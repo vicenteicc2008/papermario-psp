@@ -34,12 +34,12 @@ API_CALLABLE(N(func_802408A0_BD4110)) {
 void N(func_80240920_BD4190)(Npc* npc) {
     if (npc->yaw > 340.0f || npc->yaw < 20.0f) {
         npc->renderMode = RENDER_MODE_ALPHATEST;
-        npc->foldArg5 = 0;
-        func_8003D624(npc, FOLD_TYPE_NONE, 0, 0, 0, 0, npc->foldArg5);
+        npc->imgfxFlags = 0;
+        npc_set_imgfx_params(npc, IMGFX_CLEAR, 0, 0, 0, 0, npc->imgfxFlags);
     } else {
         npc->renderMode = RENDER_MODE_SURFACE_XLU_LAYER2;
-        func_8003D624(npc, FOLD_TYPE_7, gPlayerStatusPtr->alpha1, 0, 0, 0, npc->foldArg5);
-        npc->foldArg1 = 255;
+        npc_set_imgfx_params(npc, IMGFX_SET_ALPHA, gPlayerStatusPtr->alpha1, 0, 0, 0, npc->imgfxFlags);
+        npc->imgfxArg1 = 255;
     }
 }
 
@@ -55,14 +55,14 @@ void func_802409E8_BD4258(void) {
 }
 
 void func_80240A7C_BD42EC(void) {
-    get_npc_unsafe(NPC_KeepAwayBoo1)->foldArg5 = 0;
-    get_npc_unsafe(NPC_KeepAwayBoo2)->foldArg5 = 0;
-    get_npc_unsafe(NPC_KeepAwayBoo3)->foldArg5 = 0;
-    get_npc_unsafe(NPC_KeepAwayBoo4)->foldArg5 = 0;
-    get_npc_unsafe(NPC_KeepAwayBoo5)->foldArg5 = 0;
-    get_npc_unsafe(NPC_KeepAwayBoo6)->foldArg5 = 0;
-    get_npc_unsafe(NPC_KeepAwayBoo7)->foldArg5 = 0;
-    get_npc_unsafe(NPC_KeepAwayBoo8)->foldArg5 = 0;
+    get_npc_unsafe(NPC_KeepAwayBoo1)->imgfxFlags = 0;
+    get_npc_unsafe(NPC_KeepAwayBoo2)->imgfxFlags = 0;
+    get_npc_unsafe(NPC_KeepAwayBoo3)->imgfxFlags = 0;
+    get_npc_unsafe(NPC_KeepAwayBoo4)->imgfxFlags = 0;
+    get_npc_unsafe(NPC_KeepAwayBoo5)->imgfxFlags = 0;
+    get_npc_unsafe(NPC_KeepAwayBoo6)->imgfxFlags = 0;
+    get_npc_unsafe(NPC_KeepAwayBoo7)->imgfxFlags = 0;
+    get_npc_unsafe(NPC_KeepAwayBoo8)->imgfxFlags = 0;
 }
 
 API_CALLABLE(N(func_80240AF0_BD4360)) {

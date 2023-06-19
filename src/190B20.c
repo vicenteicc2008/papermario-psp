@@ -55,71 +55,67 @@ extern ActorPartBlueprint bMarioParts[];
 
 extern PartnerDMAData bPartnerDmaTable[];
 
-s32 func_80265CE8(AnimID*, s32);
+s32 get_npc_anim_for_status(AnimID*, s32);
 
-// WIP work from Unnunu + a permuter do-while I added
-#ifdef NON_MATCHING
-// TOOD remove gotos
 void create_target_list(Actor* actor, s32 arg1) {
+    s32 numTargets = 0;
     BattleStatus* battleStatus = &gBattleStatus;
+    SelectableTarget* targetDataList = actor->targetData;
     Actor* playerActor = battleStatus->playerActor;
     Actor* partnerActor = battleStatus->partnerActor;
-    s32 s5 = 0;
-    SelectableTarget* targetData = actor->targetData;
-    SelectableTarget* s0;
-    SelectableTarget* target;
+    SelectableTarget* targetData;
+    SelectableTarget* otherTarget;
     Actor* targetActor;
     ActorPart* targetPart;
     s8* targetIndexList;
     s32 numParts;
     s32 i, j;
-    f32 f6, f8, f10;
+    f32 targetX, targetY, targetZ;
     f32 f2, f12, f14;
-    f32 f61;
-    u8 sp10;
-    f32 sp14;
+    u8 overlayType;
+    f32 overlayZoom;
     s32 sp18 = FALSE;
-    s32 sp1C;
-    s32 fp;
+    s32 col;
+    s32 row;
+    s32 skip;
 
-    s32 a02;
-
-    if (battleStatus->currentTargetListFlags & 0x80000000) {
+    if (battleStatus->currentTargetListFlags & TARGET_FLAG_80000000) {
         actor->targetListLength = -1;
         return;
     }
-    if (battleStatus->currentTargetListFlags & 0x8) {
-        targetData->actorID = ACTOR_PLAYER;
-        targetData->partID = 1;
+
+    if (battleStatus->currentTargetListFlags & TARGET_FLAG_PLAYER) {
+        targetDataList->actorID = ACTOR_PLAYER;
+        targetDataList->partID = 1;
         if (!arg1) {
-            targetData->pos.x = playerActor->currentPos.x + playerActor->size.x * 0.3 * playerActor->scalingFactor;
-            targetData->pos.y = playerActor->currentPos.y + playerActor->size.y * 0.9 * playerActor->scalingFactor;
-            targetData->pos.z = playerActor->currentPos.z;
+            targetDataList->posA.x = playerActor->currentPos.x + playerActor->size.x * 0.3 * playerActor->scalingFactor;
+            targetDataList->posA.y = playerActor->currentPos.y + playerActor->size.y * 0.9 * playerActor->scalingFactor;
+            targetDataList->posA.z = playerActor->currentPos.z;
         } else {
-            targetData->pos.x = playerActor->homePos.x + playerActor->size.x * 0.3 * playerActor->scalingFactor;
-            targetData->pos.y = playerActor->homePos.y + playerActor->size.y * 0.9 * playerActor->scalingFactor;
-            targetData->pos.z = playerActor->homePos.z;
+            targetDataList->posA.x = playerActor->homePos.x + playerActor->size.x * 0.3 * playerActor->scalingFactor;
+            targetDataList->posA.y = playerActor->homePos.y + playerActor->size.y * 0.9 * playerActor->scalingFactor;
+            targetDataList->posA.z = playerActor->homePos.z;
         }
-        targetData->unk_10 = -100;
-        s5 += 1;
-        targetData++;
+        targetDataList->unk_10 = -100;
+        numTargets++;
+        targetDataList++;
     }
 
-    if ((battleStatus->currentTargetListFlags & 0x100) && partnerActor != NULL) {
-        targetData->actorID = ACTOR_PARTNER;
-        targetData->partID = 1;
+    if ((battleStatus->currentTargetListFlags & TARGET_FLAG_100) && partnerActor != NULL) {
+        targetDataList->actorID = ACTOR_PARTNER;
+        targetDataList->partID = 1;
         if (!arg1) {
-            targetData->pos.x = partnerActor->currentPos.x + partnerActor->size.x * 0.1 * partnerActor->scalingFactor;
-            targetData->pos.y = partnerActor->currentPos.y + partnerActor->size.y * 0.8 * partnerActor->scalingFactor;
-            targetData->pos.z = partnerActor->currentPos.z;
+            targetDataList->posA.x = partnerActor->currentPos.x + partnerActor->size.x * 0.1 * partnerActor->scalingFactor;
+            targetDataList->posA.y = partnerActor->currentPos.y + partnerActor->size.y * 0.8 * partnerActor->scalingFactor;
+            targetDataList->posA.z = partnerActor->currentPos.z;
         } else {
-            targetData->pos.x = partnerActor->homePos.x + partnerActor->size.x * 0.1 * partnerActor->scalingFactor;
-            targetData->pos.y = partnerActor->homePos.y + partnerActor->size.y * 0.8 * partnerActor->scalingFactor;
-            targetData->pos.z = partnerActor->homePos.z;
+            targetDataList->posA.x = partnerActor->homePos.x + partnerActor->size.x * 0.1 * partnerActor->scalingFactor;
+            targetDataList->posA.y = partnerActor->homePos.y + partnerActor->size.y * 0.8 * partnerActor->scalingFactor;
+            targetDataList->posA.z = partnerActor->homePos.z;
         }
-        targetData->unk_10 = -50;
-        s5 += 1;
-        targetData++;
+        targetDataList->unk_10 = -50;
+        numTargets++;
+        targetDataList++;
     }
 
     for (i = 0; i < ARRAY_COUNT(battleStatus->enemyActors); i++) {
@@ -127,312 +123,337 @@ void create_target_list(Actor* actor, s32 arg1) {
         if (targetActor == NULL) {
             continue;
         }
-        if ((battleStatus->currentTargetListFlags & 0x100) || (battleStatus->currentTargetListFlags & 0x8)) {
+        if ((battleStatus->currentTargetListFlags & TARGET_FLAG_100) || (battleStatus->currentTargetListFlags & TARGET_FLAG_PLAYER)) {
             break;
         }
         targetPart = targetActor->partsTable;
         numParts = targetActor->numParts;
         for (j = 0; j < numParts; targetPart = targetPart->nextPart, j++) {
-            if (!(targetPart->flags & 0x20000)) {
+            if (!(targetPart->flags & ACTOR_PART_FLAG_NO_TARGET)) {
                 ActorPartBlueprint* partBlueprint = targetPart->staticData;
-                s8 partID;
-                if (!(targetPart->flags & 0x100000)) {
-                    fp = !arg1; // TODO ??????
-                    if (fp) {
-                        f6 = targetActor->currentPos.x;
-                        f8 = targetActor->currentPos.y;
-                        f10 = targetActor->currentPos.z;
+                s8 partIndex;
+                if (!(targetPart->flags & ACTOR_PART_FLAG_USE_ABSOLUTE_POSITION)) {
+                    row = !arg1; // required to match
+                    if (row) {
+                        targetX = targetActor->currentPos.x;
+                        targetY = targetActor->currentPos.y;
+                        targetZ = targetActor->currentPos.z;
                     } else {
-                        f6 = targetActor->homePos.x;
-                        f8 = targetActor->homePos.y;
-                        f10 = targetActor->homePos.z;
+                        targetX = targetActor->homePos.x;
+                        targetY = targetActor->homePos.y;
+                        targetZ = targetActor->homePos.z;
                     }
-                    f6 += targetPart->partOffset.x * targetActor->scalingFactor;
-                    if (!(targetActor->flags & 0x800)) {
-                        f8 += targetPart->partOffset.y * targetActor->scalingFactor;
+                    targetX += targetPart->partOffset.x * targetActor->scalingFactor;
+                    if (!(targetActor->flags & ACTOR_FLAG_UPSIDE_DOWN)) {
+                        targetY += targetPart->partOffset.y * targetActor->scalingFactor;
                     }
-                    f10 += targetPart->partOffset.z * targetActor->scalingFactor;
-                    f12 = f6;
-                    f6 = targetActor->scalingFactor;
-                    f6 = f12 + targetPart->targetOffset.x * f6;
-                    f2 = f8;
-                    f14 = f10 + 5.0f;
-                    if (!(targetActor->flags & 0x800)) {
-                        f8 = f2 + targetPart->targetOffset.y * targetActor->scalingFactor;
+                    targetZ += targetPart->partOffset.z * targetActor->scalingFactor;
+                    f12 = targetX;
+                    targetX = targetActor->scalingFactor;
+                    targetX = f12 + targetPart->targetOffset.x * targetX;
+                    f2 = targetY;
+                    f14 = targetZ + 5.0f;
+                    if (!(targetActor->flags & ACTOR_FLAG_UPSIDE_DOWN)) {
+                        targetY = f2 + targetPart->targetOffset.y * targetActor->scalingFactor;
                     }
                 } else {
-                    f8 = targetPart->absolutePosition.y;
-                    f10 = targetPart->absolutePosition.z;
+                    targetY = targetPart->absolutePosition.y;
+                    targetZ = targetPart->absolutePosition.z;
                     f12 = targetPart->absolutePosition.x;
-                    f2 = f8;
-                    f14 = f10 + 5.0f;
-                    f6 = f12 + targetPart->targetOffset.x;
-                    if (!(targetActor->flags & 0x800)) {
-                        f8 = f2 + targetPart->targetOffset.y;
+                    f2 = targetY;
+                    f14 = targetZ + 5.0f;
+                    targetX = f12 + targetPart->targetOffset.x;
+                    if (!(targetActor->flags & ACTOR_FLAG_UPSIDE_DOWN)) {
+                        targetY = f2 + targetPart->targetOffset.y;
                     }
                 }
 
-                targetData->actorID = ACTOR_CLASS_ENEMY | i;
-                partID = partBlueprint->index;
-                targetData->pos.x = f6;
-                targetData->pos.y = f8;
-                targetData->pos.z = f10;
-                targetData->unk_10 = 0;
-                targetData->partID = partID;
+                targetDataList->actorID = ACTOR_CLASS_ENEMY | i;
+                partIndex = partBlueprint->index;
+                targetDataList->posA.x = targetX;
+                targetDataList->posA.y = targetY;
+                targetDataList->posA.z = targetZ;
+                targetDataList->unk_10 = 0;
+                targetDataList->partID = partIndex;
 
-                if ((targetActor->flags & 0x4000) && !(targetActor->flags & 0x10)) {
-                    targetData->unk_10 = 100;
+                if ((targetActor->flags & ACTOR_FLAG_TARGET_ONLY) && !(targetActor->flags & ACTOR_FLAG_10)) {
+                    targetDataList->unk_10 = 100;
                 }
-                targetData->unk_10 += targetPart->unk_70;
-                targetData->unk_0A = f12 + targetData->unk_10 * 100;
-                targetData->unk_0C = f2;
-                targetData->unk_0E = f14;
+                targetDataList->unk_10 += targetPart->unk_70;
+                targetDataList->posB.x = f12 + targetDataList->unk_10 * 100;
+                targetDataList->posB.y = f2;
+                targetDataList->posB.z = f14;
 
-                if (targetData->unk_0C < 40) {
-                    targetData->homeRow = 0;
-                } else if (targetData->unk_0C < 85) {
-                    targetData->homeRow = 1;
-                } else if (targetData->unk_0C < 100) {
-                    targetData->homeRow = 2;
+                if (targetDataList->posB.y < 40) {
+                    targetDataList->homeRow = 0;
+                } else if (targetDataList->posB.y < 85) {
+                    targetDataList->homeRow = 1;
+                } else if (targetDataList->posB.y < 100) {
+                    targetDataList->homeRow = 2;
                 } else {
-                    targetData->homeRow = 3;
+                    do {
+                        do {
+                            targetDataList->homeRow = 3;
+                        } while (0);
+                    } while (0);
                 }
 
-                if (targetData->unk_0A < 25) {
-                    targetData->homeCol = 0;
-                } else if (targetData->unk_0A < 65) {
-                    targetData->homeCol = 1;
-                } else if (targetData->unk_0A < 105) {
-                    targetData->homeCol = 2;
+                if (targetDataList->posB.x < 25) {
+                    targetDataList->homeCol = 0;
+                } else if (targetDataList->posB.x < 65) {
+                    targetDataList->homeCol = 1;
+                } else if (targetDataList->posB.x < 105) {
+                    targetDataList->homeCol = 2;
                 } else {
-                    targetData->homeCol = 3;
+                    do {
+                        targetDataList->homeCol = 3;
+                    } while (0);
                 }
 
-                if (targetData->unk_0E < -30) {
-                    targetData->layer = 0;
+                if (targetDataList->posB.z < -30) {
+                    targetDataList->layer = 0;
                 } else {
-                    targetData->layer = 1;
+                    targetDataList->layer = 1;
                 }
-                s5++;
-                targetData++;
+                numTargets++;
+                targetDataList++;
             }
         }
     }
-
-    actor->selectedTargetIndex = 0;
-    actor->targetListLength = s5;
-
     do {
+        actor->selectedTargetIndex = 0;
+    } while (0);
+    actor->targetListLength = numTargets;
 
     // @bug this should be % 4
-    sp1C = battleStatus->targetHomeIndex & 4;
-    fp = battleStatus->targetHomeIndex / 4;
+    col = battleStatus->targetHomeIndex & 4;
+    row = battleStatus->targetHomeIndex / 4;
 
-    targetData = actor->targetData;
-    s5 = actor->targetListLength;
+    targetDataList = actor->targetData;
+    numTargets = actor->targetListLength;
 
-    for (i = 0; i < s5; i++) {
-        s0 = &targetData[i];
-        targetActor = get_actor(s0->actorID);
-        targetPart = get_actor_part(targetActor, s0->partID);
-        if (s0->actorID == ACTOR_PLAYER || s0->actorID == ACTOR_PARTNER) {
+    for (i = 0; i < numTargets; i++) {
+        targetData = &targetDataList[i];
+        targetActor = get_actor(targetData->actorID);
+        targetPart = get_actor_part(targetActor, targetData->partID);
+        if (targetData->actorID == ACTOR_PLAYER || targetData->actorID == ACTOR_PARTNER) {
             continue;
         }
-        if (battleStatus->currentTargetListFlags & 0x80000000) {
-            a02 = 1;
+        if (battleStatus->currentTargetListFlags & TARGET_FLAG_80000000) {
+            skip = TRUE;
             goto END2;
         }
-        if (!(gBattleStatus.flags2 & 0x4000) && battleStatus->darknessMode > 0) {
-            get_screen_overlay_params(1, &sp10, &sp14);
-            if (sp14 >= 215.0f) {
-                a02 = 1;
+        if (!(gBattleStatus.flags2 & BS_FLAGS2_4000) && battleStatus->darknessMode > 0) {
+            get_screen_overlay_params(SCREEN_LAYER_BACK, &overlayType, &overlayZoom);
+            if (overlayZoom >= 215.0f) {
+                skip = TRUE;
                 sp18 = 1;
                 goto END2;
             }
         }
-        if (battleStatus->currentTargetListFlags & 0x8000) {
-            if (!(targetPart->flags & 0x800000) || (targetActor->flags & 0x40) || (targetPart->flags & 0x40)) {
-                a02 = 1;
+        if (battleStatus->currentTargetListFlags & TARGET_FLAG_8000) {
+            if (!(targetPart->flags & ACTOR_PART_FLAG_MULTI_TARGET) ||
+                 (targetActor->flags & ACTOR_FLAG_40) ||
+                 (targetPart->flags & ACTOR_PART_FLAG_40))
+            {
+                skip = TRUE;
                 goto END2;
             }
         }
-        a02 = 0;
+        skip = 0;
 END2:
-        if (a02) {
-            for (j = i; j < s5 - 1; j++) {
+        if (skip) {
+            for (j = i; j < numTargets - 1; j++) {
                 actor->targetData[j] = actor->targetData[j + 1];
             }
-            s5--;
+            numTargets--;
             i--;
         }
     }
 
-    for (i = 0; i < s5; i++) {
-        s0 = &targetData[i];
-        targetActor = get_actor(s0->actorID);
-        targetPart = get_actor_part(targetActor, s0->partID);
-        if (s0->actorID == ACTOR_PLAYER || s0->actorID == ACTOR_PARTNER) {
+    for (i = 0; i < numTargets; i++) {
+        targetData = &targetDataList[i];
+        targetActor = get_actor(targetData->actorID);
+        targetPart = get_actor_part(targetActor, targetData->partID);
+        if (targetData->actorID == ACTOR_PLAYER || targetData->actorID == ACTOR_PARTNER) {
             continue;
         }
+        do {
+            if ((battleStatus->currentTargetListFlags & TARGET_FLAG_800) && (targetPart->targetFlags & ACTOR_PART_TARGET_FLAG_1)) {
+                skip = TRUE;
+                goto END;
+            }
+        } while (0);
+        do {
+            if ((battleStatus->currentTargetListFlags & TARGET_FLAG_1000) && (targetPart->targetFlags & ACTOR_PART_TARGET_FLAG_2)) {
+                skip = TRUE;
+                goto END;
+            }
+        } while (0);
+        do {
+            if ((battleStatus->currentTargetListFlags & TARGET_FLAG_20000) && ((targetActor->flags & ACTOR_FLAG_80) || (targetPart->flags & ACTOR_PART_FLAG_80))) {
+                skip = TRUE;
+                goto END;
+            }
+        } while (0);
+        if ((battleStatus->currentTargetListFlags & TARGET_FLAG_400) && (targetActor->flags & ACTOR_FLAG_UPSIDE_DOWN)) {
+            skip = TRUE;
+            goto END;
+        }
+        if (!(battleStatus->currentTargetListFlags & TARGET_FLAG_10000) && (targetActor->flags & ACTOR_FLAG_TARGET_ONLY)) {
+            skip = TRUE;
+            goto END;
+        }
+        if ((battleStatus->currentTargetListFlags & TARGET_FLAG_40000) && (targetActor->flags & ACTOR_FLAG_UPSIDE_DOWN)) {
+            skip = TRUE;
+            goto END;
+        }
+        if ((battleStatus->currentTargetListFlags & TARGET_FLAG_4) && targetData->homeRow != 0) {
+            skip = TRUE;
+            goto END;
+        }
+        if ((battleStatus->currentTargetListFlags & TARGET_FLAG_10) && targetData->homeRow >= 2) {
+            skip = TRUE;
+            goto END;
+        }
+        if ((battleStatus->currentTargetListFlags & TARGET_FLAG_40) && targetData->homeRow <= 0) {
+            skip = TRUE;
+            goto END;
+        }
+        if ((battleStatus->currentTargetListFlags & TARGET_FLAG_4000) && !(targetPart->flags & ACTOR_PART_FLAG_20)) {
+            s32 cond = FALSE;
+            do {
+                for (j = 0; j < numTargets; j++) {
+                    otherTarget = &targetDataList[j];
+                    if (targetData != otherTarget) {
+                        if (targetData->layer == otherTarget->layer &&
+                            targetData->homeCol == otherTarget->homeCol &&
+                            targetData->homeRow < otherTarget->homeRow) {
+                            cond = TRUE;
+                            break;
+                        }
+                    }
+                }
+            } while (0);
+            if (cond) {
+                skip = TRUE;
+                goto END;
+            }
+        }
+        if (battleStatus->currentTargetListFlags & TARGET_FLAG_2000) {
+            s32 cond = FALSE;
 
-        if ((battleStatus->currentTargetListFlags & 0x800) && (targetPart->targetFlags & 0x1)) {
-            a02 = 1;
-            goto END;
-        }
-        if ((battleStatus->currentTargetListFlags & 0x1000) && (targetPart->targetFlags & 0x2)) {
-            a02 = 1;
-            goto END;
-        }
-        if ((battleStatus->currentTargetListFlags & 0x20000) && ((targetActor->flags & 0x80) || (targetPart->flags & 0x80))) {
-            a02 = 1;
-            goto END;
-        }
-        if ((battleStatus->currentTargetListFlags & 0x400) && (targetActor->flags & 0x800)) {
-            a02 = 1;
-            goto END;
-        }
-        if (!(battleStatus->currentTargetListFlags & 0x10000) && (targetActor->flags & 0x4000)) {
-            a02 = 1;
-            goto END;
-        }
-        if ((battleStatus->currentTargetListFlags & 0x40000) && (targetActor->flags & 0x800)) {
-            a02 = 1;
-            goto END;
-        }
-        if ((battleStatus->currentTargetListFlags & 0x4) && s0->homeRow != 0) {
-            a02 = 1;
-            goto END;
-        }
-        if ((battleStatus->currentTargetListFlags & 0x10) && s0->homeRow >= 2) {
-            a02 = 1;
-            goto END;
-        }
-        if ((battleStatus->currentTargetListFlags & 0x40) && s0->homeRow <= 0) {
-            a02 = 1;
-            goto END;
-        }
-        if ((battleStatus->currentTargetListFlags & 0x4000) && !(targetPart->flags & 0x20)) {
-            s32 a22 = 0;
-
-            for (j = 0; j < s5; j++) {
-                target = &targetData[j];
-                if (s0 != target) {
-                    if (s0->layer == target->layer &&
-                        s0->homeCol == target->homeCol &&
-                        s0->homeRow < target->homeRow) {
-                        a22 = 1;
+            for (j = 0; j < numTargets; j++) {
+                otherTarget = &targetDataList[j];
+                if (targetData != otherTarget) {
+                    if (targetData->layer == otherTarget->layer &&
+                        targetData->homeRow == otherTarget->homeRow &&
+                        targetData->homeCol > otherTarget->homeCol) {
+                        cond = TRUE;
                         break;
                     }
                 }
             }
 
-            if (a22) {
-                a02 = 1;
+            if (cond) {
+                skip = TRUE;
                 goto END;
             }
         }
-        if (battleStatus->currentTargetListFlags & 0x2000) {
-            s32 a22 = 0;
-
-            for (j = 0; j < s5; j++) {
-                target = &targetData[j];
-                if (s0 != target) {
-                    if (s0->layer == target->layer &&
-                        s0->homeRow == target->homeRow &&
-                        s0->homeCol > target->homeCol) {
-                        a22 = 1;
-                        break;
-                    }
-                }
-            }
-
-            if (a22) {
-                a02 = 1;
+        do {
+            if ((battleStatus->currentTargetListFlags & TARGET_FLAG_20) && (targetActor->flags & ACTOR_FLAG_FLYING)) {
+                skip = TRUE;
                 goto END;
             }
-        }
-        if ((battleStatus->currentTargetListFlags & 0x20) && (targetActor->flags & 0x200)) {
-            a02 = 1;
-            goto END;
-        }
-        if ((battleStatus->currentTargetListFlags & 0x100000) && s0->homeRow == fp + 1) {
-            a02 = 1;
-            goto END;
-        }
-        if ((battleStatus->currentTargetListFlags & 0x200000) && s0->homeRow == fp - 1) {
-            a02 = 1;
-            goto END;
-        }
-        if ((battleStatus->currentTargetListFlags & 0x400000) && s0->homeCol == sp1C - 1) {
-            a02 = 1;
-            goto END;
-        }
-        if ((battleStatus->currentTargetListFlags & 0x800000) && s0->homeCol == sp1C + 1) {
-            a02 = 1;
-            goto END;
-        }
-        if ((battleStatus->currentTargetListFlags & 0x100000) && s0->homeRow < fp) {
-            a02 = 1;
-            goto END;
-        }
-        if ((battleStatus->currentTargetListFlags & 0x200000) && s0->homeRow > fp) {
-            a02 = 1;
-            goto END;
-        }
-        if ((battleStatus->currentTargetListFlags & 0x400000) && s0->homeCol > sp1C) {
-            a02 = 1;
-            goto END;
-        }
-        if ((battleStatus->currentTargetListFlags & 0x800000) && s0->homeCol < sp1C) {
-            a02 = 1;
-            goto END;
-        }
-        a02 = 0;
+        } while (0);
+        do {
+            if ((battleStatus->currentTargetListFlags & TARGET_FLAG_100000) && targetData->homeRow == row + 1) {
+                skip = TRUE;
+                goto END;
+            }
+        } while (0);
+        do {
+            if ((battleStatus->currentTargetListFlags & TARGET_FLAG_200000) && targetData->homeRow == row - 1) {
+                skip = TRUE;
+                goto END;
+            }
+        } while (0);
+        do {
+            if ((battleStatus->currentTargetListFlags & TARGET_FLAG_400000) && targetData->homeCol == col - 1) {
+                skip = TRUE;
+                goto END;
+            }
+        } while (0);
+        do {
+            if ((battleStatus->currentTargetListFlags & TARGET_FLAG_800000) && targetData->homeCol == col + 1) {
+                skip = TRUE;
+                goto END;
+            }
+        } while (0);
+        do {
+            if ((battleStatus->currentTargetListFlags & TARGET_FLAG_100000) && targetData->homeRow < row) {
+                skip = TRUE;
+                goto END;
+            }
+        } while (0);
+        do {
+            if ((battleStatus->currentTargetListFlags & TARGET_FLAG_200000) && targetData->homeRow > row) {
+                skip = TRUE;
+                goto END;
+            }
+        } while (0);
+        do {
+            if ((battleStatus->currentTargetListFlags & TARGET_FLAG_400000) && targetData->homeCol > col) {
+                skip = TRUE;
+                goto END;
+            }
+        } while (0);
+        do {
+            if ((battleStatus->currentTargetListFlags & TARGET_FLAG_800000) && targetData->homeCol < col) {
+                skip = TRUE;
+                goto END;
+            }
+        } while (0);
+        skip = FALSE;
 END:
-        if (a02) {
-            for (j = i; j < s5 - 1; j++) {
+        if (skip) {
+            for (j = i; j < numTargets - 1; j++) {
                 actor->targetData[j] = actor->targetData[j + 1];
             }
-            s5--;
+            numTargets--;
             i--;
         }
     }
 
-    actor->targetListLength = s5;
-    if (s5 == 0 && sp18) {
-        gBattleStatus.flags2 |= 0x1000;
+    actor->targetListLength = numTargets;
+    if (numTargets == 0 && sp18) {
+        gBattleStatus.flags2 |= BS_FLAGS2_NO_TARGET_AVAILABLE;
     } else {
-        gBattleStatus.flags2 &= ~0x1000;
+        gBattleStatus.flags2 &= ~BS_FLAGS2_NO_TARGET_AVAILABLE;
     }
 
-    targetData = actor->targetData;
+    targetDataList = actor->targetData;
 
-    s5 = actor->targetListLength;
+    numTargets = actor->targetListLength;
     targetIndexList = actor->targetIndexList;
-    for (i = 0; i < s5; i++) {
+    for (i = 0; i < numTargets; i++) {
         targetIndexList[i] = i;
     }
-    for (i = 0; i < s5 - 1; i++) {
-        for (j = i + 1; j < s5; j++) {
+    for (i = 0; i < numTargets - 1; i++) {
+        for (j = i + 1; j < numTargets; j++) {
             s32 index1 = targetIndexList[i];
             s32 index2 = targetIndexList[j];
-            s0 = &targetData[index1];
-            target = &targetData[index2];
-            if (s0->pos.x + s0->unk_10 * 10 > target->pos.x + target->unk_10 * 10) {
+            targetData = &targetDataList[index1];
+            otherTarget = &targetDataList[index2];
+            if (targetData->posA.x + targetData->unk_10 * 10 > otherTarget->posA.x + otherTarget->unk_10 * 10) {
                 targetIndexList[i] = targetIndexList[j];
                 targetIndexList[j] = index1;
             }
         }
     }
-
-    } while (0); // TODO required to match
 }
-#else
-void create_target_list(Actor* actor, s32 arg1);
-INCLUDE_ASM(s32, "190B20", create_target_list);
-#endif
 
-void func_80266DAC(Actor* actor, s32 arg1);
+void set_actor_pal_adjustment(Actor* actor, s32 palAdjust);
 
 void player_create_target_list(Actor* actor) {
     create_target_list(actor, 0);
@@ -498,9 +519,9 @@ s32 func_80263064(Actor* actor0, Actor* actor1, s32 unused) {
 
                 actor0->targetActorID = target->actorID = actor1->actorID;
                 actor0->targetPartIndex = target->partID = bp->index;
-                target->pos.x = x;
-                target->pos.y = y;
-                target->pos.z = z;
+                target->posA.x = x;
+                target->posA.y = y;
+                target->posA.z = z;
                 target->unk_10 = 0;
                 target++;
                 ret++;
@@ -540,9 +561,9 @@ void func_80263268(void) {
         }
 
         if (partnersEnabled >= 2) {
-            if (partner->koStatus == STATUS_DAZE) {
+            if (partner->koStatus == STATUS_KEY_DAZE) {
                 battleStatus->changePartnerAllowed = 0;
-            } else if (partner->debuff == STATUS_FROZEN) {
+            } else if (partner->debuff == STATUS_KEY_FROZEN) {
                 battleStatus->changePartnerAllowed = 0;
             } else if (playerData->currentPartner == PARTNER_GOOMPA) {
                 battleStatus->changePartnerAllowed = -1;
@@ -578,7 +599,7 @@ void func_80263300(void) {
                 player_create_target_list(player);
 
                 if (player->targetListLength != 0) {
-                    battleStatus->menuStatus[0] += 1;
+                    battleStatus->menuStatus[0]++;
                     cond = TRUE;
                 }
             }
@@ -946,20 +967,20 @@ void reset_actor_turn_info(void) {
         if (actor != NULL) {
             actor->hpChangeCounter = 0;
             actor->damageCounter = 0;
-            actor->unk_204 = 0;
+            actor->actionRatingCombo = 0;
         }
 
     }
     actor = battleStatus->playerActor;
     actor->hpChangeCounter = 0;
     actor->damageCounter = 0;
-    actor->unk_204 = 0;
+    actor->actionRatingCombo = 0;
 
     actor = battleStatus->partnerActor;
     if (actor != NULL) {
         actor->hpChangeCounter = 0;
         actor->damageCounter = 0;
-        actor->unk_204 = 0;
+        actor->actionRatingCombo = 0;
     }
 }
 
@@ -1220,17 +1241,17 @@ void load_player_actor(void) {
     player->size.x = player->actorBlueprint->size.x;
     player->size.y = player->actorBlueprint->size.y;
     player->actorID = 0;
-    player->healthBarPosition.x = player->currentPos.x;
-    player->healthBarPosition.y = player->currentPos.y;
-    player->healthBarPosition.z = player->currentPos.z;
+    player->healthBarPos.x = player->currentPos.x;
+    player->healthBarPos.y = player->currentPos.y;
+    player->healthBarPos.z = player->currentPos.z;
     player->scalingFactor = 1.0f;
     player->attackResultEffect = NULL;
-    player->unk_204 = 0;
-    player->unk_205 = 0;
-    player->unk_194 = 0;
-    player->unk_195 = 0;
-    player->unk_196 = 0;
-    player->unk_197 = 0;
+    player->actionRatingCombo = 0;
+    player->actionRatingTime = 0;
+    player->statusIconOffset.x = 0;
+    player->statusIconOffset.y = 0;
+    player->statusTextOffset.x = 0;
+    player->statusTextOffset.y = 0;
     player->idleSource = NULL;
     player->takeTurnSource = NULL;
     player->handleEventSource = NULL;
@@ -1324,10 +1345,10 @@ void load_player_actor(void) {
     part->scale.y = 1.0f;
     part->scale.z = 1.0f;
     part->verticalStretch = 1;
-    part->unkOffset[0] = 0;
-    part->unkOffset[1] = 0;
+    part->palAnimPosOffset[0] = 0;
+    part->palAnimPosOffset[1] = 0;
     part->animationRate = 1.0f;
-    part->currentAnimation = func_80265CE8(part->idleAnimations, 1U);
+    part->currentAnimation = get_npc_anim_for_status(part->idleAnimations, 1U);
     part->nextPart = NULL;
     part->partTypeData[0] = bActorSoundTable[player->actorType].walk[0];
     part->partTypeData[1] = bActorSoundTable[player->actorType].walk[1];
@@ -1346,7 +1367,7 @@ void load_player_actor(void) {
 
         ASSERT(decorationTable != NULL);
 
-        decorationTable->unk_6C0 = 0;
+        decorationTable->paletteAdjustment = PAL_ADJUST_NONE;
         decorationTable->unk_750 = 0;
         decorationTable->unk_764 = 0;
         decorationTable->unk_768 = 0;
@@ -1379,7 +1400,7 @@ void load_player_actor(void) {
     player->icePillarEffect = NULL;
 
     if (is_ability_active(ABILITY_ZAP_TAP)) {
-        player->staticStatus = STATUS_STATIC;
+        player->staticStatus = STATUS_KEY_STATIC;
         player->staticDuration = 127;
     }
 }
@@ -1466,17 +1487,17 @@ void load_partner_actor(void) {
         partnerActor->verticalRenderOffset = 0;
         partnerActor->size.x = actorBP->size.x;
         partnerActor->size.y = actorBP->size.y;
-        partnerActor->healthBarPosition.x = partnerActor->homePos.x;
-        partnerActor->healthBarPosition.y = partnerActor->homePos.y;
-        partnerActor->healthBarPosition.z = partnerActor->homePos.z;
+        partnerActor->healthBarPos.x = partnerActor->homePos.x;
+        partnerActor->healthBarPos.y = partnerActor->homePos.y;
+        partnerActor->healthBarPos.z = partnerActor->homePos.z;
         partnerActor->scalingFactor = 1.0f;
         partnerActor->attackResultEffect = NULL;
-        partnerActor->unk_204 = 0;
-        partnerActor->unk_205 = 0;
-        partnerActor->unk_194 = 0;
-        partnerActor->unk_195 = 0;
-        partnerActor->unk_196 = 0;
-        partnerActor->unk_197 = 0;
+        partnerActor->actionRatingCombo = 0;
+        partnerActor->actionRatingTime = 0;
+        partnerActor->statusIconOffset.x = 0;
+        partnerActor->statusIconOffset.y = 0;
+        partnerActor->statusTextOffset.x = 0;
+        partnerActor->statusTextOffset.y = 0;
         partnerActor->renderMode = RENDER_MODE_ALPHATEST;
         partnerActor->actorID = ACTOR_PARTNER;
         partnerActor->statusTable = actorBP->statusTable;
@@ -1555,8 +1576,8 @@ void load_partner_actor(void) {
             part->scale.y = 1.0f;
             part->scale.z = 1.0f;
             part->verticalStretch = 1;
-            part->unkOffset[0] = 0;
-            part->unkOffset[1] = 0;
+            part->palAnimPosOffset[0] = 0;
+            part->palAnimPosOffset[1] = 0;
             part->partTypeData[0] = bActorSoundTable[partnerActor->actorType].walk[0];
             part->partTypeData[1] = bActorSoundTable[partnerActor->actorType].walk[1];
             part->partTypeData[2] = bActorSoundTable[partnerActor->actorType].fly[0];
@@ -1575,7 +1596,7 @@ void load_partner_actor(void) {
 
                 ASSERT(decorationTable != NULL);
 
-                decorationTable->unk_6C0 = 0;
+                decorationTable->paletteAdjustment = PAL_ADJUST_NONE;
                 decorationTable->unk_750 = 0;
                 decorationTable->unk_764 = 0;
                 decorationTable->unk_768 = 0;
@@ -1608,7 +1629,7 @@ void load_partner_actor(void) {
             part->spriteInstanceID = -1;
 
             if (part->idleAnimations != NULL) {
-                part->currentAnimation = func_80265CE8(part->idleAnimations, 1);
+                part->currentAnimation = get_npc_anim_for_status(part->idleAnimations, 1);
                 part->spriteInstanceID = spr_load_npc_sprite(part->currentAnimation | SPRITE_ID_TAIL_ALLOCATE, NULL);
             }
 
@@ -1713,22 +1734,22 @@ Actor* create_actor(Formation formation) {
     actor->size.x = formationActor->size.x;
     actor->size.y = formationActor->size.y;
     actor->scalingFactor = 1.0f;
-    actor->unk_194 = 0;
-    actor->unk_195 = 0;
-    actor->unk_196 = 0;
-    actor->unk_197 = 0;
-    actor->unk_198.x = 0;
-    actor->unk_198.y = 0;
-    actor->unk_206 = 0;
+    actor->statusIconOffset.x = 0;
+    actor->statusIconOffset.y = 0;
+    actor->statusTextOffset.x = 0;
+    actor->statusTextOffset.y = 0;
+    actor->healthBarOffset.x = 0;
+    actor->healthBarOffset.y = 0;
+    actor->healthBarHideTime = 0;
     actor->attackResultEffect = NULL;
-    actor->unk_204 = 0;
-    actor->unk_205 = 0;
+    actor->actionRatingCombo = 0;
+    actor->actionRatingTime = 0;
 
-    actor->healthBarPosition.x = actor->currentPos.x + formationActor->hpBarOffset.x;
-    actor->healthBarPosition.y = actor->currentPos.y + formationActor->hpBarOffset.y;
-    actor->healthBarPosition.z = actor->currentPos.z;
+    actor->healthBarPos.x = actor->currentPos.x + formationActor->healthBarOffset.x;
+    actor->healthBarPos.y = actor->currentPos.y + formationActor->healthBarOffset.y;
+    actor->healthBarPos.z = actor->currentPos.z;
     if (actor->flags & ACTOR_FLAG_UPSIDE_DOWN) {
-        actor->healthBarPosition.y = actor->currentPos.y - actor->size.y - formationActor->hpBarOffset.y;
+        actor->healthBarPos.y = actor->currentPos.y - actor->size.y - formationActor->healthBarOffset.y;
     }
 
     actor->statusTable = formationActor->statusTable;
@@ -1821,8 +1842,8 @@ Actor* create_actor(Formation formation) {
         part->scale.y = 1.0f;
         part->scale.z = 1.0f;
         part->verticalStretch = 1;
-        part->unkOffset[0] = 0;
-        part->unkOffset[1] = 0;
+        part->palAnimPosOffset[0] = 0;
+        part->palAnimPosOffset[1] = 0;
         part->partTypeData[0] = bActorSoundTable[actor->actorType].walk[0];
         part->partTypeData[1] = bActorSoundTable[actor->actorType].walk[1];
         part->partTypeData[2] = bActorSoundTable[actor->actorType].fly[0];
@@ -1837,7 +1858,7 @@ Actor* create_actor(Formation formation) {
             decorationTable = part->decorationTable;
             ASSERT(decorationTable != NULL);
 
-            decorationTable->unk_6C0 = 0;
+            decorationTable->paletteAdjustment = PAL_ADJUST_NONE;
             decorationTable->unk_750 = 0;
             decorationTable->unk_764 = 0;
             decorationTable->unk_768 = 0;
@@ -1875,7 +1896,7 @@ Actor* create_actor(Formation formation) {
         part->spriteInstanceID = -1;
 
         if (part->idleAnimations != NULL) {
-            part->currentAnimation = func_80265CE8(part->idleAnimations, 1) & ~SPRITE_ID_TAIL_ALLOCATE;
+            part->currentAnimation = get_npc_anim_for_status(part->idleAnimations, 1) & ~SPRITE_ID_TAIL_ALLOCATE;
             part->spriteInstanceID = spr_load_npc_sprite(part->currentAnimation, NULL);
         }
 
@@ -1893,11 +1914,11 @@ Actor* create_actor(Formation formation) {
         part->nextPart = NULL;
     }
 
-    actor->hpFraction = 25;
-    actor->actorID = actor->enemyIndex | 0x200;
+    actor->healthFraction = 25;
+    actor->actorID = actor->enemyIndex | ACTOR_CLASS_ENEMY;
     takeTurnScript = start_script(actor->takeTurnSource, EVT_PRIORITY_A, 0);
     actor->takeTurnScriptID = takeTurnScript->id;
-    takeTurnScript->owner1.enemyID = actor->enemyIndex | 0x200;
+    takeTurnScript->owner1.enemyID = actor->enemyIndex | ACTOR_CLASS_ENEMY;
     actor->shadow.id = create_shadow_type(0, actor->currentPos.x, actor->currentPos.y, actor->currentPos.z);
     actor->shadowScale = actor->size.x / 24.0;
     actor->disableEffect = fx_disable_x(0, -142.0f, 34.0f, 1.0f, 0);
@@ -1906,7 +1927,7 @@ Actor* create_actor(Formation formation) {
     return actor;
 }
 
-s32 func_80265CE8(AnimID* animations, s32 statusKey) {
+s32 get_npc_anim_for_status(AnimID* animations, s32 statusKey) {
     AnimID foundAnim;
 
     if (animations == NULL) {
@@ -1915,7 +1936,7 @@ s32 func_80265CE8(AnimID* animations, s32 statusKey) {
 
     foundAnim = 0;
     while (animations[DICTIONARY_KEY] != NULL) {
-        if (animations[DICTIONARY_KEY] == STATUS_NORMAL) {
+        if (animations[DICTIONARY_KEY] == STATUS_KEY_NORMAL) {
             foundAnim = animations[DICTIONARY_VALUE];
         }
         if (animations[DICTIONARY_KEY] == statusKey) {
@@ -1927,7 +1948,7 @@ s32 func_80265CE8(AnimID* animations, s32 statusKey) {
     return foundAnim;
 }
 
-s32 func_80265D44(s32 animID) {
+s32 get_player_anim_for_status(s32 statusKey) {
     BattleStatus* battleStatus = &gBattleStatus;
     PlayerData* playerData = &gPlayerData;
     Actor* player = battleStatus->playerActor;
@@ -1939,46 +1960,47 @@ s32 func_80265D44(s32 animID) {
     }
     ret = 0;
 
-    // TODO use animation id enum once it exists
     if (!(battleStatus->flags2 & BS_FLAGS2_PEACH_BATTLE)) {
-        if (playerData->curHP < 6) {
-            if (animID == 1) {
-                animID = 26;
+        // switch to danger override animations
+        if (playerData->curHP <= DANGER_THRESHOLD) {
+            if (statusKey == STATUS_KEY_NORMAL) {
+                statusKey = STATUS_KEY_DANGER;
             }
-
-            if (animID == 18) {
-                animID = 22;
+            if (statusKey == STATUS_KEY_INACTIVE) {
+                statusKey = STATUS_KEY_INACTIVE_WEARY;
             }
-
-            if (animID == 28) {
-                animID = 29;
-            }
-        }
-
-        if (player->debuff == STATUS_POISON) {
-            if (animID == 1) {
-                animID = 26;
-            }
-
-            if (animID == 18) {
-                animID = 22;
-            }
-
-            if (animID == 28) {
-                animID = 29;
+            if (statusKey == STATUS_KEY_THINKING) {
+                statusKey = STATUS_KEY_WEARY;
             }
         }
 
-        if (player->debuff == STATUS_DIZZY && animID == 18) {
-            animID = 24;
+        // switch to poisoned override animations
+        if (player->debuff == STATUS_KEY_POISON) {
+            if (statusKey == STATUS_KEY_NORMAL) {
+                statusKey = STATUS_KEY_DANGER;
+            }
+            if (statusKey == STATUS_KEY_INACTIVE) {
+                statusKey = STATUS_KEY_INACTIVE_WEARY;
+            }
+            if (statusKey == STATUS_KEY_THINKING) {
+                statusKey = STATUS_KEY_WEARY;
+            }
+        }
+
+        // switch to dizzy override animations
+        if (player->debuff == STATUS_KEY_DIZZY) {
+            if (statusKey == STATUS_KEY_INACTIVE) {
+                statusKey = STATUS_KEY_INACTIVE_DIZZY;
+            }
         }
     }
 
+    // search IdleAnimations to get animID for key
     while (*anim != NULL) {
         if (*anim == 1) {
             ret = anim[1];
         }
-        if (*anim == animID) {
+        if (*anim == statusKey) {
             ret = anim[1];
             break;
         }
@@ -2011,7 +2033,7 @@ s32 lookup_status_chance(s32* statusTable, s32 statusKey) {
     s32 defaultChance = 0;
 
     while (statusTable[DICTIONARY_KEY] != STATUS_END) {
-        if (statusTable[DICTIONARY_KEY] == STATUS_DEFAULT) {
+        if (statusTable[DICTIONARY_KEY] == STATUS_KEY_DEFAULT) {
             defaultChance = statusTable[DICTIONARY_VALUE];
         }
 
@@ -2030,7 +2052,7 @@ s32 lookup_status_duration_mod(s32* statusTable, s32 statusKey) {
     s32 defaultTurnMod = 0;
 
     while (statusTable[DICTIONARY_KEY] != ELEMENT_END) {
-        if (statusTable[DICTIONARY_KEY] == STATUS_DEFAULT_TURN_MOD) {
+        if (statusTable[DICTIONARY_KEY] == STATUS_TURN_MOD_DEFAULT) {
             defaultTurnMod = statusTable[DICTIONARY_VALUE];
         }
 
@@ -2050,14 +2072,14 @@ s32 inflict_status(Actor* target, s32 statusTypeKey, s32 duration) {
     EffectInstance* effect;
 
     switch (statusTypeKey) {
-        case STATUS_FEAR:
-        case STATUS_DIZZY:
-        case STATUS_PARALYZE:
-        case STATUS_SLEEP:
-        case STATUS_FROZEN:
-        case STATUS_STOP:
-        case STATUS_POISON:
-        case STATUS_SHRINK:
+        case STATUS_KEY_FEAR:
+        case STATUS_KEY_DIZZY:
+        case STATUS_KEY_PARALYZE:
+        case STATUS_KEY_SLEEP:
+        case STATUS_KEY_FROZEN:
+        case STATUS_KEY_STOP:
+        case STATUS_KEY_POISON:
+        case STATUS_KEY_SHRINK:
             if (target->actorID != ACTOR_PLAYER || (!is_ability_active(ABILITY_FEELING_FINE) &&
                 !is_ability_active(ABILITY_BERSERKER) && battleStatus->hustleTurns == 0)) {
 
@@ -2073,38 +2095,38 @@ s32 inflict_status(Actor* target, s32 statusTypeKey, s32 duration) {
                     }
 
                     switch (statusTypeKey) {
-                        case STATUS_FROZEN:
+                        case STATUS_KEY_FROZEN:
                             if (target->actorID != ACTOR_PARTNER) {
                                 effect = target->icePillarEffect;
                                 if (effect != NULL) {
-                                    effect->flags |= EFFECT_INSTANCE_FLAG_10;
+                                    effect->flags |= FX_INSTANCE_FLAG_DISMISS;
                                 }
                                 target->icePillarEffect = fx_ice_pillar(0, target->currentPos.x, target->currentPos.y,
                                                             target->currentPos.z, 1.0f, 0);
-                                create_status_debuff(target->hudElementDataIndex, STATUS_FROZEN);
+                                create_status_debuff(target->hudElementDataIndex, STATUS_KEY_FROZEN);
                             }
                             return TRUE;
-                        case STATUS_SLEEP:
-                            func_80266DAC(target, 3);
-                            create_status_debuff(target->hudElementDataIndex, STATUS_SLEEP);
+                        case STATUS_KEY_SLEEP:
+                            set_actor_pal_adjustment(target, PAL_ADJUST_SLEEP);
+                            create_status_debuff(target->hudElementDataIndex, STATUS_KEY_SLEEP);
                             return TRUE;
-                        case STATUS_PARALYZE:
-                            func_80266DAC(target, 7);
-                            create_status_debuff(target->hudElementDataIndex, STATUS_PARALYZE);
+                        case STATUS_KEY_PARALYZE:
+                            set_actor_pal_adjustment(target, PAL_ADJUST_PARALYZE);
+                            create_status_debuff(target->hudElementDataIndex, STATUS_KEY_PARALYZE);
                             return TRUE;
-                        case STATUS_DIZZY:
-                            create_status_debuff(target->hudElementDataIndex, STATUS_DIZZY);
+                        case STATUS_KEY_DIZZY:
+                            create_status_debuff(target->hudElementDataIndex, STATUS_KEY_DIZZY);
                             return TRUE;
-                        case STATUS_FEAR:
-                            func_80266DAC(target, 5);
-                            create_status_debuff(target->hudElementDataIndex, STATUS_FEAR);
+                        case STATUS_KEY_FEAR:
+                            set_actor_pal_adjustment(target, PAL_ADJUST_FEAR);
+                            create_status_debuff(target->hudElementDataIndex, STATUS_KEY_FEAR);
                             return TRUE;
-                        case STATUS_POISON:
-                            func_80266DAC(target, 6);
-                            create_status_debuff(target->hudElementDataIndex, STATUS_POISON);
+                        case STATUS_KEY_POISON:
+                            set_actor_pal_adjustment(target, PAL_ADJUST_POISON);
+                            create_status_debuff(target->hudElementDataIndex, STATUS_KEY_POISON);
                             return TRUE;
-                        case STATUS_SHRINK:
-                            create_status_debuff(target->hudElementDataIndex, STATUS_SHRINK);
+                        case STATUS_KEY_SHRINK:
+                            create_status_debuff(target->hudElementDataIndex, STATUS_KEY_SHRINK);
                             return TRUE;
                     }
                 }
@@ -2113,61 +2135,61 @@ s32 inflict_status(Actor* target, s32 statusTypeKey, s32 duration) {
                 return FALSE;
             }
             break;
-        case STATUS_STATIC:
+        case STATUS_KEY_STATIC:
             if (target->actorID != ACTOR_PARTNER) {
                 target->staticStatus = statusTypeKey;
                 target->staticDuration = duration;
                 if ((s8)duration > 9) {
                     target->staticDuration = 9;
                 }
-                target->statusAfflicted = STATUS_STATIC;
-                func_80266DAC(target, 4);
-                create_status_static(target->hudElementDataIndex, STATUS_STATIC);
+                target->statusAfflicted = STATUS_KEY_STATIC;
+                set_actor_pal_adjustment(target, PAL_ADJUST_STATIC);
+                create_status_static(target->hudElementDataIndex, STATUS_KEY_STATIC);
             }
             return TRUE;
-        case STATUS_STONE:
+        case STATUS_KEY_STONE:
             if (target->actorID != ACTOR_PARTNER) {
-                target->stoneStatus = STATUS_STONE;
+                target->stoneStatus = STATUS_KEY_STONE;
                 target->stoneDuration = duration;
                 if ((s8)duration > 9) {
                     target->stoneDuration = 9;
                 }
-                target->statusAfflicted = STATUS_STONE;
+                target->statusAfflicted = STATUS_KEY_STONE;
             }
             return TRUE;
-        case STATUS_DAZE:
+        case STATUS_KEY_DAZE:
             if (target->koStatus < statusTypeKey) {
-                target->koStatus = STATUS_DAZE;
+                target->koStatus = STATUS_KEY_DAZE;
                 target->koDuration = duration;
                 if ((s8)duration > 9) {
                     target->koDuration = 9;
                 }
-                target->statusAfflicted = STATUS_DAZE;
+                target->statusAfflicted = STATUS_KEY_DAZE;
             }
             return TRUE;
-        case STATUS_TRANSPARENT:
+        case STATUS_KEY_TRANSPARENT:
             if (target->actorID != ACTOR_PARTNER) {
-                target->transparentStatus = STATUS_TRANSPARENT;
+                target->transparentStatus = STATUS_KEY_TRANSPARENT;
                 target->transparentDuration = duration;
                 if ((s8)duration > 9) {
                     target->transparentDuration = 9;
                 }
-                target->statusAfflicted = STATUS_TRANSPARENT;
-                create_status_transparent(target->hudElementDataIndex, STATUS_TRANSPARENT);
+                target->statusAfflicted = STATUS_KEY_TRANSPARENT;
+                create_status_transparent(target->hudElementDataIndex, STATUS_KEY_TRANSPARENT);
             }
             return TRUE;
-        case STATUS_END:
-        case STATUS_NORMAL:
-        case STATUS_DEFAULT:
+        case 0:
+        case STATUS_KEY_NORMAL:
+        case STATUS_KEY_DEFAULT:
         default:
             return TRUE;
     }
 }
 
 s32 inflict_partner_ko(Actor* target, s32 statusTypeKey, s32 duration) {
-    if (statusTypeKey == STATUS_DAZE) {
+    if (statusTypeKey == STATUS_KEY_DAZE) {
         if (statusTypeKey != target->koStatus) {
-            inflict_status(target, STATUS_DAZE, duration);
+            inflict_status(target, STATUS_KEY_DAZE, duration);
             sfx_play_sound(SOUND_2107);
         } else {
             target->koDuration += duration;
@@ -2229,7 +2251,8 @@ s32 get_defense(Actor* actor, s32* defenseTable, s32 elementFlags) {
     return minDefense;
 }
 
-void func_802664DC(f32 x, f32 y, f32 z, s32 attack, s32 a) {
+// refresh the first (primary) damage popup
+void show_primary_damage_popup(f32 posX, f32 posY, f32 posZ, s32 damageAmt, b32 angle) {
     s32 i;
 
     for (i = 0; i < 1; i++) {
@@ -2240,21 +2263,22 @@ void func_802664DC(f32 x, f32 y, f32 z, s32 attack, s32 a) {
 
     if (i > 0) {
         i = 0;
-        gDamageCountEffects[i]->data.damageIndicator->effectDurationTimer = 5;
+        gDamageCountEffects[i]->data.damageIndicator->timeLeft = 5;
         gDamageCountEffects[i] = NULL;
     }
 
-    if (a == 0) {
-        a = -55;
+    if (angle == 0) {
+        angle = -55;
     } else {
-        a = 55;
+        angle = 55;
     }
 
-    fx_damage_indicator(0, x, y, z, 10.0f, a, attack, &gDamageCountEffects[i]);
+    fx_damage_indicator(0, posX, posY, posZ, 10.0f, angle, damageAmt, &gDamageCountEffects[i]);
     gDamageCountTimers[i] = 40;
 }
 
-void show_damage_popup(f32 x, f32 y, f32 z, s32 attack, s32 a) {
+// show another damage popup, if any are available
+void show_next_damage_popup(f32 posX, f32 posY, f32 posZ, s32 damageAmt, b32 angle) {
     s32 i;
 
     for (i = 0; i < ARRAY_COUNT(gDamageCountEffects); i++) {
@@ -2265,46 +2289,46 @@ void show_damage_popup(f32 x, f32 y, f32 z, s32 attack, s32 a) {
 
     if (i > ARRAY_COUNT(gDamageCountEffects) - 1) {
         i = 0;
-        gDamageCountEffects[i]->data.damageIndicator->effectDurationTimer = 5;
+        gDamageCountEffects[i]->data.damageIndicator->timeLeft = 5;
         gDamageCountEffects[i] = NULL;
     }
 
-    if (a == 0) {
-        a = -55;
+    if (angle == 0) {
+        angle = -55;
     } else {
-        a = 55;
+        angle = 55;
     }
 
-    fx_damage_indicator(0, x, y, z, 10.0f, a, attack, &gDamageCountEffects[i]);
+    fx_damage_indicator(0, posX, posY, posZ, 10.0f, angle, damageAmt, &gDamageCountEffects[i]);
     gDamageCountTimers[i] = 40;
 }
 
-void func_80266684(void) {
+void update_damage_popups(void) {
     s32 i;
 
     for (i = 0; i < ARRAY_COUNT(gDamageCountEffects); i++) {
         if (gDamageCountEffects[i] != NULL) {
             gDamageCountTimers[i]--;
             if (gDamageCountTimers[i] == 0) {
-                gDamageCountEffects[i]->data.damageIndicator->effectDurationTimer = 5;
+                gDamageCountEffects[i]->data.damageIndicator->timeLeft = 5;
                 gDamageCountEffects[i] = NULL;
             }
         }
     };
 }
 
-void func_802666E4(Actor* actor, f32 x, f32 y, f32 z, s32 damage) {
+void show_damage_fx(Actor* actor, f32 x, f32 y, f32 z, s32 damage) {
     BattleStatus* battleStatus = &gBattleStatus;
-    s32 var_t0;
+    s32 intensity;
 
     if (damage < 3) {
-        var_t0 = 0;
+        intensity = DAMAGE_INTENSITY_LIGHT;
     } else if (damage < 5) {
-        var_t0 = 1;
+        intensity = DAMAGE_INTENSITY_MEDIUM;
     } else if (damage < 9) {
-        var_t0 = 2;
+        intensity = DAMAGE_INTENSITY_HEAVY;
     } else {
-        var_t0 = 3;
+        intensity = DAMAGE_INTENSITY_EXTREME;
     }
 
     do {
@@ -2315,13 +2339,13 @@ void func_802666E4(Actor* actor, f32 x, f32 y, f32 z, s32 damage) {
         } else if (battleStatus->currentAttackElement & DAMAGE_TYPE_WATER) {
             fx_water_splash(0, x, y, z, 1.0f, 24);
         } else {
-            fx_firework(0, x, y, z, 1.0, var_t0);
+            fx_firework(0, x, y, z, 1.0, intensity);
         }
     } while (0); // required to match
 }
 
 // grossness
-void func_802667F0(s32 arg0, Actor* actor, f32 x, f32 y, f32 z) {
+void show_action_rating(s32 rating, Actor* actor, f32 x, f32 y, f32 z) {
     BattleStatus* battleStatus = &gBattleStatus;
     Actor* player;
     s32 new_var; // TODO required to match
@@ -2332,79 +2356,79 @@ void func_802667F0(s32 arg0, Actor* actor, f32 x, f32 y, f32 z) {
 
     if (actor->attackResultEffect == NULL) {
         type = 0;
-        switch (arg0) {
-            case 0:
+        switch (rating) {
+            case ACTION_RATING_NICE:
                 type = 0;
-                actor->unk_204 = 1;
+                actor->actionRatingCombo = 1;
                 break;
-            case 1:
+            case ACTION_RATING_MISS:
                 type = 4;
-                actor->unk_204 = 0;
+                actor->actionRatingCombo = 0;
                 break;
-            case 2:
+            case ACTION_RATING_LUCKY:
                 type = 3;
-                actor->unk_204 = 0;
+                actor->actionRatingCombo = 0;
                 break;
-            case 3:
+            case ACTION_RATING_SUPER:
                 type = 2;
-                actor->unk_204 = 2;
+                actor->actionRatingCombo = 2;
                 break;
-            case 4:
+            case ACTION_RATING_NICE_NO_COMBO:
                 type = 0;
-                actor->unk_204 = 0;
+                actor->actionRatingCombo = 0;
                 break;
-            case 5:
-                type = player->unk_204;
-                player->unk_204++;
-                if (player->unk_204 > 2) {
-                    player->unk_204 = 2;
+            case ACTION_RATING_NICE_SUPER_COMBO:
+                type = player->actionRatingCombo;
+                player->actionRatingCombo++;
+                if (player->actionRatingCombo > 2) {
+                    player->actionRatingCombo = 2;
                 }
                 break;
         }
         actor->attackResultEffect = fx_attack_result_text(type, x, y, z - 10.0f, 12.0f, 90);
-        actor->unk_205 = 80;
+        actor->actionRatingTime = 80;
         new_var = 2; // TODO required to match
     } else {
-        actor->attackResultEffect->data.attackResultText->unk_18 = 0;
-        type = actor->unk_204;
-        new_var = arg0; // TODO required to match
+        actor->attackResultEffect->data.attackResultText->timeLeft = 0;
+        type = actor->actionRatingCombo;
+        new_var = rating; // TODO required to match
         switch (new_var) { // TODO required to match
-            case 0:
-                actor->unk_204++;
-                if (actor->unk_204 > 2) {
-                    actor->unk_204 = 2;
+            case ACTION_RATING_NICE:
+                actor->actionRatingCombo++;
+                if (actor->actionRatingCombo > 2) {
+                    actor->actionRatingCombo = 2;
                 }
                 break;
-            case 1:
+            case ACTION_RATING_MISS:
                 type = 4;
                 break;
-            case 2:
+            case ACTION_RATING_LUCKY:
                 type = 3;
                 break;
-            case 3:
+            case ACTION_RATING_SUPER:
                 type = 2;
                 break;
-            case 4:
+            case ACTION_RATING_NICE_NO_COMBO:
                 type = 0;
                 break;
-            case 5:
-                type = player->unk_204;
-                player->unk_204++;
-                if (player->unk_204 > 2) {
-                    player->unk_204 = 2;
+            case ACTION_RATING_NICE_SUPER_COMBO:
+                type = player->actionRatingCombo;
+                player->actionRatingCombo++;
+                if (player->actionRatingCombo > 2) {
+                    player->actionRatingCombo = 2;
                 }
                 break;
         }
         actor->attackResultEffect = fx_attack_result_text(type, x, y, z - 10.0f, 12.0f, 90);
-        actor->unk_205 = 80;
+        actor->actionRatingTime = 80;
     }
 }
 
 void func_80266970(Actor* target) {
-    target->unk_204 = 0;
+    target->actionRatingCombo = 0;
 }
 
-void func_80266978(void) {
+void update_action_ratings(void) {
     BattleStatus* battleStatus = &gBattleStatus;
     Actor* actor;
     s32 i;
@@ -2412,81 +2436,81 @@ void func_80266978(void) {
     for (i = 0; i < ARRAY_COUNT(battleStatus->enemyActors); i++) {
         actor = gBattleStatus.enemyActors[i];
         if (actor != NULL) {
-            if (actor->unk_205 == 0x3C) {
-                if (actor->attackResultEffect != 0) {
-                    actor->attackResultEffect->data.attackResultText->unk_24 = 0;
+            if (actor->actionRatingTime == 60) {
+                if (actor->attackResultEffect != NULL) {
+                    actor->attackResultEffect->data.attackResultText->isVisible = FALSE;
                 }
             }
-            if (actor->unk_205 == 5) {
-                if (actor->attackResultEffect != 0) {
-                    actor->attackResultEffect->data.attackResultText->unk_18 = 0;
+            if (actor->actionRatingTime == 5) {
+                if (actor->attackResultEffect != NULL) {
+                    actor->attackResultEffect->data.attackResultText->timeLeft = 0;
                     actor->attackResultEffect = NULL;
                 }
             }
-            if (actor->unk_205 > 0) {
-                actor->unk_205--;
+            if (actor->actionRatingTime > 0) {
+                actor->actionRatingTime--;
             }
         }
     }
 
     actor = battleStatus->playerActor;
     if (actor != NULL) {
-        if (actor->unk_205 == 60) {
+        if (actor->actionRatingTime == 60) {
             if (actor->attackResultEffect != NULL) {
-                actor->attackResultEffect->data.attackResultText->unk_24 = 0;
+                actor->attackResultEffect->data.attackResultText->isVisible = FALSE;
             }
         }
-        if (actor->unk_205 == 5) {
+        if (actor->actionRatingTime == 5) {
             if (actor->attackResultEffect != NULL) {
-                actor->attackResultEffect->data.attackResultText->unk_18 = 0;
+                actor->attackResultEffect->data.attackResultText->timeLeft = 0;
                 actor->attackResultEffect = NULL;
             }
         }
-        if (actor->unk_205 > 0) {
-            actor->unk_205--;
+        if (actor->actionRatingTime > 0) {
+            actor->actionRatingTime--;
         }
     }
 
     actor = battleStatus->partnerActor;
     if (actor != NULL) {
-        if (actor->unk_205 == 60) {
+        if (actor->actionRatingTime == 60) {
             if (actor->attackResultEffect != NULL) {
-                actor->attackResultEffect->data.attackResultText->unk_24 = 0;
+                actor->attackResultEffect->data.attackResultText->isVisible = FALSE;
             }
         }
-        if (actor->unk_205 == 5) {
+        if (actor->actionRatingTime == 5) {
             if (actor->attackResultEffect != NULL) {
-                actor->attackResultEffect->data.attackResultText->unk_18 = 0;
+                actor->attackResultEffect->data.attackResultText->timeLeft = 0;
                 actor->attackResultEffect = NULL;
             }
         }
-        if (actor->unk_205 > 0) {
-            actor->unk_205--;
+        if (actor->actionRatingTime > 0) {
+            actor->actionRatingTime--;
         }
     }
 }
 
-void func_80266ADC(Actor* target) {
-    target->unk_206 = -1;
-    target->flags |= ACTOR_FLAG_80000;
+void show_actor_health_bar(Actor* target) {
+    target->healthBarHideTime = -1;
+    target->flags |= ACTOR_FLAG_HEALTH_BAR_HIDDEN;
 }
 
-void func_80266AF8(Actor* target) {
-    target->unk_206 = 0;
-    target->flags &= ~ACTOR_FLAG_80000;
+void hide_actor_health_bar(Actor* target) {
+    target->healthBarHideTime = 0;
+    target->flags &= ~ACTOR_FLAG_HEALTH_BAR_HIDDEN;
 }
 
-void func_80266B14(void) {
+void update_health_bars(void) {
     s32 i;
 
     for (i = 0; i < ARRAY_COUNT(gBattleStatus.enemyActors); i++) {
         Actor* enemy = gBattleStatus.enemyActors[i];
 
         if (enemy != NULL) {
-            if (enemy->unk_206 > 0) {
-                enemy->unk_206--;
-                if (enemy->unk_206 == 0) {
-                    enemy->flags &= ~ACTOR_FLAG_80000;
+            if (enemy->healthBarHideTime > 0) {
+                enemy->healthBarHideTime--;
+                if (enemy->healthBarHideTime == 0) {
+                    enemy->flags &= ~ACTOR_FLAG_HEALTH_BAR_HIDDEN;
                 }
             }
         }
@@ -2499,7 +2523,7 @@ s32 try_inflict_status(Actor* actor, s32 statusTypeKey, s32 statusKey) {
     s32 chance;
     s32 duration;
 
-    if (battleStatus->statusChance == STATUS_CHANCE_IGNORE_RES) {
+    if (battleStatus->statusChance == STATUS_KEY_IGNORE_RES) {
         duration = battleStatus->statusDuration;
         duration += lookup_status_duration_mod(actor->statusTable, statusKey);
         return inflict_status_set_duration(actor, statusTypeKey, statusKey, duration);
@@ -2562,43 +2586,43 @@ s32 inflict_status_set_duration(Actor* actor, s32 statusTypeKey, s32 statusDurat
     return 0;
 }
 
-void func_80266D6C(ActorPart* part, s32 arg1) {
+void set_part_pal_adjustment(ActorPart* part, s32 palAdjust) {
     if (part->idleAnimations != NULL && !(part->flags & ACTOR_PART_FLAG_2)) {
         DecorationTable* decorationTable = part->decorationTable;
 
-        if (decorationTable->unk_6C0 != arg1) {
-            decorationTable->unk_6C0 = arg1;
-            decorationTable->unk_6C2 = 0;
-            decorationTable->unk_6C1 = 1;
+        if (decorationTable->paletteAdjustment != palAdjust) {
+            decorationTable->paletteAdjustment = palAdjust;
+            decorationTable->palAnimState = 0;
+            decorationTable->resetPalAdjust = TRUE;
         }
     }
 }
 
-void func_80266DAC(Actor* actor, s32 arg1) {
+void set_actor_pal_adjustment(Actor* actor, s32 palAdjust) {
     ActorPart* partIt = &actor->partsTable[0];
 
     while (partIt != NULL) {
-        if (!(partIt->flags & ACTOR_PART_FLAG_INVISIBLE) &&
-           (partIt->idleAnimations != NULL) &&
-           !(partIt->flags & ACTOR_PART_FLAG_2))
-        {
-            func_80266D6C(partIt, arg1);
+        if (!(partIt->flags & ACTOR_PART_FLAG_INVISIBLE)
+            && (partIt->idleAnimations != NULL)
+            && !(partIt->flags & ACTOR_PART_FLAG_2)
+        ) {
+            set_part_pal_adjustment(partIt, palAdjust);
         }
         partIt = partIt->nextPart;
     }
 }
 
-void func_80266E14(ActorPart* part) {
+void clear_part_pal_adjustment(ActorPart* part) {
     if (part->idleAnimations != NULL && !(part->flags & ACTOR_PART_FLAG_2)) {
-        part->decorationTable->unk_6C0 = 0;
+        part->decorationTable->paletteAdjustment = PAL_ADJUST_NONE;
     }
 }
 
 // TODO: improve match
 void func_80266E40(Actor* actor) {
     ActorPart* partIt = actor->partsTable;
-    s8 e = 0xE;
-    s8 f = 0xF;
+    s8 e = PAL_ADJUST_BLEND_PALETTES_UNIFORM_INTERVALS;
+    s8 f = PAL_ADJUST_BLEND_PALETTES_VARYING_INTERVALS;
 
     while (partIt != NULL) {
         DecorationTable* decorationTable = partIt->decorationTable;
@@ -2608,8 +2632,8 @@ void func_80266E40(Actor* actor) {
                 (partIt->idleAnimations != NULL) &&
                 !(partIt->flags & ACTOR_PART_FLAG_2))
             {
-                if (decorationTable->unk_6C0 != e && decorationTable->unk_6C0 != f) {
-                    decorationTable->unk_6C0 = 0;
+                if (decorationTable->paletteAdjustment != e && decorationTable->paletteAdjustment != f) {
+                    decorationTable->paletteAdjustment = PAL_ADJUST_NONE;
                 }
             }
         } while (0); // required to match
@@ -2802,7 +2826,7 @@ void remove_player_buffs(s32 buffs) {
     BattleStatus* battleStatus = &gBattleStatus;
     Actor* player = battleStatus->playerActor;
     Actor* partner = battleStatus->partnerActor;
-    ActorPart* playerPartsTable = player->partsTable;
+    ActorPart* playerActorParts = player->partsTable;
 
     if (buffs & PLAYER_BUFF_JUMP_CHARGE) {
         battleStatus->jumpCharge = 0;
@@ -2828,13 +2852,13 @@ void remove_player_buffs(s32 buffs) {
     if (buffs & PLAYER_BUFF_TRANSPARENT && (player->transparentStatus != 0)) {
         player->transparentDuration = 0;
         player->transparentStatus = 0;
-        playerPartsTable->flags &= ~0x100;
+        playerActorParts->flags &= ~ACTOR_PART_FLAG_100;
         remove_status_transparent(player->hudElementDataIndex);
     }
     if (buffs & PLAYER_BUFF_WATER_BLOCK && (battleStatus->waterBlockTurnsLeft != 0)) {
         battleStatus->waterBlockTurnsLeft = 0;
         battleStatus->buffEffect->data.partnerBuff->unk_0C[FX_BUFF_DATA_WATER_BLOCK].turnsLeft = 0;
-        battleStatus->waterBlockEffect->flags |= 0x10;
+        battleStatus->waterBlockEffect->flags |= FX_INSTANCE_FLAG_DISMISS;
 
         fx_water_block(1, player->currentPos.x, player->currentPos.y + 18.0f, player->currentPos.z + 5.0f, 1.5f, 0xA);
         fx_water_splash(0, player->currentPos.x - 10.0f, player->currentPos.y + 5.0f, player->currentPos.z + 5.0f, 1.0f, 0x18);
@@ -2857,7 +2881,7 @@ void remove_player_buffs(s32 buffs) {
 
     if (partner != NULL && (buffs & PLAYER_BUFF_PARTNER_GLOWING)) {
         partner->isGlowing = FALSE;
-        gBattleStatus.flags1 &= ~BS_FLAGS1_40000000;
+        gBattleStatus.flags1 &= ~BS_FLAGS1_GOOMBARIO_CHARGED;
     }
 }
 
@@ -2870,7 +2894,7 @@ void btl_update_ko_status(void) {
 
     player->koDuration = player->debuffDuration;
     if (player->koDuration > 0) {
-        player->koStatus = STATUS_DAZE;
+        player->koStatus = STATUS_KEY_DAZE;
         player->disableEffect->data.disableX->koDuration = player->koDuration;
 
         if (koDuration == 0) {
@@ -2880,12 +2904,12 @@ void btl_update_ko_status(void) {
 
     if (partner != NULL) {
         if (partner->koDuration < partner->debuffDuration) {
-            partner->koStatus = STATUS_DAZE;
+            partner->koStatus = STATUS_KEY_DAZE;
             partner->koDuration = partner->debuffDuration;
         }
 
         if (partner->koDuration > 0) {
-            partner->koStatus = STATUS_DAZE;
+            partner->koStatus = STATUS_KEY_DAZE;
             partner->disableEffect->data.disableX->koDuration = partner->koDuration;
         }
     }
@@ -2896,7 +2920,7 @@ void btl_update_ko_status(void) {
         if (enemy != NULL) {
             enemy->koDuration = enemy->debuffDuration;
             if (enemy->koDuration > 0) {
-                enemy->koStatus = STATUS_DAZE;
+                enemy->koStatus = STATUS_KEY_DAZE;
                 enemy->disableEffect->data.disableX->koDuration = enemy->koDuration;
             }
         }
@@ -2904,23 +2928,23 @@ void btl_update_ko_status(void) {
 }
 
 void btl_appendGfx_prim_quad(u8 r, u8 g, u8 b, u8 a, u16 left, u16 top, u16 right, u16 bottom) {
-    gDPPipeSync(gMasterGfxPos++);
-    gSPDisplayList(gMasterGfxPos++, D_80293970);
+    gDPPipeSync(gMainGfxPos++);
+    gSPDisplayList(gMainGfxPos++, D_80293970);
 
     if (a == 255) {
-        gDPSetRenderMode(gMasterGfxPos++, G_RM_OPA_SURF, G_RM_OPA_SURF2);
-        gDPSetCombineLERP(gMasterGfxPos++, 0, 0, 0, PRIMITIVE, 0, 0, 0, 1, 0, 0, 0, PRIMITIVE, 0, 0, 0, 1);
+        gDPSetRenderMode(gMainGfxPos++, G_RM_OPA_SURF, G_RM_OPA_SURF2);
+        gDPSetCombineMode(gMainGfxPos++, PM_CC_08, PM_CC_08);
     } else {
-        gDPSetRenderMode(gMasterGfxPos++, G_RM_XLU_SURF, G_RM_XLU_SURF2);
-        gDPSetCombineMode(gMasterGfxPos++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
+        gDPSetRenderMode(gMainGfxPos++, G_RM_XLU_SURF, G_RM_XLU_SURF2);
+        gDPSetCombineMode(gMainGfxPos++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
     }
 
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, r, g, b, a);
-    gDPFillRectangle(gMasterGfxPos++, left, top, right, bottom);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, r, g, b, a);
+    gDPFillRectangle(gMainGfxPos++, left, top, right, bottom);
 
-    gDPPipeSync(gMasterGfxPos++);
-    gDPSetRenderMode(gMasterGfxPos++, G_RM_TEX_EDGE, G_RM_TEX_EDGE2);
-    gDPSetCombineMode(gMasterGfxPos++, G_CC_DECALRGBA, G_CC_DECALRGBA);
+    gDPPipeSync(gMainGfxPos++);
+    gDPSetRenderMode(gMainGfxPos++, G_RM_TEX_EDGE, G_RM_TEX_EDGE2);
+    gDPSetCombineMode(gMainGfxPos++, G_CC_DECALRGBA, G_CC_DECALRGBA);
 }
 
 void btl_draw_prim_quad(u8 r, u8 g, u8 b, u8 a, u16 left, u16 top, u16 arg6, u16 arg7) {

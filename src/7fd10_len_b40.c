@@ -6,6 +6,7 @@
 #include "sprite.h"
 #include "pause/pause_common.h"
 #include "world/partners.h"
+#include "world/partner/lakilester.h"
 
 BSS s16 D_8010C9C0;
 BSS char D_8010C9C4[0x4];
@@ -27,17 +28,17 @@ extern s32 D_8008EEF0[];
 void func_800E6860(void) {
     PlayerStatus* playerStatus = &gPlayerStatus;
 
-    if (gPartnerActionStatus.partnerActionState != PARTNER_ACTION_NONE && gPartnerActionStatus.actingPartner == PARTNER_BOW) {
+    if (gPartnerStatus.partnerActionState != PARTNER_ACTION_NONE && gPartnerStatus.actingPartner == PARTNER_BOW) {
         Npc* partner = get_npc_unsafe(NPC_PARTNER);
 
-        func_802DDEE4(PLAYER_SPRITE_MAIN, -1, 7, 0, 0, 0, playerStatus->alpha1, 0);
-        func_8003D624(partner, 7, playerStatus->alpha1, 0, 0, 0, 0);
+        set_player_imgfx_comp(PLAYER_SPRITE_MAIN, -1, IMGFX_SET_ALPHA, 0, 0, 0, playerStatus->alpha1, 0);
+        npc_set_imgfx_params(partner, IMGFX_SET_ALPHA, playerStatus->alpha1, 0, 0, 0, 0);
         playerStatus->alpha2 = 0;
     }
 }
 
 s32 func_800E6904(void) {
-    PartnerActionStatus* partnerActionStatus = &gPartnerActionStatus;
+    PartnerStatus* partnerStatus = &gPartnerStatus;
     PlayerStatus* playerStatus = &gPlayerStatus;
     s32 actionState = playerStatus->actionState;
 
@@ -45,20 +46,20 @@ s32 func_800E6904(void) {
         return FALSE;
     }
 
-    if (partnerActionStatus->partnerActionState == PARTNER_ACTION_NONE) {
+    if (partnerStatus->partnerActionState == PARTNER_ACTION_NONE) {
         if (!(playerStatus->flags & PS_FLAG_NO_STATIC_COLLISION) &&
             (actionState == ACTION_STATE_IDLE || actionState == ACTION_STATE_WALK || actionState == ACTION_STATE_RUN))
         {
             return TRUE;
         }
     } else if (partner_player_can_pause()) {
-        if (partnerActionStatus->actingPartner == PARTNER_WATT) {
+        if (partnerStatus->actingPartner == PARTNER_WATT) {
             return TRUE;
-        } else if (partnerActionStatus->actingPartner == PARTNER_BOW) {
+        } else if (partnerStatus->actingPartner == PARTNER_BOW) {
             if (actionState == ACTION_STATE_RIDE) {
                 return TRUE;
             }
-        } else if (partnerActionStatus->actingPartner == PARTNER_LAKILESTER) {
+        } else if (partnerStatus->actingPartner == PARTNER_LAKILESTER) {
             if (actionState == ACTION_STATE_RIDE) {
                 return TRUE;
             }
@@ -69,7 +70,7 @@ s32 func_800E6904(void) {
 }
 
 s32 can_pause(s32 currentButtons, s32 pressedButtons) {
-    PartnerActionStatus* partnerActionStatus = &gPartnerActionStatus;
+    PartnerStatus* partnerStatus = &gPartnerStatus;
     s32 actionState = gPlayerStatus.actionState;
 
     if (!(gPlayerStatus.animFlags & PA_FLAG_CHANGING_MAP)
@@ -81,7 +82,7 @@ s32 can_pause(s32 currentButtons, s32 pressedButtons) {
         && !is_picking_up_item()
     ) {
         if (!(gPlayerStatus.animFlags & PA_FLAG_8BIT_MARIO)) {
-            if (partnerActionStatus->partnerActionState == PARTNER_ACTION_NONE) {
+            if (partnerStatus->partnerActionState == PARTNER_ACTION_NONE) {
                 if (!(gPlayerStatus.flags & PS_FLAG_NO_STATIC_COLLISION)) {
                     if (actionState == ACTION_STATE_IDLE ||
                         actionState == ACTION_STATE_WALK ||
@@ -91,23 +92,23 @@ s32 can_pause(s32 currentButtons, s32 pressedButtons) {
                     }
                 }
             } else if (partner_player_can_pause()) {
-                if (partnerActionStatus->actingPartner == PARTNER_WATT) {
+                if (partnerStatus->actingPartner == PARTNER_WATT) {
                     return actionState == ACTION_STATE_IDLE ||
                            actionState == ACTION_STATE_WALK ||
                            actionState == ACTION_STATE_RUN;
-                } else if (partnerActionStatus->actingPartner == PARTNER_BOW) {
+                } else if (partnerStatus->actingPartner == PARTNER_BOW) {
                     if (actionState == ACTION_STATE_RIDE) {
                         gPlayerStatus.alpha2 = 0;
                         return TRUE;
                     }
-                } else if (partnerActionStatus->actingPartner == PARTNER_LAKILESTER) {
+                } else if (partnerStatus->actingPartner == PARTNER_LAKILESTER) {
                     if (actionState == ACTION_STATE_RIDE) {
-                        if (lakilester_raycast_below()) {
+                        if (world_lakilester_can_dismount()) {
                             return TRUE;
                         }
                         sfx_play_sound(SOUND_MENU_ERROR);
                     }
-                } else if (partnerActionStatus->actingPartner == PARTNER_SUSHIE) {
+                } else if (partnerStatus->actingPartner == PARTNER_SUSHIE) {
                     sfx_play_sound(SOUND_MENU_ERROR);
                 }
             }
@@ -181,7 +182,7 @@ s32 setup_item_popup(PopupMenu* menu) {
 void check_input_open_menus(void) {
     static s16 D_8010C9C0;
 
-    PartnerActionStatus* partnerActionStatus;
+    PartnerStatus* partnerStatus;
     PlayerStatus* playerStatus;
     PlayerData* playerData;
     PopupMenu* popup;
@@ -191,7 +192,7 @@ void check_input_open_menus(void) {
     s32 currentButtons;
     s8* partnerActionState;
 
-    partnerActionStatus = &gPartnerActionStatus;
+    partnerStatus = &gPartnerStatus;
     playerStatus = &gPlayerStatus;
     playerData = &gPlayerData;
     popup = &D_8010C9C8;
@@ -203,18 +204,18 @@ void check_input_open_menus(void) {
         return;
     }
 
-    if (partnerActionStatus->partnerActionState != 0 &&
-        (partnerActionStatus->actingPartner == PARTNER_SUSHIE ||
-         partnerActionStatus->actingPartner == PARTNER_LAKILESTER ||
-         partnerActionStatus->actingPartner == PARTNER_BOW))
+    if (partnerStatus->partnerActionState != 0 &&
+        (partnerStatus->actingPartner == PARTNER_SUSHIE ||
+         partnerStatus->actingPartner == PARTNER_LAKILESTER ||
+         partnerStatus->actingPartner == PARTNER_BOW))
     {
-        currentButtons = partnerActionStatus->currentButtons;
-        pressedButtons = partnerActionStatus->pressedButtons;
+        currentButtons = partnerStatus->currentButtons;
+        pressedButtons = partnerStatus->pressedButtons;
     } else {
         currentButtons = playerStatus->currentButtons;
         pressedButtons = playerStatus->pressedButtons;
     }
-    partnerActionState = &partnerActionStatus->partnerActionState;
+    partnerActionState = &partnerStatus->partnerActionState;
 
     if (evt_get_variable(NULL, GB_StoryProgress) >= STORY_EPILOGUE) {
         currentButtons &= ~(BUTTON_C_LEFT | BUTTON_C_RIGHT);
@@ -274,7 +275,7 @@ block_17:
             break;
         case 1:
             flags = ~PS_FLAG_PAUSED;
-            if ((func_800E6904() == 0) || is_picking_up_item() || D_8010CCFE < playerStatus->inputDisabledCount) {
+            if ((func_800E6904() == 0) || is_picking_up_item() || D_8010CCFE < playerStatus->inputDisabledCount != 0) {
                 playerStatus->flags &= flags;
                 enable_player_input();
                 partner_enable_input();
@@ -375,7 +376,7 @@ block_17:
     }
 }
 
-void check_input_status_menu(void) {
+void check_input_status_bar(void) {
     PlayerStatus* playerStatus = &gPlayerStatus;
     s32 pressedButtons;
 
@@ -386,16 +387,16 @@ void check_input_status_menu(void) {
             pressedButtons = gGameStatusPtr->pressedButtons[0];
         }
 
-        if (!is_status_menu_visible()) {
+        if (!is_status_bar_visible()) {
             if (!(playerStatus->currentButtons & (Z_TRIG | R_TRIG)) && (pressedButtons & BUTTON_C_UP) && func_800E9860()) {
-                open_status_menu_long();
+                open_status_bar_long();
 
                 if (!is_picking_up_item()) {
                     sfx_play_sound(SOUND_3);
                 }
             }
         } else if (!(playerStatus->currentButtons & (Z_TRIG | R_TRIG)) && (pressedButtons & BUTTON_C_UP) && func_800E9860()) {
-            close_status_menu();
+            close_status_bar();
 
             if (!is_picking_up_item()) {
                 sfx_play_sound(SOUND_4);

@@ -209,12 +209,12 @@ void show_merlee_message(s16 messageIndex, s16 duration) {
     if (popup != NULL) {
         popup->updateFunc = update_merlee_message;
         popup->renderUIFunc = draw_merlee_message;
-        popup->unk_17 = TRUE;
+        popup->needsInit = TRUE;
         popup->unk_00 = 0;
         popup->renderWorldFunc = NULL;
         popup->messageIndex = messageIndex;
         popup->duration = duration;
-        popup->unk_16 = 0;
+        popup->showMsgState = 0;
         D_800A0F40 = 1;
     }
 }
@@ -223,12 +223,12 @@ void update_merlee_message(void* data) {
     PopupMessage* popup = data;
     s32 closeMessage = FALSE;
 
-    switch (popup->unk_16) {
+    switch (popup->showMsgState) {
         case 0:
-            popup->unk_16 = 1;
+            popup->showMsgState = 1;
             break;
         case 1:
-            popup->unk_16 = 2;
+            popup->showMsgState = 2;
             break;
         case 2:
             if (gGameStatusPtr->pressedButtons[0] & 0xC000) {
@@ -237,11 +237,11 @@ void update_merlee_message(void* data) {
             if (popup->duration != 0) {
                 popup->duration--;
             } else {
-                popup->unk_16 = 3;
+                popup->showMsgState = 3;
             }
             break;
         case 3:
-            popup->unk_16 = 4;
+            popup->showMsgState = 4;
             break;
         case 4:
             closeMessage = TRUE;
@@ -289,8 +289,8 @@ void draw_merlee_message(void* data) {
 
     switch (popup->messageIndex) {
         case 0:
-            if (popup->unk_17 != 0) {
-                popup->unk_17 = 0;
+            if (popup->needsInit) {
+                popup->needsInit = FALSE;
                 messageID = D_80078168[popup->messageIndex];
                 width = get_msg_width(messageID, 0) + 23;
                 xPos = 160 - (width / 2);
@@ -301,8 +301,8 @@ void draw_merlee_message(void* data) {
             break;
 
         case 1:
-            if (popup->unk_17 != 0) {
-                popup->unk_17 = 0;
+            if (popup->needsInit) {
+                popup->needsInit = FALSE;
                 messageID = D_80078168[popup->messageIndex];
                 width = get_msg_width(messageID, 0) + 23;
                 xPos = 160 - (width / 2);
@@ -318,8 +318,8 @@ void draw_merlee_message(void* data) {
     s32 xPos;
     s32 width;
 
-    if (popup->unk_17) {
-        popup->unk_17 = FALSE;
+    if (popup->needsInit) {
+        popup->needsInit = FALSE;
         messageID = D_80078168[popup->messageIndex];
         width = get_msg_width(messageID, 0) + 30;
         xPos = 160 - (width / 2);
@@ -365,28 +365,28 @@ void update_all_status_icons(void* data) {
 
         if (icon->status1.activeTask == STATUS_ICON_TASK_LOAD) {
             switch (icon->status1.active) {
-                case STATUS_SLEEP:
+                case STATUS_KEY_SLEEP:
                     elementID = icon->status1.activeElementID = hud_element_create(&HES_AsleepBegin);
                     break;
-                case STATUS_PARALYZE:
+                case STATUS_KEY_PARALYZE:
                     elementID = icon->status1.activeElementID = hud_element_create(&HES_ParalyzedBegin);
                     break;
-                case STATUS_DIZZY:
+                case STATUS_KEY_DIZZY:
                     elementID = icon->status1.activeElementID = hud_element_create(&HES_DizzyBegin);
                     break;
-                case STATUS_FEAR:
+                case STATUS_KEY_FEAR:
                     elementID = icon->status1.activeElementID = hud_element_create(&HES_WeakenedLoop);
                     break;
-                case STATUS_STOP:
+                case STATUS_KEY_STOP:
                     elementID = icon->status1.activeElementID = hud_element_create(&HES_StoppedBegin);
                     break;
-                case STATUS_POISON:
+                case STATUS_KEY_POISON:
                     elementID = icon->status1.activeElementID = hud_element_create(&HES_PoisonedBegin);
                     break;
-                case STATUS_SHRINK:
+                case STATUS_KEY_SHRINK:
                     elementID = icon->status1.activeElementID = hud_element_create(&HES_ShrunkBegin);
                     break;
-                case STATUS_FROZEN:
+                case STATUS_KEY_FROZEN:
                     elementID = icon->status1.activeElementID = hud_element_create(&HES_FrozenBegin);
                     break;
                 default:
@@ -403,28 +403,28 @@ void update_all_status_icons(void* data) {
                 break;
             case STATUS_ICON_TASK_LOAD:
                 switch (icon->status1.removing) {
-                    case STATUS_SLEEP:
+                    case STATUS_KEY_SLEEP:
                         hud_element_set_script(icon->status1.removingElementID, &HES_AsleepEnd);
                         break;
-                    case STATUS_PARALYZE:
+                    case STATUS_KEY_PARALYZE:
                         hud_element_set_script(icon->status1.removingElementID, &HES_ParalyzedEnd);
                         break;
-                    case STATUS_DIZZY:
+                    case STATUS_KEY_DIZZY:
                         hud_element_set_script(icon->status1.removingElementID, &HES_DizzyEnd);
                         break;
-                    case STATUS_FEAR:
+                    case STATUS_KEY_FEAR:
                         hud_element_set_script(icon->status1.removingElementID, &HES_WeakenedLoop);
                         break;
-                    case STATUS_STOP:
+                    case STATUS_KEY_STOP:
                         hud_element_set_script(icon->status1.removingElementID, &HES_StoppedEnd);
                         break;
-                    case STATUS_POISON:
+                    case STATUS_KEY_POISON:
                         hud_element_set_script(icon->status1.removingElementID, &HES_PoisonedEnd);
                         break;
-                    case STATUS_SHRINK:
+                    case STATUS_KEY_SHRINK:
                         hud_element_set_script(icon->status1.removingElementID, &HES_ShrunkEnd);
                         break;
-                    case STATUS_FROZEN:
+                    case STATUS_KEY_FROZEN:
                         hud_element_set_script(icon->status1.removingElementID, &HES_FrozenEnd);
                         break;
                     default:
@@ -449,7 +449,7 @@ void update_all_status_icons(void* data) {
 
         if (icon->status2.activeTask == STATUS_ICON_TASK_LOAD) {
             switch (icon->status2.active) {
-                case STATUS_STATIC:
+                case STATUS_KEY_STATIC:
                     elementID = icon->status2.activeElementID = hud_element_create(&HES_ElectrifiedBegin);
                     break;
                 default:
@@ -467,7 +467,7 @@ void update_all_status_icons(void* data) {
                 break;
             case STATUS_ICON_TASK_LOAD:
                 switch (icon->status2.removing) {
-                    case STATUS_STATIC:
+                    case STATUS_KEY_STATIC:
                         hud_element_set_script(icon->status2.removingElementID, &HES_ElectrifiedEnd);
                         break;
                     default:
@@ -491,7 +491,7 @@ void update_all_status_icons(void* data) {
 
         if (icon->status3.activeTask == STATUS_ICON_TASK_LOAD) {
             switch (icon->status3.active) {
-                case STATUS_TRANSPARENT:
+                case STATUS_KEY_TRANSPARENT:
                     elementID = icon->status3.activeElementID = hud_element_create(&HES_TransparentBegin);
                     break;
                 default:
@@ -509,7 +509,7 @@ void update_all_status_icons(void* data) {
                 break;
             case STATUS_ICON_TASK_LOAD:
                 switch (icon->status3.removing) {
-                    case STATUS_TRANSPARENT:
+                    case STATUS_KEY_TRANSPARENT:
                         hud_element_set_script(icon->status3.removingElementID, &HES_TransparentEnd);
                         break;
                     default:
@@ -592,19 +592,19 @@ void draw_all_status_icons(void* data) {
     Camera* camera = &gCameras[gCurrentCameraID];
     int i;
 
-    gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, 12, 20, SCREEN_WIDTH - 12, SCREEN_HEIGHT - 20);
-    gDPPipeSync(gMasterGfxPos++);
-    gDPSetCycleType(gMasterGfxPos++, G_CYC_1CYCLE);
-    gDPSetTexturePersp(gMasterGfxPos++, G_TP_NONE);
-    gDPSetTextureLOD(gMasterGfxPos++, G_TL_TILE);
-    gDPSetTextureDetail(gMasterGfxPos++, G_TD_CLAMP);
-    gDPSetTextureConvert(gMasterGfxPos++, G_TC_FILT);
-    gDPSetCombineKey(gMasterGfxPos++, G_CK_NONE);
-    gDPSetAlphaCompare(gMasterGfxPos++, G_AC_NONE);
-    gDPNoOp(gMasterGfxPos++);
-    gDPSetColorDither(gMasterGfxPos++, G_CD_DISABLE);
-    gDPSetAlphaDither(gMasterGfxPos++, G_AD_DISABLE);
-    gSPTexture(gMasterGfxPos++, -1, -1, 0, G_TX_RENDERTILE, G_ON);
+    gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, 12, 20, SCREEN_WIDTH - 12, SCREEN_HEIGHT - 20);
+    gDPPipeSync(gMainGfxPos++);
+    gDPSetCycleType(gMainGfxPos++, G_CYC_1CYCLE);
+    gDPSetTexturePersp(gMainGfxPos++, G_TP_NONE);
+    gDPSetTextureLOD(gMainGfxPos++, G_TL_TILE);
+    gDPSetTextureDetail(gMainGfxPos++, G_TD_CLAMP);
+    gDPSetTextureConvert(gMainGfxPos++, G_TC_FILT);
+    gDPSetCombineKey(gMainGfxPos++, G_CK_NONE);
+    gDPSetAlphaCompare(gMainGfxPos++, G_AC_NONE);
+    gDPNoOp(gMainGfxPos++);
+    gDPSetColorDither(gMainGfxPos++, G_CD_DISABLE);
+    gDPSetAlphaDither(gMainGfxPos++, G_AD_DISABLE);
+    gSPTexture(gMainGfxPos++, -1, -1, 0, G_TX_RENDERTILE, G_ON);
 
     for (i = 0, icon = D_800A0F44; i < MAX_ICONS; i++, icon++) {
         if (icon->flags == 0) {
@@ -1060,7 +1060,7 @@ void remove_status_debuff(s32 iconID) {
     if (statusIcon->status1.active && !statusIcon->status1.removing) {
         statusIcon->status1.removing = statusIcon->status1.active;
         statusIcon->status1.removingTask = STATUS_ICON_TASK_LOAD;
-        statusIcon->status1.active = STATUS_END;
+        statusIcon->status1.active = 0;
         statusIcon->status1.activeTask = STATUS_ICON_TASK_NONE;
         statusIcon->status1.frameCounter = 10;
         statusIcon->status1.removingElementID = statusIcon->status1.activeElementID;

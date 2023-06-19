@@ -40,17 +40,17 @@ EvtScript N(EVS_EnterMap) = {
         EVT_RETURN
     EVT_END_IF
     EVT_CALL(GetEntryID, LVar0)
-    EVT_SET(LocalFlag(0), FALSE)
+    EVT_SET(LFlag0, FALSE)
     EVT_IF_EQ(LVar0, nok_01_ENTRY_0)
         EVT_IF_LT(GB_StoryProgress, STORY_CH1_ARRIVED_AT_KOOPA_VILLAGE)
-            EVT_SET(LocalFlag(0), TRUE)
+            EVT_SET(LFlag0, TRUE)
             EVT_THREAD
                 EVT_WAIT(30)
                 EVT_EXEC(N(EVS_BindExitTriggers))
             EVT_END_THREAD
         EVT_END_IF
     EVT_END_IF
-    EVT_IF_EQ(LocalFlag(0), FALSE)
+    EVT_IF_EQ(LFlag0, FALSE)
         EVT_SET(LVar0, EVT_PTR(N(EVS_BindExitTriggers)))
         EVT_EXEC(EnterWalk)
     EVT_END_IF
@@ -87,6 +87,10 @@ EvtScript N(EVS_Main) = {
     EVT_SET(GB_WorldLocation, LOCATION_KOOPA_VILLAGE)
     EVT_CALL(SetSpriteShading, SHADING_NONE)
     EVT_SETUP_CAMERA_NO_LEAD()
+#if VERSION_PAL
+    EVT_CALL(GetLanguage, LVar0)
+    EVT_CALL(SetModelTexVariant, MODEL_o340, LVar0)
+#endif
     EVT_SET(GF_MAP_KoopaVillage, TRUE)
     EVT_SET(AF_NOK01_Dialogue_RelaxedKoopa, FALSE)
     EVT_SET(AF_NOK01_Dialogue_Bobomb_01_Crisis, FALSE)

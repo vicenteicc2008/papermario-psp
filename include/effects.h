@@ -384,7 +384,7 @@ enum SparkesFXTypes {
 };
 
 typedef struct ShapeSpellFXData {
-    /* 0x00 */ s32 isChild;
+    /* 0x00 */ b32 isChild;
     /* 0x04 */ Vec3f pos;
     /* 0x10 */ f32 unk_10;
     /* 0x14 */ f32 unk_14;
@@ -526,30 +526,26 @@ typedef struct ExplosionFXData {
 } ExplosionFXData; // size = 0x3C
 
 typedef struct LensFlareFXData {
-    /* 0x00 */ s32 unk_00;
-    /* 0x04 */ f32 unk_04;
-    /* 0x08 */ f32 unk_08;
-    /* 0x0C */ f32 unk_0C;
-    /* 0x10 */ f32 unk_10;
-    /* 0x14 */ f32 unk_14;
-    /* 0x18 */ f32 unk_18;
-    /* 0x1C */ f32 unk_1C;
-    /* 0x20 */ f32 unk_20;
-    /* 0x24 */ s32 unk_24;
-    /* 0x28 */ s32 unk_28;
-    /* 0x2C */ s32 unk_2C;
-    /* 0x30 */ s32 unk_30;
+    /* 0x00 */ s32 type;
+    /* 0x04 */ Vec3f pos;
+    /* 0x10 */ f32 largeFlareRot;
+    /* 0x14 */ f32 largeFlareRotVel;
+    /* 0x18 */ f32 largeFlareScale;
+    /* 0x1C */ f32 largeFlareScaleVel;
+    /* 0x20 */ f32 smallFlareScale;
+    /* 0x24 */ s32 largeFlareAlpha;
+    /* 0x28 */ s32 smallFlareAlpha;
+    /* 0x2C */ s32 timeLeft;
+    /* 0x30 */ s32 lifetime;
 } LensFlareFXData; // size = 0x34
 
 typedef struct GotItemOutlineFXData {
-    /* 0x00 */ s32 unk_00;
-    /* 0x04 */ f32 unk_04;
-    /* 0x08 */ f32 unk_08;
-    /* 0x0C */ f32 unk_0C;
-    /* 0x10 */ s32 unk_10;
-    /* 0x14 */ s32 unk_14;
-    /* 0x18 */ f32 unk_18;
-    /* 0x1C */ s32 unk_1C;
+    /* 0x00 */ s32 type;
+    /* 0x04 */ Vec3f pos;
+    /* 0x10 */ s32 lifetime;
+    /* 0x14 */ s32 timeLeft;
+    /* 0x18 */ f32 scale;
+    /* 0x1C */ s32 alpha;
 } GotItemOutlineFXData; // size = 0x20
 
 typedef struct SpikyWhiteAuraFXData {
@@ -586,15 +582,15 @@ typedef struct SmokeImpactFXData {
 
 typedef struct DamageIndicatorFXData {
     /* 0x00 */ s32 unk_00;
-    /* 0x04 */ Vec3f unk_04;
-    /* 0x10 */ Vec3f unk_10;
-    /* 0x1C */ Vec3f unk_1C;
-    /* 0x28 */ f32 unk_28;
+    /* 0x04 */ Vec3f basePos;
+    /* 0x10 */ Vec3f curPos;
+    /* 0x1C */ Vec3f relPos;
+    /* 0x28 */ f32 radius;
     /* 0x2C */ s32 alpha;
-    /* 0x30 */ s32 effectDurationTimer;
-    /* 0x34 */ s32 unk_34;
-    /* 0x38 */ f32 unk_38;
-    /* 0x3C */ s32 numParts;
+    /* 0x30 */ s32 timeLeft;
+    /* 0x34 */ s32 lifetime;
+    /* 0x38 */ f32 scale;
+    /* 0x3C */ s32 damageAmt;
 } DamageIndicatorFXData; // size = 0x40
 
 typedef struct PurpleRingFXData {
@@ -856,27 +852,21 @@ typedef struct BigSnowflakesFXData {
 } BigSnowflakesFXData; // size = 0x30
 
 typedef struct DebuffFXData {
-    /* 0x00 */ s16 unk_00;
+    /* 0x00 */ s16 type;
     /* 0x02 */ char unk_02[2];
-    /* 0x04 */ f32 unk_04;
-    /* 0x08 */ f32 unk_08;
-    /* 0x0C */ f32 unk_0C;
+    /* 0x04 */ Vec3f pos;
     /* 0x10 */ f32 unk_10;
     /* 0x14 */ f32 unk_14;
     /* 0x18 */ f32 unk_18;
-    /* 0x1C */ f32 unk_1C;
-    /* 0x20 */ f32 unk_20;
-    /* 0x24 */ s32 unk_24;
-    /* 0x28 */ s32 unk_28;
-    /* 0x2C */ f32 unk_2C;
+    /* 0x1C */ f32 scaleY;
+    /* 0x20 */ f32 scaleX;
+    /* 0x24 */ s32 timeLeft;
+    /* 0x28 */ s32 lifetime;
+    /* 0x2C */ f32 rotZ;
     /* 0x30 */ f32 unk_30;
-    /* 0x34 */ s32 unk_34;
-    /* 0x38 */ u8 unk_38;
-    /* 0x39 */ u8 unk_39;
-    /* 0x3A */ u8 unk_3A;
-    /* 0x3B */ u8 unk_3B;
-    /* 0x3C */ u8 unk_3C;
-    /* 0x3D */ u8 unk_3D;
+    /* 0x34 */ s32 alpha;
+    /* 0x38 */ Color_RGB8 primCol;
+    /* 0x38 */ Color_RGB8 envCol;
     /* 0x3E */ char unk_3E[2];
 } DebuffFXData; // size = 0x40
 
@@ -1337,29 +1327,21 @@ typedef struct SnowfallFXData {
     /* 0x30 */ s32 unk_30;
 } SnowfallFXData; // size = 0x34
 
-typedef struct Effect46FXData {
-    /* 0x00 */ s32 unk_00;
-    /* 0x04 */ PlayerStatus* unk_04;
-    /* 0x08 */ f32 unk_08;
-    /* 0x0C */ f32 unk_0C;
-    /* 0x10 */ f32 unk_10;
-    /* 0x14 */ f32 unk_14;
-    /* 0x18 */ f32 unk_18;
-    /* 0x1C */ s32 unk_1C;
-    /* 0x20 */ s32 unk_20;
-    /* 0x24 */ s32 unk_24;
-    /* 0x28 */ s32 unk_28;
-    /* 0x2C */ f32 unk_2C;
-    /* 0x30 */ f32 unk_30;
-    /* 0x34 */ f32 unk_34;
-    /* 0x38 */ f32 unk_38;
-    /* 0x3C */ f32 unk_3C;
-    /* 0x40 */ f32 unk_40;
-    /* 0x44 */ u8 unk_44;
-    /* 0x45 */ u8 unk_45;
-    /* 0x46 */ u8 unk_46;
+typedef struct SpinFXData {
+    /* 0x00 */ s32 type;
+    /* 0x04 */ PlayerStatus* player;
+    /* 0x08 */ Vec3f pos;
+    /* 0x14 */ f32 scale;
+    /* 0x18 */ f32 initialScale;
+    /* 0x1C */ s32 alpha;
+    /* 0x20 */ s32 duration;
+    /* 0x24 */ s32 timeLeft;
+    /* 0x28 */ s32 lifetime;
+    /* 0x2C */ Vec3f rot;
+    /* 0x38 */ Vec3f rotVel;
+    /* 0x44 */ Color_RGB8 color;
     /* 0x47 */ char unk_47;
-} Effect46FXData; // size = 0x48
+} SpinFXData; // size = 0x48
 
 typedef struct GatherMagicFXData {
     /* 0x00 */ s32 unk_00;
@@ -1383,20 +1365,17 @@ typedef struct GatherMagicFXData {
 } GatherMagicFXData;
 
 typedef struct AttackResultTextFXData {
-    /* 0x00 */ s32 unk_00;
+    /* 0x00 */ s32 type;
     /* 0x04 */ s32 unk_04;
-    /* 0x08 */ f32 unk_08;
-    /* 0x0C */ f32 unk_0C;
-    /* 0x10 */ f32 unk_10;
-    /* 0x14 */ s32 unk_14;
-    /* 0x18 */ s32 unk_18;
-    /* 0x1C */ s32 unk_1C;
+    /* 0x08 */ Vec3f pos;
+    /* 0x14 */ s32 alpha;
+    /* 0x18 */ s32 timeLeft;
+    /* 0x1C */ s32 lifetime;
     /* 0x20 */ s32 unk_20;
-    /* 0x24 */ s32 unk_24;
-    /* 0x28 */ f32 unk_28;
+    /* 0x24 */ b32 isVisible;
+    /* 0x28 */ f32 scale;
     /* 0x2C */ char unk_2C[0x4];
-    /* 0x30 */ f32 unk_30;
-    /* 0x34 */ f32 unk_34;
+    /* 0x30 */ Vec2f vel;
 } AttackResultTextFXData; // size = 0x38
 
 typedef struct SmallGoldSparkleFXData {
@@ -1443,24 +1422,18 @@ typedef struct BalloonFXData {
 } BalloonFXData; // size = 0x24
 
 typedef struct FloatingRockFXData {
-    /* 0x00 */ s32 unk_00;
-    /* 0x04 */ f32 unk_04;
-    /* 0x08 */ f32 unk_08;
-    /* 0x0C */ f32 unk_0C;
-    /* 0x10 */ f32 unk_10;
-    /* 0x14 */ s32 unk_14;
-    /* 0x18 */ f32 unk_18;
-    /* 0x1C */ s32 unk_1C;
-    /* 0x20 */ f32 unk_20;
-    /* 0x24 */ f32 unk_24;
-    /* 0x28 */ f32 unk_28;
-    /* 0x2C */ f32 unk_2C;
-    /* 0x30 */ Vec3f unk_30;
-    /* 0x3C */ f32 unk_3C;
+    /* 0x00 */ s32 type;
+    /* 0x04 */ Vec3f pos;
+    /* 0x10 */ f32 floorY;
+    /* 0x14 */ Vec3f vel;
+    /* 0x20 */ f32 fallAccel;
+    /* 0x24 */ Vec3f rot;
+    /* 0x30 */ Vec3f rotVel;
+    /* 0x3C */ f32 scale;
     /* 0x40 */ s32 unk_40;
-    /* 0x44 */ s32 unk_44;
-    /* 0x48 */ s32 unk_48;
-    /* 0x4C */ s32 unk_4C;
+    /* 0x44 */ s32 alpha;
+    /* 0x48 */ s32 timeLeft;
+    /* 0x4C */ s32 lifetime;
 } FloatingRockFXData; // size = 0x50
 
 typedef struct ChompDropFXData {
@@ -1752,16 +1725,11 @@ typedef struct UnderwaterFXData {
     /* 0x004 */ f32 unk_04;
     /* 0x008 */ f32 unk_08;
     /* 0x00C */ f32 unk_0C;
-    /* 0x010 */ s32 unk_10;
-    /* 0x014 */ s32 unk_14;
+    /* 0x010 */ s32 timeLeft;
+    /* 0x014 */ s32 lifeTime;
     /* 0x018 */ f32 unk_18;
-    /* 0x01C */ u8 unk_1C;
-    /* 0x01D */ u8 unk_1D;
-    /* 0x01E */ u8 unk_1E;
-    /* 0x01F */ u8 unk_1F;
-    /* 0x020 */ u8 unk_20;
-    /* 0x021 */ u8 unk_21;
-    /* 0x022 */ u8 unk_22;
+    /* 0x01C */ Color_RGBA8 waterColor;
+    /* 0x020 */ Color_RGB8 unk_20;
     /* 0x023 */ s8 unk_23[19][13];
     /* 0x11A */ s16 unk_11A[19][13];
 } UnderwaterFXData; // size = 0x308
@@ -1925,31 +1893,31 @@ typedef struct ThrowSpinyFXData {
 } ThrowSpinyFXData; //sizeof 0x6C
 
 typedef struct Effect65FXData {
-    /* 0x000 */ s32 unk_00;
+    /* 0x000 */ s32 variation;
     /* 0x004 */ f32 unk_04;
     /* 0x008 */ f32 unk_08;
     /* 0x00C */ f32 unk_0C;
-    /* 0x010 */ s32 unk_10;
-    /* 0x014 */ s32 unk_14;
-    /* 0x018 */ s32 unk_18;
-    /* 0x01C */ s32 unk_1C;
-    /* 0x020 */ s32 unk_20;
-    /* 0x024 */ s32 unk_24;
-    /* 0x028 */ s32 unk_28;
-    /* 0x02C */ s32 unk_2C;
-    /* 0x030 */ s32 unk_30;
-    /* 0x034 */ f32 unk_34;
+    /* 0x010 */ s32 timeLeft;
+    /* 0x014 */ s32 lifeTime;
+    /* 0x018 */ s32 primR;
+    /* 0x01C */ s32 primG;
+    /* 0x020 */ s32 primB;
+    /* 0x024 */ s32 alpha;
+    /* 0x028 */ s32 envR;
+    /* 0x02C */ s32 envG;
+    /* 0x030 */ s32 envB;
+    /* 0x034 */ f32 scale;
     /* 0x038 */ Vec3f pos;
-    /* 0x044 */ f32 unk_44;
-    /* 0x048 */ f32 unk_48;
-    /* 0x04C */ f32 unk_4C;
-    /* 0x050 */ f32 unk_50[30];
-    /* 0x0C8 */ f32 unk_C8[30];
-    /* 0x140 */ f32 unk_140[30];
-    /* 0x1B8 */ s32 unk_1B8[30];
-    /* 0x230 */ s32 unk_230[30]; // a bool
-    /* 0x2A8 */ s32 unk_2A8;
-    /* 0x2AC */ f32 unk_2AC[30];
+    /* 0x044 */ f32 pathJitterX;
+    /* 0x048 */ f32 pathJitterY;
+    /* 0x04C */ f32 pathJitterZ;
+    /* 0x050 */ f32 pathX[30];
+    /* 0x0C8 */ f32 pathY[30];
+    /* 0x140 */ f32 pathZ[30];
+    /* 0x1B8 */ s32 pathTimestamp[30];
+    /* 0x230 */ s32 pathPointEnabled[30]; // a bool
+    /* 0x2A8 */ s32 lastPointIndex;
+    /* 0x2AC */ f32 pathLength[30];
 } Effect65FXData; // size = 0x324
 
 typedef struct TubbaHeartAttackFXData {
@@ -2167,8 +2135,8 @@ typedef struct EmbersFXData {
     /* 0x0C */ f32 unk_0C;
     /* 0x10 */ f32 unk_10;
     /* 0x14 */ f32 unk_14;
-    /* 0x18 */ s32 unk_18;
-    /* 0x1C */ s32 unk_1C;
+    /* 0x18 */ s32 timeLeft;
+    /* 0x1C */ s32 lifetime;
     /* 0x20 */ s32 unk_20;
     /* 0x24 */ s32 unk_24;
     /* 0x28 */ s32 unk_28;
@@ -2228,20 +2196,18 @@ typedef struct MiscParticlesFXData {
 } MiscParticlesFXData; // size = 0x64
 
 typedef struct StaticStatusFXData {
-    /* 0x00 */ s32 unk_00;
-    /* 0x04 */ f32 unk_04;
-    /* 0x08 */ f32 unk_08;
-    /* 0x0C */ f32 unk_0C;
+    /* 0x00 */ s32 type;
+    /* 0x04 */ Vec3f pos;
     /* 0x10 */ f32 unk_10;
     /* 0x14 */ f32 unk_14;
     /* 0x18 */ f32 unk_18;
     /* 0x1C */ f32 unk_1C;
-    /* 0x20 */ s32 unk_20;
-    /* 0x24 */ f32 unk_24;
-    /* 0x28 */ s32 unk_28;
-    /* 0x2C */ s32 unk_2C;
-    /* 0x30 */ s32 unk_30;
-    /* 0x34 */ f32 unk_34;
+    /* 0x20 */ s32 frame; // not visible when negative
+    /* 0x24 */ f32 rotation;
+    /* 0x28 */ s32 timeLeft;
+    /* 0x2C */ s32 lifetime;
+    /* 0x30 */ s32 alpha;
+    /* 0x34 */ f32 scale;
 } StaticStatusFXData; // size = 0x38
 
 typedef struct MovingCloudFXData {
@@ -2393,7 +2359,7 @@ typedef struct SpiritCardFXData {
     /* 0x10 */ s32 unk_10;
     /* 0x14 */ s32 unk_14;
     /* 0x18 */ f32 unk_18;
-    /* 0x1C */ struct EffectInstance* unk_1C;
+    /* 0x1C */ struct EffectInstance* child;
     /* 0x20 */ f32 unk_20;
     /* 0x24 */ f32 yaw;
     /* 0x28 */ char unk_28[0xC];
@@ -2697,7 +2663,7 @@ typedef union {
     struct FireworkFXData*              firework;
     struct ConfettiFXData*              confetti;
     struct SnowfallFXData*              snowfall;
-    struct Effect46FXData*              unk_46;
+    struct SpinFXData*                  spin;
     struct GatherMagicFXData*           gatherMagic;
     struct AttackResultTextFXData*      attackResultText;
     struct SmallGoldSparkleFXData*      smallGoldSparkle;
@@ -2818,7 +2784,7 @@ typedef struct EffectBlueprint {
     /* 0x08 */ void (*init)(EffectInstance* effectInst);
     /* 0x0C */ void (*update)(EffectInstance* effectInst);
     /* 0x10 */ void (*renderWorld)(EffectInstance* effectInst);
-    /* 0x14 */ void (*unk_14)(EffectInstance* effectInst);
+    /* 0x14 */ void (*renderUI)(EffectInstance* effectInst);
 } EffectBlueprint; // size = 0x18
 
 typedef struct EffectGraphics {

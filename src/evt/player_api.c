@@ -4,7 +4,7 @@
 #include "world/partners.h"
 
 extern Npc playerNpcData;
-extern u16 D_802DB5B0;
+extern u16 PlayerImgFXFlags;
 extern s32 D_802DB5B4[3]; // unused
 
 Npc* playerNpc = &playerNpcData;
@@ -41,7 +41,7 @@ ApiStatus DisablePlayerInput(Evt* script, s32 isInitialCall) {
     if (enable) {
         disable_player_input();
         partner_disable_input();
-        close_status_menu();
+        close_status_bar();
         func_800E984C();
         if (playerStatus->actionState == ACTION_STATE_SPIN) {
             playerStatus->animFlags |= PA_FLAG_INTERRUPT_SPIN;
@@ -82,10 +82,10 @@ ApiStatus SetPlayerCollisionSize(Evt* script, s32 isInitialCall) {
     s32 radius = evt_get_variable(script, *args++);
 
     playerNpc->collisionHeight = height;
-    playerNpc->collisionRadius = radius;
+    playerNpc->collisionDiameter = radius;
 
     playerStatus->colliderHeight = playerNpc->collisionHeight;
-    playerStatus->colliderDiameter = playerNpc->collisionRadius;
+    playerStatus->colliderDiameter = playerNpc->collisionDiameter;
 
     return ApiStatus_DONE2;
 }
@@ -508,7 +508,7 @@ ApiStatus DisablePartner(Evt* script, s32 isInitialCall) {
     return ApiStatus_DONE2;
 }
 
-ApiStatus UseEntryHeading(Evt *script, s32 isInitialCall) {
+ApiStatus UseEntryHeading(Evt* script, s32 isInitialCall) {
     Bytecode* args = script->ptrReadPos;
     MapSettings* mapSettings = get_current_map_settings();
     s32 var1 = evt_get_variable(script, *args++);
@@ -630,78 +630,78 @@ ApiStatus WaitForPlayerInputEnabled(Evt* script, s32 isInitialCall) {
     }
 }
 
-ApiStatus func_802D2520(Evt* script, s32 isInitialCall) {
+ApiStatus UpdatePlayerImgFX(Evt* script, s32 isInitialCall) {
     Bytecode* args = script->ptrReadPos;
     PlayerStatus* playerStatus = &gPlayerStatus;
     s32 a0 = *args++;
-    s32 foldType = evt_get_variable(script, *args++);
+    s32 imgfxType = evt_get_variable(script, *args++);
     s32 a2, a3, a4, a5;
 
-    func_802DDFF8(a0, FOLD_TYPE_NONE, 0, 0, 0, 0, 0);
+    set_player_imgfx_all(a0, IMGFX_CLEAR, 0, 0, 0, 0, 0);
 
-    switch (foldType) {
-        case FOLD_TYPE_NONE:
+    switch (imgfxType) {
+        case IMGFX_CLEAR:
             playerStatus->renderMode = RENDER_MODE_ALPHATEST;
-            func_802DDFF8(a0, FOLD_TYPE_NONE, 0, 0, 0, 0, D_802DB5B0);
+            set_player_imgfx_all(a0, IMGFX_CLEAR, 0, 0, 0, 0, PlayerImgFXFlags);
             break;
-        case FOLD_TYPE_2:
-        case FOLD_TYPE_3:
+        case IMGFX_UNK_2:
+        case IMGFX_RESET:
             playerStatus->renderMode = RENDER_MODE_ALPHATEST;
-        case FOLD_TYPE_1:
-            func_802DDFF8(a0, foldType, 0, 0, 0, 0, D_802DB5B0);
+        case IMGFX_UNK_1:
+            set_player_imgfx_all(a0, imgfxType, 0, 0, 0, 0, PlayerImgFXFlags);
             break;
-        case FOLD_TYPE_4:
-            playerStatus->renderMode = RENDER_MODE_ALPHATEST;
-            a2 = evt_get_variable(script, *args++);
-            a3 = evt_get_variable(script, *args++);
-            a4 = evt_get_variable(script, *args++);
-            func_802DDFF8(a0, FOLD_TYPE_4, a2, a3, a4, 0, D_802DB5B0);
-            break;
-        case FOLD_TYPE_6:
+        case IMGFX_SET_WAVY:
             playerStatus->renderMode = RENDER_MODE_ALPHATEST;
             a2 = evt_get_variable(script, *args++);
             a3 = evt_get_variable(script, *args++);
             a4 = evt_get_variable(script, *args++);
-            func_802DDFF8(a0, FOLD_TYPE_6, a2, a3, a4, 255, D_802DB5B0);
+            set_player_imgfx_all(a0, IMGFX_SET_WAVY, a2, a3, a4, 0, PlayerImgFXFlags);
             break;
-        case FOLD_TYPE_7:
+        case IMGFX_SET_COLOR:
+            playerStatus->renderMode = RENDER_MODE_ALPHATEST;
+            a2 = evt_get_variable(script, *args++);
+            a3 = evt_get_variable(script, *args++);
+            a4 = evt_get_variable(script, *args++);
+            set_player_imgfx_all(a0, IMGFX_SET_COLOR, a2, a3, a4, 255, PlayerImgFXFlags);
+            break;
+        case IMGFX_SET_ALPHA:
             playerStatus->renderMode = RENDER_MODE_SURFACE_XLU_LAYER2;
             a5 = evt_get_variable(script, *args++);
-            func_802DDFF8(a0, FOLD_TYPE_7, 255, 255, 255, a5, D_802DB5B0);
+            set_player_imgfx_all(a0, IMGFX_SET_ALPHA, 255, 255, 255, a5, PlayerImgFXFlags);
             break;
-        case FOLD_TYPE_8:
-            playerStatus->renderMode = RENDER_MODE_SURFACE_XLU_LAYER2;
-            a2 = evt_get_variable(script, *args++);
-            a3 = evt_get_variable(script, *args++);
-            a4 = evt_get_variable(script, *args++);
-            a5 = evt_get_variable(script, *args++);
-            func_802DDFF8(a0, FOLD_TYPE_8, a2, a3, a4, a5, D_802DB5B0);
-            break;
-        case FOLD_TYPE_5:
-            playerStatus->renderMode = RENDER_MODE_ALPHATEST;
-            a2 = evt_get_variable(script, *args++);
-            a3 = evt_get_variable(script, *args++);
-            a4 = evt_get_variable(script, *args++);
-            func_802DDFF8(a0, FOLD_TYPE_5, a2, a3, a4, 0, D_802DB5B0);
-            break;
-        case FOLD_TYPE_D:
+        case IMGFX_SET_TINT:
             playerStatus->renderMode = RENDER_MODE_SURFACE_XLU_LAYER2;
             a2 = evt_get_variable(script, *args++);
             a3 = evt_get_variable(script, *args++);
             a4 = evt_get_variable(script, *args++);
             a5 = evt_get_variable(script, *args++);
-            func_802DDFF8(a0, FOLD_TYPE_D, a2, a3, a4, a5, D_802DB5B0);
+            set_player_imgfx_all(a0, IMGFX_SET_TINT, a2, a3, a4, a5, PlayerImgFXFlags);
+            break;
+        case IMGFX_SET_ANIM:
+            playerStatus->renderMode = RENDER_MODE_ALPHATEST;
+            a2 = evt_get_variable(script, *args++);
+            a3 = evt_get_variable(script, *args++);
+            a4 = evt_get_variable(script, *args++);
+            set_player_imgfx_all(a0, IMGFX_SET_ANIM, a2, a3, a4, 0, PlayerImgFXFlags);
+            break;
+        case IMGFX_HOLOGRAM:
+            playerStatus->renderMode = RENDER_MODE_SURFACE_XLU_LAYER2;
+            a2 = evt_get_variable(script, *args++);
+            a3 = evt_get_variable(script, *args++);
+            a4 = evt_get_variable(script, *args++);
+            a5 = evt_get_variable(script, *args++);
+            set_player_imgfx_all(a0, IMGFX_HOLOGRAM, a2, a3, a4, a5, PlayerImgFXFlags);
             break;
     }
 
-    D_802DB5B0 = 0;
+    PlayerImgFXFlags = 0;
     return ApiStatus_DONE2;
 }
 
-ApiStatus func_802D286C(Evt* script, s32 isInitialCall) {
-    s32 temp = *script->ptrReadPos;
+ApiStatus SetPlayerImgFXFlags(Evt* script, s32 isInitialCall) {
+    s32 imgfxFlags = *script->ptrReadPos;
 
-    D_802DB5B0 = temp;
+    PlayerImgFXFlags = imgfxFlags;
     return ApiStatus_DONE2;
 }
 
@@ -772,7 +772,7 @@ ApiStatus GetPartnerInUse(Evt* script, s32 isInitialCall) {
     PlayerData* playerData = &gPlayerData;
     s32 currentPartner = PARTNER_NONE;
 
-    if (gPartnerActionStatus.partnerActionState != PARTNER_ACTION_NONE) {
+    if (gPartnerStatus.partnerActionState != PARTNER_ACTION_NONE) {
         currentPartner = playerData->currentPartner;
     }
 

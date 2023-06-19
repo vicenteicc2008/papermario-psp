@@ -3,7 +3,7 @@
 
 typedef struct FallingSprite {
     /* 0x00 */ s32 animationEnabled;
-    /* 0x04 */ s32 foldStateID;
+    /* 0x04 */ s32 imgfxIdx;
     /* 0x08 */ s32 workerID;
     /* 0x0C */ s32 playerSpriteID;
     /* 0x10 */ s32 rasterID;
@@ -17,26 +17,26 @@ typedef struct FallingSprite {
 BSS FallingSprite N(Falling);
 
 void N(appendGfx_FallingSprite)(void) {
-    FoldImageRecPart foldImage;
+    ImgFXTexture ifxImg;
     SpriteRasterInfo rasterInfo;
     Matrix4f mtxTransform;
     Matrix4f mtxTemp;
     u32 animFrame;
     FallingSprite* falling = &N(Falling);
 
-    gDPPipeSync(gMasterGfxPos++);
-    gDPSetCycleType(gMasterGfxPos++, G_CYC_1CYCLE);
-    gSPClearGeometryMode(gMasterGfxPos++, G_SHADE | G_CULL_BOTH | G_FOG | G_LIGHTING | G_TEXTURE_GEN | G_TEXTURE_GEN_LINEAR | G_LOD | G_SHADING_SMOOTH);
-    gSPSetGeometryMode(gMasterGfxPos++, G_ZBUFFER | G_SHADE | G_SHADING_SMOOTH);
-    gSPTexture(gMasterGfxPos++, -1, -1, 0, G_TX_RENDERTILE, G_ON);
-    gDPSetTextureLOD(gMasterGfxPos++, G_TL_TILE);
-    gDPSetTexturePersp(gMasterGfxPos++, G_TP_PERSP);
-    gDPSetTextureFilter(gMasterGfxPos++, G_TF_BILERP);
-    gDPSetColorDither(gMasterGfxPos++, G_CD_DISABLE);
-    gDPSetTextureDetail(gMasterGfxPos++, G_TD_CLAMP);
-    gDPSetTextureConvert(gMasterGfxPos++, G_TC_FILT);
-    gDPSetCombineKey(gMasterGfxPos++, G_CK_NONE);
-    gDPSetAlphaCompare(gMasterGfxPos++, G_AC_NONE);
+    gDPPipeSync(gMainGfxPos++);
+    gDPSetCycleType(gMainGfxPos++, G_CYC_1CYCLE);
+    gSPClearGeometryMode(gMainGfxPos++, G_SHADE | G_CULL_BOTH | G_FOG | G_LIGHTING | G_TEXTURE_GEN | G_TEXTURE_GEN_LINEAR | G_LOD | G_SHADING_SMOOTH);
+    gSPSetGeometryMode(gMainGfxPos++, G_ZBUFFER | G_SHADE | G_SHADING_SMOOTH);
+    gSPTexture(gMainGfxPos++, -1, -1, 0, G_TX_RENDERTILE, G_ON);
+    gDPSetTextureLOD(gMainGfxPos++, G_TL_TILE);
+    gDPSetTexturePersp(gMainGfxPos++, G_TP_PERSP);
+    gDPSetTextureFilter(gMainGfxPos++, G_TF_BILERP);
+    gDPSetColorDither(gMainGfxPos++, G_CD_DISABLE);
+    gDPSetTextureDetail(gMainGfxPos++, G_TD_CLAMP);
+    gDPSetTextureConvert(gMainGfxPos++, G_TC_FILT);
+    gDPSetCombineKey(gMainGfxPos++, G_CK_NONE);
+    gDPSetAlphaCompare(gMainGfxPos++, G_AC_NONE);
     guTranslateF(mtxTransform, falling->pos.x, falling->pos.y, falling->pos.z);
     guRotateF(mtxTemp, falling->rot.y, 0.0f, 1.0f, 0.0f);
     guMtxCatF(mtxTemp, mtxTransform, mtxTransform);
@@ -47,9 +47,9 @@ void N(appendGfx_FallingSprite)(void) {
     guScaleF(mtxTemp, falling->scale.x, falling->scale.y, falling->scale.z);
     guMtxCatF(mtxTemp, mtxTransform, mtxTransform);
     guMtxF2L(mtxTransform, &gDisplayContext->matrixStack[gMatrixListPos]);
-    gSPMatrix(gMasterGfxPos++, VIRTUAL_TO_PHYSICAL(&gDisplayContext->matrixStack[gMatrixListPos++]),
+    gSPMatrix(gMainGfxPos++, VIRTUAL_TO_PHYSICAL(&gDisplayContext->matrixStack[gMatrixListPos++]),
         G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-    
+
     //TODO use SPR_RASTER_Mario8_XYZ here once they are defined
     if (!falling->animationEnabled) {
         falling->playerSpriteID = SPR_MarioW2;
@@ -66,15 +66,15 @@ void N(appendGfx_FallingSprite)(void) {
     }
 
     spr_get_player_raster_info(&rasterInfo, falling->playerSpriteID, falling->rasterID);
-    foldImage.raster = rasterInfo.raster;
-    foldImage.palette = rasterInfo.defaultPal;
-    falling->width  = foldImage.width = rasterInfo.width;
-    falling->height = foldImage.height = rasterInfo.height;
-    foldImage.xOffset = -(rasterInfo.width / 2);
-    foldImage.yOffset = rasterInfo.height / 2;
-    foldImage.opacity = 255;
-    fold_appendGfx_component(falling->foldStateID, &foldImage, 0, mtxTransform);
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+    ifxImg.raster = rasterInfo.raster;
+    ifxImg.palette = rasterInfo.defaultPal;
+    falling->width  = ifxImg.width = rasterInfo.width;
+    falling->height = ifxImg.height = rasterInfo.height;
+    ifxImg.xOffset = -(rasterInfo.width / 2);
+    ifxImg.yOffset = rasterInfo.height / 2;
+    ifxImg.alpha = 255;
+    imgfx_appendGfx_component(falling->imgfxIdx, &ifxImg, 0, mtxTransform);
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
 }
 
 API_CALLABLE(N(InitializeFallingSprite)) {
@@ -93,14 +93,14 @@ API_CALLABLE(N(InitializeFallingSprite)) {
     falling->scale.x = SPRITE_WORLD_SCALE_F;
     falling->scale.y = SPRITE_WORLD_SCALE_F;
     falling->scale.z = SPRITE_WORLD_SCALE_F;
-   
-    falling->foldStateID = func_8013A704(1);
+
+    falling->imgfxIdx = imgfx_get_free_instances(1);
     falling->workerID = create_worker_world(0, &N(appendGfx_FallingSprite));
     return ApiStatus_DONE2;
 }
 
 API_CALLABLE(N(DeleteFallingSprite)) {
-    func_8013A854(N(Falling).foldStateID);
+    imgfx_release_instance(N(Falling).imgfxIdx);
     free_worker(N(Falling).workerID);
     return ApiStatus_DONE2;
 }
@@ -152,7 +152,7 @@ API_CALLABLE(N(InitializeFallingPartner)) {
 
 API_CALLABLE(N(InitializeGetUp)) {
     FallingSprite* falling = &N(Falling);
-    
+
     falling->playerSpriteID = SPR_Mario1;
     falling->rasterID = 0;
     return ApiStatus_DONE2;
@@ -340,14 +340,14 @@ EvtScript N(EVS_Scene_FallIntoCell) = {
         EVT_WAIT(1)
         EVT_CALL(SpeakToPlayer, NPC_Bombette, ANIM_WorldBombette_Talk, ANIM_WorldBombette_Idle, 0, MSG_CH1_00D9)
         EVT_THREAD
-            EVT_WAIT(5)
+            EVT_WAIT(5 * DT)
             EVT_CALL(SetPlayerAnimation, ANIM_MarioW2_SpeakUp)
-            EVT_WAIT(30)
+            EVT_WAIT(30 * DT)
             EVT_CALL(SetPlayerAnimation, ANIM_Mario1_Idle)
         EVT_END_THREAD
         EVT_CALL(EndSpeech, NPC_Bombette, ANIM_WorldBombette_Talk, ANIM_WorldBombette_Idle, 0)
         EVT_CALL(PanToTarget, CAM_DEFAULT, 0, 0)
-        EVT_CALL(SetCamSpeed, CAM_DEFAULT, EVT_FLOAT(2.0))
+        EVT_CALL(SetCamSpeed, CAM_DEFAULT, EVT_FLOAT(2.0 / DT))
         EVT_CALL(WaitForCam, CAM_DEFAULT, EVT_FLOAT(1.0))
         EVT_CALL(SetNpcVar, NPC_Bombette, 0, 1)
     EVT_END_IF

@@ -103,7 +103,7 @@ s32 N(BridgeModels)[] = {
     MODEL_g45,
     MODEL_g44,
     MODEL_g43,
-    MODEL_g42, 
+    MODEL_g42,
     MODEL_g41,
     MODEL_g40,
     MODEL_g39,
@@ -111,7 +111,7 @@ s32 N(BridgeModels)[] = {
     MODEL_g37,
     MODEL_g36,
     MODEL_g35,
-    MODEL_g34, 
+    MODEL_g34,
 };
 
 EvtScript N(EVS_Scene_BowserTrapsMario) = {
@@ -121,9 +121,14 @@ EvtScript N(EVS_Scene_BowserTrapsMario) = {
             EVT_WAIT(1)
             EVT_GOTO(0)
         EVT_END_IF
+#if VERSION_PAL
+    EVT_CALL(DisablePlayerInput, TRUE)
+#endif
     EVT_THREAD
         EVT_WAIT(1)
+#if !VERSION_PAL
         EVT_CALL(DisablePlayerInput, TRUE)
+#endif
         EVT_CALL(PlayerFaceNpc, NPC_Bowser_01, FALSE)
         EVT_CALL(GetPartnerInUse, LVar0)
         EVT_CALL(GetCurrentPartnerID, LVar1)
@@ -280,7 +285,7 @@ Vec3i N(PowerUpBoltOrigins2)[] = {
     { 330, 160,  50 },
     { 360, 160, -50 },
     { 370, 160,  50 },
-    { 330, 160, -50 }, 
+    { 330, 160, -50 },
 };
 
 EvtScript N(EVS_Scene_ActivateMachine) = {

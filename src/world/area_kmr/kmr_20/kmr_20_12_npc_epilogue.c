@@ -27,7 +27,7 @@ API_CALLABLE(N(func_80242084_8EDEA4)) {
         script->functionTemp[1] = 255;
     }
 
-    set_screen_overlay_params_front(0, script->functionTemp[1]);
+    set_screen_overlay_params_front(OVERLAY_SCREEN_COLOR, script->functionTemp[1]);
 
     if (script->functionTemp[1] == 255) {
         return ApiStatus_DONE2;
@@ -47,7 +47,7 @@ API_CALLABLE(N(func_802420EC_8EDF0C)) {
         return ApiStatus_DONE2;
     }
 
-    set_screen_overlay_params_front(0, script->functionTemp[1]);
+    set_screen_overlay_params_front(OVERLAY_SCREEN_COLOR, script->functionTemp[1]);
     return ApiStatus_BLOCK;
 }
 
@@ -149,8 +149,8 @@ EvtScript N(EVS_Player_EnterPipe_Epilogue) = {
             EVT_WAIT(1)
         EVT_END_LOOP
     EVT_END_THREAD
-    EVT_CALL(func_802D286C, 0x00000800)
-    EVT_CALL(func_802D2520, ANIM_Mario1_Idle, FOLD_TYPE_5, 2, 1, 1, 0)
+    EVT_CALL(SetPlayerImgFXFlags, IMGFX_FLAG_800)
+    EVT_CALL(UpdatePlayerImgFX, ANIM_Mario1_Idle, IMGFX_SET_ANIM, IMGFX_ANIM_VERTICAL_PIPE_CURL, 1, 1, 0)
     EVT_WAIT(25)
     EVT_RETURN
     EVT_END
@@ -179,8 +179,8 @@ EvtScript N(EVS_Luigi_EnterPipe_Epilogue) = {
             EVT_WAIT(1)
         EVT_END_LOOP
     EVT_END_THREAD
-    EVT_CALL(func_802CFE2C, NPC_Luigi_1, 0x00000800)
-    EVT_CALL(func_802CFD30, NPC_Luigi_1, FOLD_TYPE_5, 2, 1, 1, 0)
+    EVT_CALL(SetNpcImgFXFlags, NPC_Luigi_1, IMGFX_FLAG_800)
+    EVT_CALL(SetNpcImgFXParams, NPC_Luigi_1, IMGFX_SET_ANIM, IMGFX_ANIM_VERTICAL_PIPE_CURL, 1, 1, 0)
     EVT_WAIT(25)
     EVT_RETURN
     EVT_END

@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#!/usr/bin/env python3
 
 import sys
 import os
@@ -842,7 +842,7 @@ def disassemble(bytes, midx, symbol_map={}, comments=True, romstart=0, namespace
                 out += f"{anim},\n"
 
             out += f"}};\n"
-        elif struct["type"] == "PartsTable":
+        elif struct["type"] == "ActorParts":
             out += f"ActorPartBlueprint {struct['name']}[] = {{\n"
 
             for _ in range(0, struct["length"] // 36):
@@ -854,8 +854,8 @@ def disassemble(bytes, midx, symbol_map={}, comments=True, romstart=0, namespace
                 out += INDENT + INDENT  + f".posOffset = {{ {d[2]}, {d[3]}, {d[4]} }},\n"
                 out += INDENT + INDENT  + f".targetOffset = {{ {d[5]}, {d[6]} }},\n"
                 out += INDENT + INDENT  + f".opacity = {d[7]},\n"
-                out += INDENT + INDENT  + f".idleAnimations = N(idleAnimations_{d[8]:08X}),\n"
-                out += INDENT + INDENT  + f".defenseTable = N(defenseTable_{d[9]:08X}),\n"
+                out += INDENT + INDENT  + f".idleAnimations = N(IdleAnimations_{d[8]:08X}),\n"
+                out += INDENT + INDENT  + f".defenseTable = N(DefenseTable_{d[9]:08X}),\n"
                 out += INDENT + INDENT  + f".eventFlags = {read_flags(d[10], 'ActorEventFlags')},\n"
                 out += INDENT + INDENT  + f".elementImmunityFlags = {read_flags(d[11], 'ElementImmunityFlags')},\n"
                 out += INDENT + INDENT  + f".unk_1C = {d[12]},\n"
@@ -885,9 +885,9 @@ def disassemble(bytes, midx, symbol_map={}, comments=True, romstart=0, namespace
             out += INDENT + f".powerBounceChance = {d[14]},\n"
             out += INDENT + f".coinReward = {d[15]},\n"
             out += INDENT + f".size = {{ {d[16]}, {d[17]} }},\n"
-            out += INDENT + f".hpBarOffset = {{ {d[18]}, {d[19]} }},\n"
+            out += INDENT + f".healthBarOffset = {{ {d[18]}, {d[19]} }},\n"
             out += INDENT + f".statusIconOffset = {{ {d[20]}, {d[21]} }},\n"
-            out += INDENT + f".statusMessageOffset = {{ {d[22]}, {d[23]} }},\n"
+            out += INDENT + f".statusTextOffset = {{ {d[22]}, {d[23]} }},\n"
 
             out += f"}};\n"
 

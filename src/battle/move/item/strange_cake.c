@@ -52,7 +52,7 @@ void N(func_802A123C_73153C(void)) {
     if (D_802A2DEC < 6) {
         if (D_802A2DEC > 0) {
             draw_box(0, WINDOW_STYLE_7, 106, 86, 0, 36, 36, 255, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NULL, NULL, NULL, SCREEN_WIDTH, SCREEN_HEIGHT, NULL);
-            gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, 108, 90, 139, 118);
+            gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, 108, 90, 139, 118);
 
             for (i = 0; i < ARRAY_COUNT(D_802A2DD8); i++) {
                 id = D_802A2DD8[i];
@@ -198,6 +198,7 @@ API_CALLABLE(N(ShowFlowerRecoveryFX)) {
     return ApiStatus_DONE2;
 }
 
+#if !VERSION_PAL
 #include "common/AddHP.inc.c"
 #include "common/AddFP.inc.c"
 
@@ -214,6 +215,7 @@ API_CALLABLE(N(func_802A1A40_731D40)) {
 
     return ApiStatus_DONE2;
 }
+#endif
 
 API_CALLABLE(N(func_802A1A8C_731D8C)) {
     ItemData* item = &gItemTable[ITEM_KOOKY_COOKIE];
@@ -233,7 +235,7 @@ API_CALLABLE(N(func_802A1AD8_731DD8)) {
     BattleStatus* battleStatus = &gBattleStatus;
     Actor* player = battleStatus->playerActor;
 
-    inflict_status(player, STATUS_STATIC, 3);
+    inflict_status(player, STATUS_KEY_STATIC, 3);
     player->statusAfflicted = 0;
 
     return ApiStatus_DONE2;
@@ -244,7 +246,7 @@ API_CALLABLE(N(func_802A1B14_731E14)) {
     Actor* player = battleStatus->playerActor;
     ActorPart* part = player->partsTable;
 
-    inflict_status(player, STATUS_TRANSPARENT, 3);
+    inflict_status(player, STATUS_KEY_TRANSPARENT, 3);
     player->statusAfflicted = 0;
     part->flags |= ACTOR_PART_FLAG_100;
 
@@ -255,7 +257,7 @@ API_CALLABLE(N(func_802A1B68_731E68)) {
     BattleStatus* battleStatus = &gBattleStatus;
     Actor* player = battleStatus->playerActor;
 
-    inflict_status(player, STATUS_SLEEP, 3);
+    inflict_status(player, STATUS_KEY_SLEEP, 3);
     player->statusAfflicted = 0;
 
     return ApiStatus_DONE2;
@@ -280,7 +282,9 @@ EvtScript N(EVS_UseItem) = {
         EVT_CALL(GetActorPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)
         EVT_ADD(LVar1, 25)
         EVT_CALL(ShowStartRecoveryShimmer, LVar0, LVar1, LVar2, LVar3)
+#if !VERSION_PAL
         EVT_CALL(N(AddFP), LVar3)
+#endif
         EVT_WAIT(10)
         EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_Mario1_ThumbsUp)
         EVT_WAIT(30)
@@ -324,7 +328,7 @@ EvtScript N(script7) = {
     EVT_PLAY_EFFECT(EFFECT_SNAKING_STATIC, 0, LVar0, LVar1, LVar2, EVT_FLOAT(1.0), 30, 0)
     EVT_CALL(N(func_802A1AD8_731DD8))
     EVT_WAIT(20)
-    EVT_CALL(ShowMessageBox, BTL_MSG_10, 60)
+    EVT_CALL(ShowMessageBox, BTL_MSG_PLAYER_CHARGED, 60)
     EVT_CALL(WaitForMessageBoxDone)
     EVT_RETURN
     EVT_END
@@ -337,7 +341,7 @@ EvtScript N(script8) = {
     EVT_PLAY_EFFECT(EFFECT_RADIAL_SHIMMER, 6, LVar0, LVar1, LVar2, EVT_FLOAT(1.0), 30, 0)
     EVT_CALL(N(func_802A1B14_731E14))
     EVT_WAIT(20)
-    EVT_CALL(ShowMessageBox, BTL_MSG_11, 60)
+    EVT_CALL(ShowMessageBox, BTL_MSG_PLAYER_TRANSPARENT, 60)
     EVT_CALL(WaitForMessageBoxDone)
     EVT_RETURN
     EVT_END
@@ -347,10 +351,10 @@ EvtScript N(script9) = {
     EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB1_Sleep)
     EVT_CALL(SetGoalToTarget, ACTOR_PLAYER)
     EVT_CALL(GetGoalPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)
-    EVT_EXEC(DoSleepHit)
+    EVT_EXEC(EVS_PlaySleepHitFX)
     EVT_CALL(N(func_802A1B68_731E68))
     EVT_WAIT(20)
-    EVT_CALL(ShowMessageBox, BTL_MSG_0B, 60)
+    EVT_CALL(ShowMessageBox, BTL_MSG_PLAYER_ASLEEP, 60)
     EVT_CALL(WaitForMessageBoxDone)
     EVT_RETURN
     EVT_END

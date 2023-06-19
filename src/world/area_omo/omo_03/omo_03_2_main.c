@@ -47,6 +47,19 @@ EvtScript N(EVS_Main) = {
     EVT_SET(GB_WorldLocation, LOCATION_SHY_GUYS_TOYBOX)
     EVT_CALL(SetSpriteShading, SHADING_NONE)
     EVT_SETUP_CAMERA_ALT_NO_LEAD()
+#if VERSION_PAL
+    EVT_CALL(GetLanguage, LVar0)
+    EVT_SWITCH(LVar0)
+        EVT_IF_GE(LVar0, LANGUAGE_FR) // or LANGUAGE_ES
+            EVT_SUB(LVar0, LANGUAGE_FR - LANGUAGE_EN)
+        EVT_END_IF
+        EVT_CALL(SetModelTexVariant, MODEL_s, LVar0)
+        EVT_CALL(SetModelTexVariant, MODEL_a, LVar0)
+        EVT_CALL(SetModelTexVariant, MODEL_t, LVar0)
+        EVT_CALL(SetModelTexVariant, MODEL_i, LVar0)
+        EVT_CALL(SetModelTexVariant, MODEL_o, LVar0)
+        EVT_CALL(SetModelTexVariant, MODEL_n, LVar0)
+#endif
     EVT_SET(AF_OMO_05, FALSE)
     EVT_SET(GF_MAP_ShyGuysToybox, TRUE)
     EVT_CALL(GetEntryID, LVar0)

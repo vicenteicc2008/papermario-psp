@@ -27,11 +27,12 @@ void func_800E5520(void) {
 }
 
 s32 phys_adjust_cam_on_landing(void) {
-    PartnerActionStatus* partnerActionStatus = &gPartnerActionStatus;
+    PartnerStatus* partnerStatus = &gPartnerStatus;
     GameStatus* gameStatus = gGameStatusPtr;
     PlayerStatus* playerStatus = &gPlayerStatus;
     s32 ret = 1;
 
+    //TODO hardcoded map IDs
     switch (gameStatus->areaID) {
         case AREA_OBK:
             ret = gameStatus->mapID != 4;
@@ -155,15 +156,15 @@ s32 phys_adjust_cam_on_landing(void) {
         s32 surfaceType = get_collider_flags(gCollisionStatus.currentFloor) & COLLIDER_FLAGS_SURFACE_TYPE_MASK;
 
         if (surfaceType == SURFACE_TYPE_LAVA) {
-            gCameras[0].moveFlags |= CAMERA_MOVE_IGNORE_PLAYER_Y;
+            gCameras[CAM_DEFAULT].moveFlags |= CAMERA_MOVE_IGNORE_PLAYER_Y;
             ret = 0;
         } else {
-            gCameras[0].moveFlags &= ~CAMERA_MOVE_IGNORE_PLAYER_Y;
+            gCameras[CAM_DEFAULT].moveFlags &= ~CAMERA_MOVE_IGNORE_PLAYER_Y;
         }
-    } else if (partnerActionStatus->partnerActionState != PARTNER_ACTION_NONE && partnerActionStatus->actingPartner == PARTNER_PARAKARRY) {
-        gCameras[0].moveFlags |= CAMERA_MOVE_FLAG_2;
+    } else if (partnerStatus->partnerActionState != PARTNER_ACTION_NONE && partnerStatus->actingPartner == PARTNER_PARAKARRY) {
+        gCameras[CAM_DEFAULT].moveFlags |= CAMERA_MOVE_FLAG_2;
     } else {
-        gCameras[0].moveFlags &= ~CAMERA_MOVE_FLAG_2;
+        gCameras[CAM_DEFAULT].moveFlags &= ~CAMERA_MOVE_FLAG_2;
     }
 
     return ret;
@@ -215,7 +216,7 @@ void phys_reset_spin_history(void) {
 
 void phys_update_action_state(void) {
     Camera* cameras = gCameras;
-    PartnerActionStatus* partnerActionStatus = &gPartnerActionStatus;
+    PartnerStatus* partnerStatus = &gPartnerStatus;
     PlayerStatus* playerStatus = &gPlayerStatus;
     PlayerSpinState* playerSpinState = &gPlayerSpinState;
 
@@ -266,7 +267,7 @@ void phys_update_action_state(void) {
                 cond = FALSE;
             }
 
-            if ((partnerActionStatus->partnerActionState == PARTNER_ACTION_NONE) && !(playerStatus->flags & PS_FLAG_PAUSED) && cond) {
+            if ((partnerStatus->partnerActionState == PARTNER_ACTION_NONE) && !(playerStatus->flags & PS_FLAG_PAUSED) && cond) {
                 set_action_state(ACTION_STATE_TALK);
             }
             check_input_spin();
@@ -364,7 +365,7 @@ void set_action_state(s32 actionState) {
         partner = playerData->currentPartner;
 
         if (partner == PARTNER_SUSHIE || partner == PARTNER_LAKILESTER || partner == PARTNER_PARAKARRY) {
-            if (gPartnerActionStatus.partnerActionState != PARTNER_ACTION_NONE) {
+            if (gPartnerStatus.partnerActionState != PARTNER_ACTION_NONE) {
                 playerStatus->animFlags |= PA_FLAG_INTERRUPT_USE_PARTNER;
                 playerStatus->flags |= PS_FLAG_HIT_FIRE;
                 return;
@@ -401,7 +402,7 @@ void set_action_state(s32 actionState) {
     }
 
     if (playerStatus->specialDecorationEffect != NULL) {
-        playerStatus->specialDecorationEffect->data.unk_46->unk_24 = 10;
+        playerStatus->specialDecorationEffect->data.spin->timeLeft = 10;
         playerStatus->specialDecorationEffect = NULL;
     }
 }
@@ -455,7 +456,7 @@ s32 check_input_hammer(void) {
             return FALSE;
         }
 
-        if (gPartnerActionStatus.partnerActionState == PARTNER_ACTION_USE && playerData->currentPartner == PARTNER_WATT) {
+        if (gPartnerStatus.partnerActionState == PARTNER_ACTION_USE && playerData->currentPartner == PARTNER_WATT) {
             return FALSE;
         }
 

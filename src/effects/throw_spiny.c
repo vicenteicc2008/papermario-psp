@@ -30,7 +30,7 @@ EffectInstance* throw_spiny_main(s32 arg0, f32 arg1, f32 arg2, f32 arg3, f32 arg
     bp.update = throw_spiny_update;
     bp.renderWorld = throw_spiny_render;
     bp.unk_00 = 0;
-    bp.unk_14 = NULL;
+    bp.renderUI = NULL;
     bp.effectID = EFFECT_THROW_SPINY;
 
     effect = (EffectInstance*)shim_create_effect_instance(bpPtr);
@@ -91,8 +91,8 @@ void throw_spiny_update(EffectInstance* effectInstance) {
     f32 gravity;
     s32 lifeDuration;
 
-    if (effectInstance->flags & EFFECT_INSTANCE_FLAG_10) {
-        effectInstance->flags &= ~EFFECT_INSTANCE_FLAG_10;
+    if (effectInstance->flags & FX_INSTANCE_FLAG_DISMISS) {
+        effectInstance->flags &= ~FX_INSTANCE_FLAG_DISMISS;
         spinyObject->life = 16;
     }
 
@@ -165,8 +165,8 @@ void throw_spiny_appendGfx(void* effect) {
     s32 temp_s6 = data->unk_00;
     f32 scale = data->unk_40 * SPRITE_WORLD_SCALE_D;
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
+    gDPPipeSync(gMainGfxPos++);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
 
     shim_guTranslateF(sp18, data->pos.x, data->pos.y, data->pos.z);
     shim_guScaleF(sp58, scale * data->xScale, scale * data->yScale, scale);
@@ -175,10 +175,10 @@ void throw_spiny_appendGfx(void* effect) {
     shim_guMtxCatF(sp58, sp18, sp18);
     shim_guMtxF2L(sp18, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-    gSPMatrix(gMasterGfxPos++, camera->unkMatrix, G_MTX_NOPUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, data->unk_30, data->unk_34, data->unk_38, temp_s5);
-    gSPDisplayList(gMasterGfxPos++, D_E00C8710[temp_s6]);
-    gSPDisplayList(gMasterGfxPos++, D_090009F0_3D04E0);
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPMatrix(gMainGfxPos++, camera->unkMatrix, G_MTX_NOPUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, data->unk_30, data->unk_34, data->unk_38, temp_s5);
+    gSPDisplayList(gMainGfxPos++, D_E00C8710[temp_s6]);
+    gSPDisplayList(gMainGfxPos++, D_090009F0_3D04E0);
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
 }

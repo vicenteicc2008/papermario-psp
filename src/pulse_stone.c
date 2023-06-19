@@ -29,13 +29,13 @@ void pulse_stone_notification_update(void);
 
 s32 should_cancel_pulse_stone(void) {
     PlayerStatus* playerStatus = &gPlayerStatus;
-    PartnerActionStatus* partnerActionStatus = &gPartnerActionStatus;
+    PartnerStatus* partnerStatus = &gPartnerStatus;
     s8 actionState = playerStatus->actionState;
 
     // could be written more clearly if these two condtions were inverted
     if (actionState != ACTION_STATE_USE_TWEESTER) {
-        if (!(partnerActionStatus->partnerActionState == PARTNER_ACTION_USE
-            && (partnerActionStatus->actingPartner == PARTNER_BOW || partnerActionStatus->actingPartner == PARTNER_PARAKARRY))
+        if (!(partnerStatus->partnerActionState == PARTNER_ACTION_USE
+            && (partnerStatus->actingPartner == PARTNER_BOW || partnerStatus->actingPartner == PARTNER_PARAKARRY))
         ) {
             return FALSE;
         }
@@ -80,7 +80,7 @@ void pulse_stone_notification_setup(void) {
 void appendGfx_pulse_stone_icon(void) {
     PlayerStatus* playerStatus = &gPlayerStatus;
     Matrix4f sp18, sp58;
-    FoldImageRecPart part;
+    ImgFXTexture ifxImg;
     s32 pingDelay;
     s32 dx, dy;
 
@@ -92,9 +92,9 @@ void appendGfx_pulse_stone_icon(void) {
         guMtxCatF(sp18, sp58, sp58);
         guMtxF2L(sp58, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-        gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++],
+        gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++],
                     G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-        gSPDisplayList(gMasterGfxPos++, pulse_stone_icon_gfx);
+        gSPDisplayList(gMainGfxPos++, pulse_stone_icon_gfx);
 
         dx = abs((gGameStatusPtr->mapID % 7) - 2);
         dy = gGameStatusPtr->mapID / 7;
@@ -124,7 +124,7 @@ void appendGfx_pulse_stone_icon(void) {
                 break;
         }
 
-        part.palette = pulse_stone_icon_1_pal;
+        ifxImg.palette = pulse_stone_icon_1_pal;
         if (pingDelay >= 0) {
             PulseStonePtr->pingTime++;
             if (PulseStonePtr->pingTime >= pingDelay + 2) {
@@ -132,20 +132,20 @@ void appendGfx_pulse_stone_icon(void) {
                 sfx_play_sound_at_player(SOUND_7D, SOUND_SPACE_MODE_0);
             }
             if (PulseStonePtr->pingTime < 2) {
-                part.palette = pulse_stone_icon_2_pal;
+                ifxImg.palette = pulse_stone_icon_2_pal;
             } else {
-                part.palette = pulse_stone_icon_1_pal;
+                ifxImg.palette = pulse_stone_icon_1_pal;
             }
         }
 
-        part.raster  = pulse_stone_icon_img;
-        part.width   = pulse_stone_icon_img_width;
-        part.height  = pulse_stone_icon_img_height;
-        part.xOffset = -28;
-        part.yOffset = 46;
-        part.opacity = 255;
-        fold_appendGfx_component(0, &part, 0, sp58);
-        gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+        ifxImg.raster  = pulse_stone_icon_img;
+        ifxImg.width   = pulse_stone_icon_img_width;
+        ifxImg.height  = pulse_stone_icon_img_height;
+        ifxImg.xOffset = -28;
+        ifxImg.yOffset = 46;
+        ifxImg.alpha = 255;
+        imgfx_appendGfx_component(0, &ifxImg, 0, sp58);
+        gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
     }
 }
 

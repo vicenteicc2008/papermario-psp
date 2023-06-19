@@ -14,12 +14,12 @@ Gfx* D_E008AA50[] = { D_09000D50_38DDC0, D_09000D50_38DDC0 };
 void func_E008A000(SnowfallFXData* data) {
     Camera* camera = &gCameras[gCurrentCameraID];
 
-    data->unk_08 = (camera->lookAt_eye.x + func_E0200000(2000)) - 1000.0f;
-    data->unk_0C = (camera->lookAt_eye.y + func_E0200000(2000)) - 1000.0f;
-    data->unk_10 = (camera->lookAt_eye.z + func_E0200000(2000)) - 1000.0f;
-    data->unk_14 = (func_E0200000(20) - 10.0f) * 0.05;
-    data->unk_18 = -1.2 - (func_E0200000(80) * 0.01);
-    data->unk_1C = (func_E0200000(20) - 10.0f) * 0.05;
+    data->unk_08 = (camera->lookAt_eye.x + effect_rand_int(2000)) - 1000.0f;
+    data->unk_0C = (camera->lookAt_eye.y + effect_rand_int(2000)) - 1000.0f;
+    data->unk_10 = (camera->lookAt_eye.z + effect_rand_int(2000)) - 1000.0f;
+    data->unk_14 = (effect_rand_int(20) - 10.0f) * 0.05;
+    data->unk_18 = -1.2 - (effect_rand_int(80) * 0.01);
+    data->unk_1C = (effect_rand_int(20) - 10.0f) * 0.05;
     data->unk_28 = 255;
 }
 
@@ -34,7 +34,7 @@ EffectInstance* snowfall_main(s32 arg0, s32 arg1) {
     effectBp.update = snowfall_update;
     effectBp.renderWorld = snowfall_render;
     effectBp.unk_00 = 0;
-    effectBp.unk_14 = 0;
+    effectBp.renderUI = NULL;
     effectBp.effectID = EFFECT_SNOWFALL;
 
     effect = shim_create_effect_instance(&effectBp);
@@ -183,11 +183,11 @@ void snowfall_appendGfx(void* effect) {
         }
 
         if (unk_28 != 0) {
-            gDPPipeSync(gMasterGfxPos++);
-            gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
+            gDPPipeSync(gMainGfxPos++);
+            gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
 
-            gSPDisplayList(gMasterGfxPos++, D_09000C00_38DC70);
-            gDPSetPrimColor(gMasterGfxPos++, 0, 0, 255, 255, 255, unk_28);
+            gSPDisplayList(gMainGfxPos++, D_09000C00_38DC70);
+            gDPSetPrimColor(gMainGfxPos++, 0, 0, 255, 255, 255, unk_28);
 
             shim_guRotateF(sp18, -gCameras[gCurrentCameraID].currentYaw, 0.0f, 1.0f, 0.0f);
             shim_guMtxF2L(sp18, &gDisplayContext->matrixStack[gMatrixListPos]);
@@ -200,15 +200,15 @@ void snowfall_appendGfx(void* effect) {
                     shim_guTranslateF(sp18, data->unk_08, data->unk_0C, data->unk_10);
                     shim_guMtxF2L(sp18, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-                    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++],
+                    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++],
                               G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-                    gSPMatrix(gMasterGfxPos++, mtx,
+                    gSPMatrix(gMainGfxPos++, mtx,
                               G_MTX_NOPUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-                    gSPDisplayList(gMasterGfxPos++, dlist);
-                    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+                    gSPDisplayList(gMainGfxPos++, dlist);
+                    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
                 }
             }
-            gDPPipeSync(gMasterGfxPos++);
+            gDPPipeSync(gMainGfxPos++);
         }
     }
 }

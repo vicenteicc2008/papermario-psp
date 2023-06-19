@@ -157,24 +157,24 @@ void pause_spirits_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 widt
     f32 scale;
     PlayerData* playerData = get_player_data();
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPViewport(gMasterGfxPos++, &gPauseSpiritsViewport);
-    gSPDisplayList(gMasterGfxPos++, gPauseDLSpiritsBg);
+    gDPPipeSync(gMainGfxPos++);
+    gSPViewport(gMainGfxPos++, &gPauseSpiritsViewport);
+    gSPDisplayList(gMainGfxPos++, gPauseDLSpiritsBg);
 
     for (i = 0; i < 5; i++) {
-        gDPLoadTextureTile_4b(gMasterGfxPos++, pause_spirits_bg_png, G_IM_FMT_CI, 128, 110,
+        gDPLoadTextureTile_4b(gMainGfxPos++, pause_spirits_bg_png, G_IM_FMT_CI, 128, 110,
                                0, i * 22, 127, i * 22 + 21, 0,
                                G_TX_MIRROR, G_TX_CLAMP, 7, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
         pause_draw_rect((baseX + 15) * 4, (baseY + 22 + i * 22) * 4, (baseX + 271) * 4, (baseY + 22 + i * 22 + 22) * 4, 0, 16, 16 + i * 704, 0x400, 0x400);
-        gDPPipeSync(gMasterGfxPos++);
+        gDPPipeSync(gMainGfxPos++);
     }
 
     guOrthoF(matrix1, 0.0f, 320.0f, 240.0f, 0.0f, -1000.0f, 1000.0f, 1.0f);
     guMtxF2L(matrix1, &gDisplayContext->matrixStack[gMatrixListPos]);
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
     guTranslateF(matrix1, 0.0f, 0.0f, 0.0f);
     guMtxF2L(matrix1, &gDisplayContext->matrixStack[gMatrixListPos]);
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
 
     for (i = 0; i < gPauseSpiritsNumSpirits; i++) {
@@ -196,7 +196,7 @@ void pause_spirits_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 widt
 
         }
 
-        func_802DE894(gPauseSpiritsSpriteIDs[gPauseSpiritsIndexes[index]], FOLD_TYPE_8, color, color, color, alpha, 0x40);
+        set_npc_imgfx_all(gPauseSpiritsSpriteIDs[gPauseSpiritsIndexes[index]], IMGFX_SET_TINT, color, color, color, alpha, 64);
         guTranslateF(matrix1, baseX + 22 + x, baseY + 77 + y + offsetY, 0.0f);
         guRotateF(matrix2, 180.0f, 0.0f, 0.0f, 1.0f);
         guMtxCatF(matrix2, matrix1, matrix1);
@@ -211,7 +211,7 @@ void pause_spirits_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 widt
         spr_draw_npc_sprite(gPauseSpiritsSpriteIDs[gPauseSpiritsIndexes[index]], 0, 0, 0, matrix1);
     }
 
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
 
     x1 = baseX + 7;
     y1 = baseY + 14;
@@ -236,7 +236,7 @@ void pause_spirits_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 widt
         y2 = SCREEN_HEIGHT - 1;
     }
 
-    gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, x1, y1, x2, y2);
+    gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, x1, y1, x2, y2);
     draw_box(0, &gPauseWS_25, baseX + 7, baseY + 14, 0, 272, 126, opacity, darkening, 1.0f, 1.0f, 0, 0, 0, 0, 0, 0, width, height, 0);
 
     if (gPauseMenuCurrentTab == 5) {
@@ -252,7 +252,7 @@ void pause_spirits_draw_title(MenuPanel* menu, s32 baseX, s32 baseY, s32 width, 
         if (playerData->maxStarPower > gPauseSpiritsIndexes[menu->selected]) {
             msgID = gPauseSpiritsIndexes[menu->selected] + MSG_Menus_SpiritName_Eldstar;
         } else {
-            msgID = pause_get_menu_msg(0x56);
+            msgID = pause_get_menu_msg(PAUSE_MSG_UNKNOWN_SPIRIT);
         }
         draw_msg(msgID, baseX + ((width - get_msg_width(msgID, 0)) >> 1), baseY + 1, 255, MSG_PAL_WHITE, 0);
     }
@@ -373,7 +373,7 @@ void pause_spirits_handle_input(MenuPanel* panel) {
     gPauseCurrentDescIconScript = 0;
 
     if (get_player_data()->maxStarPower <= gPauseSpiritsIndexes[panel->selected]) {
-        gPauseCurrentDescMsg = pause_get_menu_msg(0x56);
+        gPauseCurrentDescMsg = pause_get_menu_msg(PAUSE_MSG_UNKNOWN_SPIRIT);
     } else {
         gPauseCurrentDescMsg = MSG_Menus_SpiritDesc_Eldstar + gPauseSpiritsIndexes[panel->selected];
     }

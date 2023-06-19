@@ -72,7 +72,7 @@ EvtScript N(EVS_ProvideDemoInputs) = {
         EVT_RETURN
     EVT_END_IF
     EVT_SET(GF_DemoSceneDone, TRUE)
-    EVT_CALL(GotoMapSpecial, EVT_PTR("jan_04"), jan_04_ENTRY_2, TRANSITION_2)
+    EVT_CALL(GotoMapSpecial, EVT_PTR("jan_04"), jan_04_ENTRY_2, TRANSITION_END_DEMO_SCENE_BLACK)
     EVT_WAIT(110)
     EVT_RETURN
     EVT_END
@@ -91,7 +91,7 @@ EvtScript N(EVS_MonitorDemoState) = {
         EVT_RETURN
     EVT_END_IF
     EVT_SET(GF_DemoSceneDone, TRUE)
-    EVT_CALL(GotoMapSpecial, EVT_PTR("jan_04"), jan_04_ENTRY_2, TRANSITION_3)
+    EVT_CALL(GotoMapSpecial, EVT_PTR("jan_04"), jan_04_ENTRY_2, TRANSITION_END_DEMO_SCENE_WHITE)
     EVT_WAIT(100)
     EVT_RETURN
     EVT_END
@@ -105,7 +105,7 @@ API_CALLABLE(N(SetupDemoScene)) {
 
     switch (N(DemoInitState)) {
         case 0:
-            rideScriptSrc = partner_get_ride_script();
+            rideScriptSrc = partner_get_enter_map_script();
             if (rideScriptSrc != NULL) {
                 Evt* newScript;
 
@@ -114,8 +114,8 @@ API_CALLABLE(N(SetupDemoScene)) {
                 newScript->varTable[1] = playerStatus->position.x - 10.0f;
                 newScript->varTable[2] = playerStatus->position.y;
                 newScript->varTable[3] = playerStatus->position.z;
-                D_8024A290 = newScript;
                 newScript->varTable[12] = 1;
+                D_8024A290 = newScript;
             }
             break;
         case 1:

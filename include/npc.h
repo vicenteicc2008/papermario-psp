@@ -18,8 +18,8 @@
 
 #define NO_DROPS { \
     .dropFlags = NPC_DROP_FLAG_80, \
-    .heartDrops  = { { F16(100), F16(0), 0, F16(0) }, }, \
-    .flowerDrops = { { F16(100), F16(0), 0, F16(0) }, }, \
+    .heartDrops  = { { F16(100), F16(0), 0, F16(0) } }, \
+    .flowerDrops = { { F16(100), F16(0), 0, F16(0) } }, \
 }
 
 #define STANDARD_HEART_DROPS(attempts) { \
@@ -380,7 +380,7 @@ typedef struct EncounterStatus {
     /* 0x008 */ s8 unk_08;
     /* 0x009 */ s8 battleOutcome; /* 0 = won, 1 = lost */
     /* 0x00A */ s8 battleTriggerCooldown; ///< set to 15 after victory, 45 after fleeing
-    /* 0x00B */ s8 merleeCoinBonus; /* triple coins when != 0 */
+    /* 0x00B */ b8 hasMerleeCoinBonus; /* triple coins when TRUE */
     /* 0x00C */ u8 damageTaken; /* valid after battle */
     /* 0x00D */ char unk_0D;
     /* 0x00E */ s16 coinsEarned; /* valid after battle */
@@ -592,9 +592,9 @@ Npc* npc_find_closest_simple(f32 x, f32 y, f32 z, f32 radius);
 
 s32 npc_get_collider_below(Npc* npc);
 
-void func_8003D3BC(Npc* npc);
+void npc_imgfx_update(Npc* npc);
 
-void func_8003D624(Npc* npc, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6);
+void npc_set_imgfx_params(Npc* npc, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6);
 
 void spawn_surface_effects(Npc* npc, SurfaceInteractMode mode);
 

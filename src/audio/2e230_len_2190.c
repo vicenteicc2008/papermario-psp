@@ -9,7 +9,7 @@ extern f32 AlTuneScaling[];
 
 
 #ifdef SHIFT
-#define SBN_ROM_OFFSET SBN_ROM_START
+#define SBN_ROM_OFFSET (s32) SBN_ROM_START
 #elif VERSION_JP
 #define SBN_ROM_OFFSET 0xFC0000
 #else
@@ -599,8 +599,6 @@ AuResult func_80053E58(s32 songID, BGMHeader* bgmFile) {
     AuGlobals* soundData;
     InitSongEntry* songInfo;
     s32 i;
-    u32 data;
-    u32 offset;
     u16 bkFileIndex;
 
     soundData = gSoundGlobals;
@@ -614,14 +612,11 @@ AuResult func_80053E58(s32 songID, BGMHeader* bgmFile) {
             if (bkFileIndex != 0) {
                 bkFileEntry = &soundData->sbnFileList[bkFileIndex];
 
-                offset = (bkFileEntry->offset & 0xFFFFFF) + soundData->baseRomOffset;
-                fileEntry.offset = offset;
+                fileEntry.offset = (bkFileEntry->offset & 0xFFFFFF) + soundData->baseRomOffset;
+                fileEntry.data = bkFileEntry->data;
 
-                data = bkFileEntry->data;
-                fileEntry.data = data;
-
-                if ((data >> 0x18) == AU_FMT_BK) {
-                    snd_load_BK(offset, i);
+                if ((fileEntry.data >> 0x18) == AU_FMT_BK) {
+                    snd_load_BK(fileEntry.offset, i);
                 } else {
                     status = AU_ERROR_SBN_FORMAT_MISMATCH;
                 }

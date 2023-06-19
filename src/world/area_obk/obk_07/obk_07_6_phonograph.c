@@ -256,9 +256,9 @@ void N(worker_update_phonograph_hud)(void) {
             id = data->barFillWidth / 60; // TODO use of id required to match - weird
             if (id <= 50) {
                 temp = 50.0f;
-                temp *= sin_rad((((id * 90) / 50) * TAU) / 360.0f);
+                temp *= sin_rad(DEG_TO_RAD((id * 90) / 50));
             } else {
-                temp = ((1.0 - sin_rad((((((id - 50) * 90) / 50) + 90) * TAU) / 360.0f)) * 50.0) + 50.0;
+                temp = ((1.0 - sin_rad(DEG_TO_RAD((((id - 50) * 90) / 50) + 90))) * 50.0) + 50.0;
             }
             data->timeScale = (((100 - temp) * 0.25) / 100.0) + ((2.0 * temp) / 100.0);
             snd_song_set_playback_rate(data->songName, data->timeScale);
@@ -886,7 +886,7 @@ EvtScript N(EVS_Inspect_Phonograph) = {
     EVT_CALL(RemoveKeyItemAt, LVar1)
     EVT_SET(GB_StoryProgress, STORY_CH3_PLAYED_THE_RECORD)
     EVT_CALL(EnableModel, MODEL_reco, TRUE)
-    EVT_CALL(SetPlayerAnimation, ANIM_MarioW1_PlaceRecord)
+    EVT_CALL(SetPlayerAnimation, ANIM_MarioW1_CarryIdle)
     EVT_WAIT(15)
     EVT_CALL(SetPlayerAnimation, ANIM_Mario1_Idle)
     EVT_WAIT(15)
@@ -982,7 +982,7 @@ EvtScript N(EVS_GuardBoo_ReturnToPost) = {
     EVT_CALL(MakeLerp, 180, 0, 10, EASING_LINEAR)
     EVT_LOOP(0)
         EVT_CALL(UpdateLerp)
-        EVT_CALL(func_802CFD30, NPC_GuardBoo, FOLD_TYPE_7, LVar0, 0, 0, 0)
+        EVT_CALL(SetNpcImgFXParams, NPC_GuardBoo, IMGFX_SET_ALPHA, LVar0, 0, 0, 0)
         EVT_IF_EQ(LVar1, 0)
             EVT_BREAK_LOOP
         EVT_END_IF
@@ -992,7 +992,7 @@ EvtScript N(EVS_GuardBoo_ReturnToPost) = {
     EVT_CALL(MakeLerp, 0, 180, 10, EASING_LINEAR)
     EVT_LOOP(0)
         EVT_CALL(UpdateLerp)
-        EVT_CALL(func_802CFD30, NPC_GuardBoo, FOLD_TYPE_7, LVar0, 0, 0, 0)
+        EVT_CALL(SetNpcImgFXParams, NPC_GuardBoo, IMGFX_SET_ALPHA, LVar0, 0, 0, 0)
         EVT_IF_EQ(LVar1, 0)
             EVT_BREAK_LOOP
         EVT_END_IF
@@ -1086,7 +1086,7 @@ EvtScript N(EVS_GuardBooVanish) = {
     EVT_CALL(MakeLerp, 255, 0, 60, EASING_LINEAR)
     EVT_LABEL(0)
         EVT_CALL(UpdateLerp)
-        EVT_CALL(func_802CFD30, NPC_GuardBoo, FOLD_TYPE_7, LVar0, 0, 0, 0)
+        EVT_CALL(SetNpcImgFXParams, NPC_GuardBoo, IMGFX_SET_ALPHA, LVar0, 0, 0, 0)
         EVT_WAIT(1)
         EVT_IF_EQ(LVar1, 1)
             EVT_GOTO(0)

@@ -226,7 +226,7 @@ API_CALLABLE(N(func_802447E0_805060)) {
         script->functionTemp[1] = 255;
     }
 
-    set_screen_overlay_params_front(0, script->functionTemp[1]);
+    set_screen_overlay_params_front(OVERLAY_SCREEN_COLOR, script->functionTemp[1]);
 
     if (script->functionTemp[1] == 255) {
         return ApiStatus_DONE2;
@@ -246,7 +246,7 @@ API_CALLABLE(N(func_80244848_8050C8)) {
         return ApiStatus_DONE2;
     }
 
-    set_screen_overlay_params_front(0, script->functionTemp[1]);
+    set_screen_overlay_params_front(OVERLAY_SCREEN_COLOR, script->functionTemp[1]);
     return ApiStatus_BLOCK;
 }
 
@@ -413,64 +413,64 @@ EvtScript N(EVS_MerlonBargeOut) = {
         EVT_WAIT(1)
         EVT_CALL(SetPlayerAnimation, ANIM_Mario1_Hurt)
         EVT_CALL(SetPlayerJumpscale, EVT_FLOAT(1.0))
-        EVT_CALL(PlayerJump1, -222, 20, -158, 8)
-        EVT_WAIT(5)
+        EVT_CALL(PlayerJump1, -222, 20, -158, 8 * DT)
+        EVT_WAIT(5 * DT)
         EVT_CALL(SetPlayerFlagBits, PS_FLAG_NO_FLIPPING, FALSE)
-        EVT_CALL(N(KnockDownPlayerB), 1, 37)
-        EVT_CALL(N(KnockDownPlayerD), -215, 20, -158)
+        EVT_CALL(N(KnockdownCreate), SPR_Mario1, 37) //TODO hardcoded player raster ID
+        EVT_CALL(N(KnockdownSetPos), -215, 20, -158)
         EVT_WAIT(1)
         EVT_CALL(SetPlayerPos, -215, 1000, -158)
-        EVT_CALL(MakeLerp, 0, 90, 10, EASING_QUADRATIC_IN)
+        EVT_CALL(MakeLerp, 0, 90, 10 * DT, EASING_QUADRATIC_IN)
         EVT_LOOP(0)
             EVT_CALL(UpdateLerp)
-            EVT_CALL(N(KnockDownPlayerE), LVar0, 0, 0)
+            EVT_CALL(N(KnockdownSetRot), LVar0, 0, 0)
             EVT_WAIT(1)
             EVT_IF_EQ(LVar1, 0)
                 EVT_BREAK_LOOP
             EVT_END_IF
         EVT_END_LOOP
-        EVT_CALL(N(KnockDownPlayerD), -215, 21, -158)
+        EVT_CALL(N(KnockdownSetPos), -215, 21, -158)
         EVT_CALL(PlaySoundAtPlayer, SOUND_162, SOUND_SPACE_MODE_0)
     EVT_END_THREAD
-    EVT_WAIT(50)
+    EVT_WAIT(50 * DT)
     EVT_CALL(SetNpcPos, NPC_Merlon, -241, 20, -270)
     EVT_CALL(SetNpcAnimation, NPC_Merlon, ANIM_Merlon_Walk)
-    EVT_CALL(NpcMoveTo, NPC_Merlon, -168, -198, 20)
+    EVT_CALL(NpcMoveTo, NPC_Merlon, -168, -198, 20 * DT)
     EVT_CALL(SetNpcAnimation, NPC_Merlon, ANIM_Merlon_Idle)
     EVT_CALL(GetAngleToPlayer, NPC_Merlon, LVar0)
     EVT_CALL(InterpNpcYaw, NPC_Merlon, LVar0, 5)
     EVT_CALL(SpeakToPlayer, NPC_Merlon, ANIM_Merlon_Talk, ANIM_Merlon_Idle, 0, MSG_MAC_Plaza_0021)
-    EVT_CALL(N(KnockDownPlayerD), -215, 20, -158)
-    EVT_CALL(MakeLerp, 90, 0, 15, EASING_QUADRATIC_OUT)
+    EVT_CALL(N(KnockdownSetPos), -215, 20, -158)
+    EVT_CALL(MakeLerp, 90, 0, 15 * DT, EASING_QUADRATIC_OUT)
     EVT_LOOP(0)
         EVT_CALL(UpdateLerp)
-        EVT_CALL(N(KnockDownPlayerE), LVar0, 0, 0)
+        EVT_CALL(N(KnockdownSetRot), LVar0, 0, 0)
         EVT_WAIT(1)
         EVT_IF_EQ(LVar1, 0)
             EVT_BREAK_LOOP
         EVT_END_IF
     EVT_END_LOOP
     EVT_CALL(SetPlayerPos, -222, 20, -158)
-    EVT_CALL(N(KnockDownPlayerC))
+    EVT_CALL(N(KnockdownDestroy))
     EVT_CALL(InterpPlayerYaw, 90, 0)
     EVT_CALL(SetPlayerActionState, ACTION_STATE_JUMP)
     EVT_CALL(SetPlayerJumpscale, EVT_FLOAT(1.0))
     EVT_CALL(GetPlayerPos, LVar0, LVar1, LVar2)
-    EVT_CALL(PlayerJump, LVar0, LVar1, LVar2, 15)
+    EVT_CALL(PlayerJump, LVar0, LVar1, LVar2, 15 * DT)
     EVT_CALL(SetPlayerActionState, ACTION_STATE_LAND)
-    EVT_WAIT(10)
+    EVT_WAIT(10 * DT)
     EVT_CALL(SpeakToPlayer, NPC_Merlon, ANIM_Merlon_Talk, ANIM_Merlon_Idle, 0, MSG_MAC_Plaza_0022)
     EVT_THREAD
         EVT_CALL(SetNpcAnimation, NPC_Merlon, ANIM_Merlon_Walk)
-        EVT_CALL(NpcMoveTo, NPC_Merlon, -275, -305, 30)
+        EVT_CALL(NpcMoveTo, NPC_Merlon, -275, -305, 30 * DT)
         EVT_CALL(SetNpcAnimation, NPC_Merlon, ANIM_Merlon_Idle)
         EVT_CALL(SetNpcPos, NPC_Merlon, -337, 20, -360)
         EVT_CALL(SetNpcYaw, NPC_Merlon, 135)
     EVT_END_THREAD
-    EVT_CALL(PlayerMoveTo, -168, -198, 20)
-    EVT_CALL(PlayerMoveTo, -275, -305, 30)
+    EVT_CALL(PlayerMoveTo, -168, -198, 20 * DT)
+    EVT_CALL(PlayerMoveTo, -275, -305, 30 * DT)
     EVT_EXEC(N(D_8024E7F0_80F070))
-    EVT_WAIT(5)
+    EVT_WAIT(5 * DT)
     EVT_CALL(SetNpcPos, NPC_PARTNER, -240, 20, -284)
     EVT_CALL(N(func_802447E0_805060))
     EVT_THREAD
@@ -484,32 +484,32 @@ EvtScript N(EVS_MerlonBargeOut) = {
     EVT_CALL(UseSettingsFrom, CAM_DEFAULT, -250, 20, -280)
     EVT_CALL(SetCamSpeed, CAM_DEFAULT, EVT_FLOAT(90.0))
     EVT_CALL(PanToTarget, CAM_DEFAULT, 0, 1)
-    EVT_WAIT(30)
+    EVT_WAIT(30 * DT)
     EVT_CALL(N(func_80244848_8050C8))
     EVT_CALL(InterpNpcYaw, NPC_Merlon, 135, 5)
     EVT_CALL(SpeakToPlayer, NPC_Merlon, ANIM_Merlon_Talk, ANIM_Merlon_Idle, 0, MSG_MAC_Plaza_0023)
     EVT_CALL(N(func_802447E0_805060))
-    EVT_WAIT(60)
+    EVT_WAIT(60 * DT)
     EVT_CALL(SetPlayerAnimation, ANIM_MarioW2_SleepStanding)
     EVT_THREAD
         EVT_CALL(N(func_80244848_8050C8))
     EVT_END_THREAD
-    EVT_WAIT(10)
+    EVT_WAIT(10 * DT)
     EVT_CALL(ContinueSpeech, NPC_Merlon, ANIM_Merlon_Talk, ANIM_Merlon_Idle, 0, MSG_MAC_Plaza_0024)
     EVT_CALL(SetPlayerAnimation, ANIM_MarioW2_JoltAwake)
     EVT_WAIT(10)
     EVT_CALL(SetPlayerAnimation, ANIM_MarioW2_NodYesTwice)
-    EVT_WAIT(50)
+    EVT_WAIT(50 * DT)
     EVT_CALL(GetNpcPos, NPC_Merlon, LVar0, LVar1, LVar2)
     EVT_CALL(SetCamType, CAM_DEFAULT, 0, FALSE)
     EVT_CALL(SetPanTarget, CAM_DEFAULT, LVar0, LVar1, LVar2)
     EVT_CALL(SetCamDistance, CAM_DEFAULT, 200)
     EVT_CALL(SetCamPitch, CAM_DEFAULT, 15, -10)
     EVT_CALL(SetCamSpeed, CAM_DEFAULT, EVT_FLOAT(90.0))
-    EVT_WAIT(10)
+    EVT_WAIT(10 * DT)
     EVT_CALL(SpeakToPlayer, NPC_Merlon, ANIM_Merlon_Talk, ANIM_Merlon_Idle, 0, MSG_MAC_Plaza_0025)
     EVT_SET(GB_StoryProgress, STORY_CH1_SPOKE_WITH_MERLIN)
-    EVT_CALL(ResetCam, CAM_DEFAULT, EVT_FLOAT(5.0))
+    EVT_CALL(ResetCam, CAM_DEFAULT, EVT_FLOAT(5.0 / DT))
     EVT_THREAD
         EVT_CALL(ModifyColliderFlags, MODIFY_COLLIDER_FLAGS_CLEAR_BITS, COLLIDER_o336, COLLIDER_FLAGS_UPPER_MASK)
         EVT_CALL(ModifyColliderFlags, MODIFY_COLLIDER_FLAGS_SET_BITS, COLLIDER_o335, COLLIDER_FLAGS_UPPER_MASK)
@@ -540,7 +540,7 @@ EvtScript N(EVS_Scene_KoopaBrosUnmasked) = {
     EVT_CALL(func_802CF56C, 2)
     EVT_THREAD
         EVT_CALL(SetNpcAnimation, NPC_Merlon, ANIM_Merlon_Walk)
-        EVT_CALL(SetNpcSpeed, NPC_Merlon, EVT_FLOAT(4.0))
+        EVT_CALL(SetNpcSpeed, NPC_Merlon, EVT_FLOAT(4.0 / DT))
         EVT_CALL(NpcMoveTo, NPC_Merlon, 410, 0, 0)
         EVT_CALL(SetNpcAnimation, NPC_Merlon, ANIM_Merlon_Idle)
         EVT_CALL(InterpNpcYaw, NPC_Merlon, 90, 0)
@@ -556,19 +556,19 @@ EvtScript N(EVS_Scene_KoopaBrosUnmasked) = {
     EVT_END_LOOP
     EVT_CALL(SetCamProperties, CAM_DEFAULT, EVT_FLOAT(4.0), 410, 0, 0, 320, 15, -6)
     EVT_THREAD
-        EVT_WAIT(5)
-        EVT_CALL(SetPlayerSpeed, EVT_FLOAT(3.0))
+        EVT_WAIT(5 * DT)
+        EVT_CALL(SetPlayerSpeed, EVT_FLOAT(3.0 / DT))
         EVT_CALL(PlayerMoveTo, 460, 0, 0)
         EVT_CALL(PlayerFaceNpc, NPC_Merlon, FALSE)
     EVT_END_THREAD
     EVT_CALL(SetNpcAnimation, NPC_Merlon, ANIM_Merlon_Idle)
     EVT_CALL(SpeakToPlayer, NPC_Merlon, ANIM_Merlon_Talk, ANIM_Merlon_Idle, 0, MSG_MAC_Plaza_002B)
     EVT_CALL(SetPanTarget, CAM_DEFAULT, 480, 0, 0)
-    EVT_CALL(SetCamSpeed, CAM_DEFAULT, EVT_FLOAT(2.0))
+    EVT_CALL(SetCamSpeed, CAM_DEFAULT, EVT_FLOAT(2.0 / DT))
     EVT_CALL(PanToTarget, CAM_DEFAULT, 0, 1)
     EVT_CALL(WaitForCam, CAM_DEFAULT, EVT_FLOAT(1.0))
     EVT_THREAD
-        EVT_WAIT(5)
+        EVT_WAIT(5 * DT)
         EVT_CALL(PlayerFaceNpc, NPC_DarkToad_01, FALSE)
     EVT_END_THREAD
     EVT_CALL(SpeakToPlayer, NPC_DarkToad_03, ANIM_DarkToad_Yellow_Dismiss, ANIM_DarkToad_Yellow_Idle, 0, MSG_MAC_Plaza_002C)
@@ -578,30 +578,30 @@ EvtScript N(EVS_Scene_KoopaBrosUnmasked) = {
     EVT_CALL(PanToTarget, CAM_DEFAULT, 0, 1)
     EVT_CALL(WaitForCam, CAM_DEFAULT, EVT_FLOAT(1.0))
     EVT_THREAD
-        EVT_WAIT(5)
+        EVT_WAIT(5 * DT)
         EVT_CALL(PlayerFaceNpc, NPC_Merlon, FALSE)
     EVT_END_THREAD
     EVT_CALL(SpeakToPlayer, NPC_Merlon, ANIM_Merlon_Talk, ANIM_Merlon_Idle, 0, MSG_MAC_Plaza_002E)
     EVT_CALL(PanToTarget, CAM_DEFAULT, 0, 0)
-    EVT_CALL(SetCamSpeed, CAM_DEFAULT, EVT_FLOAT(5.0))
+    EVT_CALL(SetCamSpeed, CAM_DEFAULT, EVT_FLOAT(5.0 / DT))
     EVT_CALL(WaitForCam, CAM_DEFAULT, EVT_FLOAT(1.0))
     EVT_CALL(PlaySoundAtNpc, NPC_Merlon, SOUND_209, SOUND_SPACE_MODE_0)
     EVT_CALL(SetNpcAnimation, NPC_Merlon, ANIM_Merlon_Gather1)
     EVT_CALL(GetNpcPos, NPC_Merlon, LVar0, LVar1, LVar2)
     EVT_ADD(LVar1, 10)
     EVT_PLAY_EFFECT(EFFECT_RADIAL_SHIMMER, 12, LVar0, LVar1, LVar2, 1, 50)
-    EVT_WAIT(60)
+    EVT_WAIT(60 * DT)
     EVT_CALL(SetNpcAnimation, NPC_Merlon, ANIM_Merlon_RaiseArms)
-    EVT_WAIT(5)
+    EVT_WAIT(5 * DT)
     EVT_PLAY_EFFECT(EFFECT_ENERGY_ORB_WAVE, 6, LVar0, LVar1, LVar2, 1, 20)
     EVT_ADD(LVar1, 180)
     EVT_CALL(PlayerFaceNpc, NPC_DarkToad_01, FALSE)
-    EVT_CALL(SetCamProperties, CAM_DEFAULT, EVT_FLOAT(4.0), 480, 0, 0, 320, 15, -6)
+    EVT_CALL(SetCamProperties, CAM_DEFAULT, EVT_FLOAT(4.0 / DT), 480, 0, 0, 320, 15, -6)
     EVT_CALL(PushSong, SONG_KOOPA_BROS_THEME, 0)
     EVT_THREAD
         EVT_SET(MF_KoopaBrosSceneLock, FALSE)
         EVT_WAIT(5)
-        EVT_CALL(SpeakToPlayer, NPC_KoopaBros_01, ANIM_KoopaBros_Red_Anim0B, ANIM_KoopaBros_Red_Anim0B, 5, MSG_MAC_Plaza_002F)
+        EVT_CALL(SpeakToPlayer, NPC_KoopaBros_01, ANIM_KoopaBros_Red_Hurt, ANIM_KoopaBros_Red_Hurt, 5, MSG_MAC_Plaza_002F)
         EVT_SET(MF_KoopaBrosSceneLock, TRUE)
     EVT_END_THREAD
     EVT_THREAD
@@ -611,64 +611,64 @@ EvtScript N(EVS_Scene_KoopaBrosUnmasked) = {
         EVT_PLAY_EFFECT(EFFECT_LIGHTNING_BOLT, 0, LVar0, LVar1, LVar2, LVar3, LVar4, LVar5, 2, 20)
         EVT_PLAY_EFFECT(EFFECT_SHIMMER_BURST, 1, LVar3, LVar4, LVar5, 1, 30)
         EVT_CALL(SetNpcAnimation, NPC_DarkToad_01, ANIM_DarkToad_Red_Hurt)
-        EVT_WAIT(5)
+        EVT_WAIT(5 * DT)
         EVT_CALL(PlaySoundAtNpc, NPC_DarkToad_01, SOUND_2049, SOUND_SPACE_MODE_0)
         EVT_CALL(GetNpcPos, NPC_DarkToad_01, LVar3, LVar4, LVar5)
         EVT_CALL(SetNpcPos, NPC_DarkToad_01, LVar3, NPC_DISPOSE_POS_Y, LVar2)
         EVT_CALL(SetNpcPos, NPC_KoopaBros_01, LVar3, LVar4, LVar5)
         EVT_CALL(SetNpcJumpscale, NPC_KoopaBros_01, EVT_FLOAT(1.0))
-        EVT_CALL(SetNpcAnimation, NPC_KoopaBros_01, ANIM_KoopaBros_Red_Anim0B)
-        EVT_CALL(NpcJump0, NPC_KoopaBros_01, LVar3, LVar4, LVar5, 10)
+        EVT_CALL(SetNpcAnimation, NPC_KoopaBros_01, ANIM_KoopaBros_Red_Hurt)
+        EVT_CALL(NpcJump0, NPC_KoopaBros_01, LVar3, LVar4, LVar5, 10 * DT)
     EVT_END_THREAD
     EVT_THREAD
-        EVT_WAIT(10)
+        EVT_WAIT(10 * DT)
         EVT_CALL(PlaySoundAtNpc, NPC_DarkToad_01, SOUND_20A, SOUND_SPACE_MODE_0)
         EVT_CALL(GetNpcPos, NPC_DarkToad_02, LVar3, LVar4, LVar5)
         EVT_ADD(LVar5, 5)
         EVT_PLAY_EFFECT(EFFECT_LIGHTNING_BOLT, 0, LVar0, LVar1, LVar2, LVar3, LVar4, LVar5, 2, 20)
         EVT_PLAY_EFFECT(EFFECT_SHIMMER_BURST, 1, LVar3, LVar4, LVar5, 1, 30)
         EVT_CALL(SetNpcAnimation, NPC_DarkToad_02, ANIM_DarkToad_Black_Hurt)
-        EVT_WAIT(5)
+        EVT_WAIT(5 * DT)
         EVT_CALL(PlaySoundAtNpc, NPC_DarkToad_02, SOUND_2049, SOUND_SPACE_MODE_0)
         EVT_CALL(GetNpcPos, NPC_DarkToad_02, LVar3, LVar4, LVar5)
         EVT_CALL(SetNpcPos, NPC_DarkToad_02, LVar3, NPC_DISPOSE_POS_Y, LVar2)
         EVT_CALL(SetNpcPos, NPC_KoopaBros_02, LVar3, LVar4, LVar5)
         EVT_CALL(SetNpcJumpscale, NPC_KoopaBros_02, EVT_FLOAT(1.0))
-        EVT_CALL(SetNpcAnimation, NPC_KoopaBros_02, ANIM_KoopaBros_Black_Anim0B)
-        EVT_CALL(NpcJump0, NPC_KoopaBros_02, LVar3, LVar4, LVar5, 10)
+        EVT_CALL(SetNpcAnimation, NPC_KoopaBros_02, ANIM_KoopaBros_Black_Hurt)
+        EVT_CALL(NpcJump0, NPC_KoopaBros_02, LVar3, LVar4, LVar5, 10 * DT)
     EVT_END_THREAD
     EVT_THREAD
-        EVT_WAIT(20)
+        EVT_WAIT(20 * DT)
         EVT_CALL(PlaySoundAtNpc, NPC_DarkToad_01, SOUND_20A, SOUND_SPACE_MODE_0)
         EVT_CALL(GetNpcPos, NPC_DarkToad_03, LVar3, LVar4, LVar5)
         EVT_ADD(LVar5, 5)
         EVT_PLAY_EFFECT(EFFECT_LIGHTNING_BOLT, 0, LVar0, LVar1, LVar2, LVar3, LVar4, LVar5, 2, 20)
         EVT_PLAY_EFFECT(EFFECT_SHIMMER_BURST, 1, LVar3, LVar4, LVar5, 1, 30)
         EVT_CALL(SetNpcAnimation, NPC_DarkToad_03, ANIM_DarkToad_Yellow_Hurt)
-        EVT_WAIT(5)
+        EVT_WAIT(5 * DT)
         EVT_CALL(PlaySoundAtNpc, NPC_DarkToad_03, SOUND_2049, SOUND_SPACE_MODE_0)
         EVT_CALL(GetNpcPos, NPC_DarkToad_03, LVar3, LVar4, LVar5)
         EVT_CALL(SetNpcPos, NPC_DarkToad_03, LVar3, NPC_DISPOSE_POS_Y, LVar2)
         EVT_CALL(SetNpcPos, NPC_KoopaBros_03, LVar3, LVar4, LVar5)
         EVT_CALL(SetNpcJumpscale, NPC_KoopaBros_03, EVT_FLOAT(1.0))
-        EVT_CALL(SetNpcAnimation, NPC_KoopaBros_03, ANIM_KoopaBros_Yellow_Anim0B)
-        EVT_CALL(NpcJump0, NPC_KoopaBros_03, LVar3, LVar4, LVar5, 10)
+        EVT_CALL(SetNpcAnimation, NPC_KoopaBros_03, ANIM_KoopaBros_Yellow_Hurt)
+        EVT_CALL(NpcJump0, NPC_KoopaBros_03, LVar3, LVar4, LVar5, 10 * DT)
     EVT_END_THREAD
-    EVT_WAIT(30)
+    EVT_WAIT(30 * DT)
     EVT_CALL(PlaySoundAtNpc, NPC_DarkToad_01, SOUND_20A, SOUND_SPACE_MODE_0)
     EVT_CALL(GetNpcPos, NPC_DarkToad_04, LVar3, LVar4, LVar5)
     EVT_ADD(LVar5, 5)
     EVT_PLAY_EFFECT(EFFECT_LIGHTNING_BOLT, 0, LVar0, LVar1, LVar2, LVar3, LVar4, LVar5, 2, 20)
     EVT_PLAY_EFFECT(EFFECT_SHIMMER_BURST, 1, LVar3, LVar4, LVar5, 1, 30)
     EVT_CALL(SetNpcAnimation, NPC_DarkToad_04, ANIM_DarkToad_Green_Hurt)
-    EVT_WAIT(5)
+    EVT_WAIT(5 * DT)
     EVT_CALL(PlaySoundAtNpc, NPC_DarkToad_04, SOUND_2049, SOUND_SPACE_MODE_0)
     EVT_CALL(GetNpcPos, NPC_DarkToad_04, LVar3, LVar4, LVar5)
     EVT_CALL(SetNpcPos, NPC_DarkToad_04, LVar3, NPC_DISPOSE_POS_Y, LVar2)
     EVT_CALL(SetNpcPos, NPC_KoopaBros_04, LVar3, LVar4, LVar5)
     EVT_CALL(SetNpcJumpscale, NPC_KoopaBros_04, EVT_FLOAT(1.0))
-    EVT_CALL(SetNpcAnimation, NPC_KoopaBros_04, ANIM_KoopaBros_Green_Anim0B)
-    EVT_CALL(NpcJump0, NPC_KoopaBros_04, LVar3, LVar4, LVar5, 10)
+    EVT_CALL(SetNpcAnimation, NPC_KoopaBros_04, ANIM_KoopaBros_Green_Hurt)
+    EVT_CALL(NpcJump0, NPC_KoopaBros_04, LVar3, LVar4, LVar5, 10 * DT)
     EVT_CALL(SetNpcAnimation, NPC_Merlon, ANIM_Merlon_Idle)
     EVT_LOOP(0)
         EVT_IF_EQ(MF_KoopaBrosSceneLock, TRUE)
@@ -676,45 +676,45 @@ EvtScript N(EVS_Scene_KoopaBrosUnmasked) = {
         EVT_END_IF
         EVT_WAIT(1)
     EVT_END_LOOP
-    EVT_CALL(SetNpcAnimation, NPC_KoopaBros_01, ANIM_KoopaBros_Red_Anim04)
-    EVT_CALL(SetNpcAnimation, NPC_KoopaBros_02, ANIM_KoopaBros_Black_Anim04)
-    EVT_CALL(SetNpcAnimation, NPC_KoopaBros_03, ANIM_KoopaBros_Yellow_Anim04)
-    EVT_CALL(SetNpcAnimation, NPC_KoopaBros_04, ANIM_KoopaBros_Green_Anim04)
+    EVT_CALL(SetNpcAnimation, NPC_KoopaBros_01, ANIM_KoopaBros_Red_Idle)
+    EVT_CALL(SetNpcAnimation, NPC_KoopaBros_02, ANIM_KoopaBros_Black_Idle)
+    EVT_CALL(SetNpcAnimation, NPC_KoopaBros_03, ANIM_KoopaBros_Yellow_Idle)
+    EVT_CALL(SetNpcAnimation, NPC_KoopaBros_04, ANIM_KoopaBros_Green_Idle)
     EVT_CALL(SpeakToPlayer, NPC_Merlon, ANIM_Merlon_Talk, ANIM_Merlon_Idle, 0, MSG_MAC_Plaza_0030)
-    EVT_WAIT(10)
-    EVT_CALL(SpeakToPlayer, NPC_KoopaBros_01, ANIM_KoopaBros_Red_Anim14, ANIM_KoopaBros_Red_Anim04, 0, MSG_MAC_Plaza_0031)
+    EVT_WAIT(10 * DT)
+    EVT_CALL(SpeakToPlayer, NPC_KoopaBros_01, ANIM_KoopaBros_Red_Talk, ANIM_KoopaBros_Red_Idle, 0, MSG_MAC_Plaza_0031)
     EVT_CALL(InterpNpcYaw, NPC_KoopaBros_01, 90, 0)
-    EVT_WAIT(10)
-    EVT_CALL(SpeakToPlayer, NPC_KoopaBros_01, ANIM_KoopaBros_Red_Anim14, ANIM_KoopaBros_Red_Anim04, 5, MSG_MAC_Plaza_0032)
+    EVT_WAIT(10 * DT)
+    EVT_CALL(SpeakToPlayer, NPC_KoopaBros_01, ANIM_KoopaBros_Red_Talk, ANIM_KoopaBros_Red_Idle, 5, MSG_MAC_Plaza_0032)
     EVT_CALL(InterpNpcYaw, NPC_KoopaBros_01, 90, 0)
     EVT_CALL(InterpNpcYaw, NPC_KoopaBros_02, 90, 0)
     EVT_CALL(InterpNpcYaw, NPC_KoopaBros_03, 90, 0)
     EVT_CALL(InterpNpcYaw, NPC_KoopaBros_04, 90, 0)
-    EVT_CALL(SetNpcAnimation, NPC_KoopaBros_01, ANIM_KoopaBros_Red_Anim03)
-    EVT_CALL(SetNpcAnimation, NPC_KoopaBros_02, ANIM_KoopaBros_Black_Anim03)
-    EVT_CALL(SetNpcAnimation, NPC_KoopaBros_03, ANIM_KoopaBros_Yellow_Anim03)
-    EVT_CALL(SetNpcAnimation, NPC_KoopaBros_04, ANIM_KoopaBros_Green_Anim03)
-    EVT_WAIT(15)
+    EVT_CALL(SetNpcAnimation, NPC_KoopaBros_01, ANIM_KoopaBros_Red_Run)
+    EVT_CALL(SetNpcAnimation, NPC_KoopaBros_02, ANIM_KoopaBros_Black_Run)
+    EVT_CALL(SetNpcAnimation, NPC_KoopaBros_03, ANIM_KoopaBros_Yellow_Run)
+    EVT_CALL(SetNpcAnimation, NPC_KoopaBros_04, ANIM_KoopaBros_Green_Run)
+    EVT_WAIT(15 * DT)
     EVT_CALL(PlaySoundAtNpc, NPC_KoopaBros_03, SOUND_174, SOUND_SPACE_MODE_0)
     EVT_THREAD
-        EVT_CALL(SetNpcSpeed, NPC_KoopaBros_01, EVT_FLOAT(8.0))
+        EVT_CALL(SetNpcSpeed, NPC_KoopaBros_01, EVT_FLOAT(8.0 / DT))
         EVT_CALL(NpcMoveTo, NPC_KoopaBros_01, 700, 0, 0)
     EVT_END_THREAD
     EVT_THREAD
-        EVT_CALL(SetNpcSpeed, NPC_KoopaBros_02, EVT_FLOAT(8.0))
+        EVT_CALL(SetNpcSpeed, NPC_KoopaBros_02, EVT_FLOAT(8.0 / DT))
         EVT_CALL(NpcMoveTo, NPC_KoopaBros_02, 700, 0, 0)
     EVT_END_THREAD
     EVT_THREAD
-        EVT_CALL(SetNpcSpeed, NPC_KoopaBros_03, EVT_FLOAT(8.0))
+        EVT_CALL(SetNpcSpeed, NPC_KoopaBros_03, EVT_FLOAT(8.0 / DT))
         EVT_CALL(NpcMoveTo, NPC_KoopaBros_03, 700, 0, 0)
     EVT_END_THREAD
     EVT_WAIT(1)
-    EVT_CALL(SetNpcSpeed, NPC_KoopaBros_04, EVT_FLOAT(8.0))
+    EVT_CALL(SetNpcSpeed, NPC_KoopaBros_04, EVT_FLOAT(8.0 / DT))
     EVT_CALL(NpcMoveTo, NPC_KoopaBros_04, 700, 0, 0)
-    EVT_WAIT(10)
+    EVT_WAIT(10 * DT)
     EVT_CALL(PopSong)
     EVT_CALL(SetPanTarget, CAM_DEFAULT, 410, 0, 0)
-    EVT_CALL(SetCamSpeed, CAM_DEFAULT, EVT_FLOAT(2.0))
+    EVT_CALL(SetCamSpeed, CAM_DEFAULT, EVT_FLOAT(2.0 / DT))
     EVT_CALL(PanToTarget, CAM_DEFAULT, 0, 1)
     EVT_CALL(WaitForCam, CAM_DEFAULT, EVT_FLOAT(1.0))
     EVT_THREAD
@@ -722,21 +722,25 @@ EvtScript N(EVS_Scene_KoopaBrosUnmasked) = {
         EVT_CALL(PlayerFaceNpc, NPC_Merlon, FALSE)
     EVT_END_THREAD
     EVT_CALL(SpeakToPlayer, NPC_Merlon, ANIM_Merlon_Talk, ANIM_Merlon_Idle, 0, MSG_MAC_Plaza_0033)
-    EVT_CALL(SetNpcSpeed, NPC_Merlon, EVT_FLOAT(3.0))
+    EVT_CALL(SetNpcSpeed, NPC_Merlon, EVT_FLOAT(3.0 / DT))
     EVT_CALL(GetNpcPos, NPC_Merlon, LVar0, LVar1, LVar2)
     EVT_SET(LVar3, LVar0)
     EVT_ADD(LVar3, -50)
     EVT_CALL(SetNpcAnimation, NPC_Merlon, ANIM_Merlon_Walk)
     EVT_CALL(NpcMoveTo, NPC_Merlon, LVar3, LVar2, 0)
     EVT_CALL(SetNpcAnimation, NPC_Merlon, ANIM_Merlon_Idle)
-    EVT_WAIT(10)
+    EVT_WAIT(10 * DT)
     EVT_CALL(SetNpcAnimation, NPC_Merlon, ANIM_Merlon_Walk)
     EVT_CALL(NpcMoveTo, NPC_Merlon, LVar0, LVar2, 0)
     EVT_CALL(SetNpcAnimation, NPC_Merlon, ANIM_Merlon_Idle)
     EVT_CALL(SpeakToPlayer, NPC_Merlon, ANIM_Merlon_Talk, ANIM_Merlon_Idle, 0, MSG_MAC_Plaza_0034)
     EVT_THREAD
-        EVT_WAIT(10)
+        EVT_WAIT(10 * DT)
+#if VERSION_PAL
+        EVT_CALL(ResetCam, CAM_DEFAULT, EVT_FLOAT(1.6669921875))
+#else
         EVT_CALL(ResetCam, CAM_DEFAULT, 2)
+#endif
     EVT_END_THREAD
     EVT_CALL(GetNpcPos, NPC_Merlon, LVar0, LVar1, LVar2)
     EVT_ADD(LVar0, -150)
@@ -777,7 +781,7 @@ EvtScript N(EVS_NpcInteract_Merlon) = {
                 EVT_END_CHILD_THREAD
                 EVT_CALL(SetNpcFlagBits, NPC_Merlon, NPC_FLAG_IGNORE_PLAYER_COLLISION, TRUE)
                 EVT_CALL(SetNpcAnimation, NPC_Merlon, ANIM_Merlon_Walk)
-                EVT_CALL(SetNpcSpeed, NPC_Merlon, EVT_FLOAT(4.0))
+                EVT_CALL(SetNpcSpeed, NPC_Merlon, EVT_FLOAT(4.0 / DT))
                 EVT_CALL(NpcMoveTo, NPC_Merlon, -350, -280, 0)
                 EVT_CALL(NpcMoveTo, NPC_Merlon, -230, -270, 0)
                 EVT_CALL(SetNpcAnimation, NPC_Merlon, ANIM_Merlon_Idle)
@@ -927,13 +931,17 @@ EvtScript N(EVS_NpcInteract_DarkToad_01) = {
             EVT_CALL(SpeakToPlayer, NPC_DarkToad_03, ANIM_DarkToad_Yellow_Talk, ANIM_DarkToad_Yellow_Idle, 0, MSG_MAC_Plaza_004F)
             EVT_CALL(SpeakToPlayer, NPC_DarkToad_04, ANIM_DarkToad_Green_Talk, ANIM_DarkToad_Green_Idle, 0, MSG_MAC_Plaza_0050)
         EVT_CASE_LT(STORY_CH1_TOLD_MERLIN_ABOUT_DARK_TOADS)
-            EVT_CALL(AdjustCam, CAM_DEFAULT, EVT_FLOAT(4.0), 0, 300, EVT_FLOAT(15.0), EVT_FLOAT(-7.5))
+            EVT_CALL(AdjustCam, CAM_DEFAULT, EVT_FLOAT(4.0 / DT), 0, 300, EVT_FLOAT(15.0), EVT_FLOAT(-7.5))
             EVT_CALL(SpeakToPlayer, NPC_DarkToad_01, ANIM_DarkToad_Red_Talk, ANIM_DarkToad_Red_Idle, 0, MSG_MAC_Plaza_0051)
             EVT_CALL(SpeakToPlayer, NPC_DarkToad_02, ANIM_DarkToad_Black_Talk, ANIM_DarkToad_Black_Idle, 0, MSG_MAC_Plaza_0052)
             EVT_CALL(SpeakToPlayer, NPC_DarkToad_03, ANIM_DarkToad_Yellow_Talk, ANIM_DarkToad_Yellow_Idle, 0, MSG_MAC_Plaza_0053)
             EVT_CALL(SpeakToPlayer, NPC_DarkToad_04, ANIM_DarkToad_Green_Talk, ANIM_DarkToad_Green_Idle, 0, MSG_MAC_Plaza_0054)
             EVT_SET(GF_MAC01_Merlon_HintFromDarkToads, TRUE)
+#if VERSION_PAL
+            EVT_CALL(ResetCam, CAM_DEFAULT, EVT_FLOAT(5.0 / DT))
+#else
             EVT_CALL(ResetCam, CAM_DEFAULT, 5)
+#endif
     EVT_END_SWITCH
     EVT_RETURN
     EVT_END
@@ -993,20 +1001,28 @@ EvtScript N(EVS_Scene_MerlonAndNinji) = {
     EVT_CALL(SetNpcPos, NPC_Ninji, -278, 20, -376)
     EVT_CALL(SetNpcYaw, NPC_Ninji, 0)
     EVT_WAIT(40)
-    EVT_CALL(SetPlayerSpeed, EVT_FLOAT(3.0))
+    EVT_CALL(SetPlayerSpeed, EVT_FLOAT(3.0 / DT))
     EVT_CALL(PlayerMoveTo, -276, -305, 0)
-    EVT_WAIT(10)
+    EVT_WAIT(10 * DT)
     EVT_CALL(SpeakToPlayer, NPC_Merlon, ANIM_Merlon_Talk, ANIM_Merlon_Idle, 0, MSG_MAC_Plaza_0047)
     EVT_CALL(NpcFacePlayer, NPC_Ninji, 5)
-    EVT_WAIT(15)
+    EVT_WAIT(15 * DT)
     EVT_CALL(GetNpcPos, NPC_Ninji, LVar0, LVar1, LVar2)
+#if VERSION_PAL
+    EVT_CALL(SetCamProperties, CAM_DEFAULT, EVT_FLOAT(4.0 / DT), LVar0, LVar1, LVar2, 250, 15, -9)
+#else
     EVT_CALL(SetCamProperties, CAM_DEFAULT, 4, LVar0, LVar1, LVar2, 250, 15, -9)
+#endif
     EVT_CALL(SpeakToPlayer, NPC_Ninji, ANIM_Ninji_Talk, ANIM_Ninji_Idle, 0, MSG_MAC_Plaza_0048)
     EVT_CALL(GetNpcPos, NPC_Merlon, LVar0, LVar1, LVar2)
     EVT_CALL(SetPanTarget, CAM_DEFAULT, LVar0, LVar1, LVar2)
-    EVT_WAIT(10)
+    EVT_WAIT(10 * DT)
     EVT_CALL(SpeakToPlayer, NPC_Merlon, ANIM_Merlon_Talk, ANIM_Merlon_Idle, 0, MSG_MAC_Plaza_0049)
+#if VERSION_PAL
+    EVT_CALL(ResetCam, CAM_DEFAULT, EVT_FLOAT(5.0 / DT))
+#else
     EVT_CALL(ResetCam, CAM_DEFAULT, 5)
+#endif
     EVT_CALL(SpeakToPlayer, NPC_Ninji, ANIM_Ninji_Talk, ANIM_Ninji_Idle, 0, MSG_MAC_Plaza_004A)
     EVT_THREAD
         EVT_CALL(SetNpcAnimation, NPC_Ninji, ANIM_Ninji_Walk)
@@ -1015,7 +1031,7 @@ EvtScript N(EVS_Scene_MerlonAndNinji) = {
         EVT_CALL(SetNpcPos, NPC_Ninji, NPC_DISPOSE_LOCATION)
     EVT_END_THREAD
     EVT_THREAD
-        EVT_WAIT(25)
+        EVT_WAIT(25 * DT)
         EVT_CALL(PlaySoundAtCollider, COLLIDER_deilitud, SOUND_BASIC_DOOR_OPEN, SOUND_SPACE_MODE_0)
         EVT_SET(LVar0, 0)
         EVT_LOOP(10)
@@ -1023,7 +1039,7 @@ EvtScript N(EVS_Scene_MerlonAndNinji) = {
             EVT_CALL(RotateModel, MODEL_door, LVar0, 0, -1, 0)
             EVT_WAIT(1)
         EVT_END_LOOP
-        EVT_WAIT(5)
+        EVT_WAIT(5 * DT)
         EVT_LOOP(10)
             EVT_ADD(LVar0, -8)
             EVT_CALL(RotateModel, MODEL_door, LVar0, 0, -1, 0)
@@ -1031,7 +1047,7 @@ EvtScript N(EVS_Scene_MerlonAndNinji) = {
         EVT_END_LOOP
         EVT_CALL(PlaySoundAtCollider, COLLIDER_deilitud, SOUND_BASIC_DOOR_CLOSE, SOUND_SPACE_MODE_0)
     EVT_END_THREAD
-    EVT_WAIT(20)
+    EVT_WAIT(20 * DT)
     EVT_CALL(SpeakToPlayer, NPC_Merlon, ANIM_Merlon_Talk, ANIM_Merlon_Idle, 0, MSG_MAC_Plaza_004B)
     EVT_SET(GB_StoryProgress, STORY_CH7_INVITED_TO_STARBORN_VALLEY)
     EVT_CALL(DisablePlayerInput, FALSE)
@@ -1116,10 +1132,10 @@ NpcData N(NpcData_DarkToads)[] = {
 };
 
 AnimID N(ExtraAnims_KoopaBros)[] = {
-    ANIM_KoopaBros_Black_Anim03,
-    ANIM_KoopaBros_Black_Anim04,
-    ANIM_KoopaBros_Black_Anim0B,
-    ANIM_KoopaBros_Black_Anim14,
+    ANIM_KoopaBros_Black_Run,
+    ANIM_KoopaBros_Black_Idle,
+    ANIM_KoopaBros_Black_Hurt,
+    ANIM_KoopaBros_Black_Talk,
     ANIM_LIST_END
 };
 
@@ -1132,22 +1148,22 @@ NpcData N(NpcData_KoopaBros)[] = {
         .flags = ENEMY_FLAG_PASSIVE | ENEMY_FLAG_ENABLE_HIT_SCRIPT | ENEMY_FLAG_IGNORE_WORLD_COLLISION | ENEMY_FLAG_IGNORE_PLAYER_COLLISION | ENEMY_FLAG_IGNORE_ENTITY_COLLISION | ENEMY_FLAG_800 | ENEMY_FLAG_NO_SHADOW_RAYCAST | ENEMY_FLAG_400000,
         .drops = NO_DROPS,
         .animations = {
-            .idle   = ANIM_KoopaBros_Black_Anim04,
-            .walk   = ANIM_KoopaBros_Black_Anim02,
-            .run    = ANIM_KoopaBros_Black_Anim03,
-            .chase  = ANIM_KoopaBros_Black_Anim03,
-            .anim_4 = ANIM_KoopaBros_Black_Anim04,
-            .anim_5 = ANIM_KoopaBros_Black_Anim04,
-            .death  = ANIM_KoopaBros_Black_Anim0A,
-            .hit    = ANIM_KoopaBros_Black_Anim0A,
-            .anim_8 = ANIM_KoopaBros_Black_Anim03,
-            .anim_9 = ANIM_KoopaBros_Black_Anim03,
-            .anim_A = ANIM_KoopaBros_Black_Anim03,
-            .anim_B = ANIM_KoopaBros_Black_Anim03,
-            .anim_C = ANIM_KoopaBros_Black_Anim03,
-            .anim_D = ANIM_KoopaBros_Black_Anim03,
-            .anim_E = ANIM_KoopaBros_Black_Anim03,
-            .anim_F = ANIM_KoopaBros_Black_Anim03,
+            .idle   = ANIM_KoopaBros_Black_Idle,
+            .walk   = ANIM_KoopaBros_Black_Walk,
+            .run    = ANIM_KoopaBros_Black_Run,
+            .chase  = ANIM_KoopaBros_Black_Run,
+            .anim_4 = ANIM_KoopaBros_Black_Idle,
+            .anim_5 = ANIM_KoopaBros_Black_Idle,
+            .death  = ANIM_KoopaBros_Black_HurtStill,
+            .hit    = ANIM_KoopaBros_Black_HurtStill,
+            .anim_8 = ANIM_KoopaBros_Black_Run,
+            .anim_9 = ANIM_KoopaBros_Black_Run,
+            .anim_A = ANIM_KoopaBros_Black_Run,
+            .anim_B = ANIM_KoopaBros_Black_Run,
+            .anim_C = ANIM_KoopaBros_Black_Run,
+            .anim_D = ANIM_KoopaBros_Black_Run,
+            .anim_E = ANIM_KoopaBros_Black_Run,
+            .anim_F = ANIM_KoopaBros_Black_Run,
         },
         .extraAnimations = N(ExtraAnims_KoopaBros),
     },
@@ -1159,22 +1175,22 @@ NpcData N(NpcData_KoopaBros)[] = {
         .flags = ENEMY_FLAG_PASSIVE | ENEMY_FLAG_ENABLE_HIT_SCRIPT | ENEMY_FLAG_IGNORE_WORLD_COLLISION | ENEMY_FLAG_IGNORE_PLAYER_COLLISION | ENEMY_FLAG_IGNORE_ENTITY_COLLISION | ENEMY_FLAG_800 | ENEMY_FLAG_NO_SHADOW_RAYCAST | ENEMY_FLAG_400000,
         .drops = NO_DROPS,
         .animations = {
-            .idle   = ANIM_KoopaBros_Red_Anim04,
-            .walk   = ANIM_KoopaBros_Red_Anim02,
-            .run    = ANIM_KoopaBros_Red_Anim03,
-            .chase  = ANIM_KoopaBros_Red_Anim03,
-            .anim_4 = ANIM_KoopaBros_Red_Anim04,
-            .anim_5 = ANIM_KoopaBros_Red_Anim04,
-            .death  = ANIM_KoopaBros_Red_Anim0A,
-            .hit    = ANIM_KoopaBros_Red_Anim0A,
-            .anim_8 = ANIM_KoopaBros_Red_Anim03,
-            .anim_9 = ANIM_KoopaBros_Red_Anim03,
-            .anim_A = ANIM_KoopaBros_Red_Anim03,
-            .anim_B = ANIM_KoopaBros_Red_Anim03,
-            .anim_C = ANIM_KoopaBros_Red_Anim03,
-            .anim_D = ANIM_KoopaBros_Red_Anim03,
-            .anim_E = ANIM_KoopaBros_Red_Anim03,
-            .anim_F = ANIM_KoopaBros_Red_Anim03,
+            .idle   = ANIM_KoopaBros_Red_Idle,
+            .walk   = ANIM_KoopaBros_Red_Walk,
+            .run    = ANIM_KoopaBros_Red_Run,
+            .chase  = ANIM_KoopaBros_Red_Run,
+            .anim_4 = ANIM_KoopaBros_Red_Idle,
+            .anim_5 = ANIM_KoopaBros_Red_Idle,
+            .death  = ANIM_KoopaBros_Red_HurtStill,
+            .hit    = ANIM_KoopaBros_Red_HurtStill,
+            .anim_8 = ANIM_KoopaBros_Red_Run,
+            .anim_9 = ANIM_KoopaBros_Red_Run,
+            .anim_A = ANIM_KoopaBros_Red_Run,
+            .anim_B = ANIM_KoopaBros_Red_Run,
+            .anim_C = ANIM_KoopaBros_Red_Run,
+            .anim_D = ANIM_KoopaBros_Red_Run,
+            .anim_E = ANIM_KoopaBros_Red_Run,
+            .anim_F = ANIM_KoopaBros_Red_Run,
         },
         .extraAnimations = N(ExtraAnims_KoopaBros),
     },
@@ -1186,22 +1202,22 @@ NpcData N(NpcData_KoopaBros)[] = {
         .flags = ENEMY_FLAG_PASSIVE | ENEMY_FLAG_ENABLE_HIT_SCRIPT | ENEMY_FLAG_IGNORE_WORLD_COLLISION | ENEMY_FLAG_IGNORE_PLAYER_COLLISION | ENEMY_FLAG_IGNORE_ENTITY_COLLISION | ENEMY_FLAG_800 | ENEMY_FLAG_NO_SHADOW_RAYCAST | ENEMY_FLAG_400000,
         .drops = NO_DROPS,
         .animations = {
-            .idle   = ANIM_KoopaBros_Yellow_Anim04,
-            .walk   = ANIM_KoopaBros_Yellow_Anim02,
-            .run    = ANIM_KoopaBros_Yellow_Anim03,
-            .chase  = ANIM_KoopaBros_Yellow_Anim03,
-            .anim_4 = ANIM_KoopaBros_Yellow_Anim04,
-            .anim_5 = ANIM_KoopaBros_Yellow_Anim04,
-            .death  = ANIM_KoopaBros_Yellow_Anim0A,
-            .hit    = ANIM_KoopaBros_Yellow_Anim0A,
-            .anim_8 = ANIM_KoopaBros_Yellow_Anim03,
-            .anim_9 = ANIM_KoopaBros_Yellow_Anim03,
-            .anim_A = ANIM_KoopaBros_Yellow_Anim03,
-            .anim_B = ANIM_KoopaBros_Yellow_Anim03,
-            .anim_C = ANIM_KoopaBros_Yellow_Anim03,
-            .anim_D = ANIM_KoopaBros_Yellow_Anim03,
-            .anim_E = ANIM_KoopaBros_Yellow_Anim03,
-            .anim_F = ANIM_KoopaBros_Yellow_Anim03,
+            .idle   = ANIM_KoopaBros_Yellow_Idle,
+            .walk   = ANIM_KoopaBros_Yellow_Walk,
+            .run    = ANIM_KoopaBros_Yellow_Run,
+            .chase  = ANIM_KoopaBros_Yellow_Run,
+            .anim_4 = ANIM_KoopaBros_Yellow_Idle,
+            .anim_5 = ANIM_KoopaBros_Yellow_Idle,
+            .death  = ANIM_KoopaBros_Yellow_HurtStill,
+            .hit    = ANIM_KoopaBros_Yellow_HurtStill,
+            .anim_8 = ANIM_KoopaBros_Yellow_Run,
+            .anim_9 = ANIM_KoopaBros_Yellow_Run,
+            .anim_A = ANIM_KoopaBros_Yellow_Run,
+            .anim_B = ANIM_KoopaBros_Yellow_Run,
+            .anim_C = ANIM_KoopaBros_Yellow_Run,
+            .anim_D = ANIM_KoopaBros_Yellow_Run,
+            .anim_E = ANIM_KoopaBros_Yellow_Run,
+            .anim_F = ANIM_KoopaBros_Yellow_Run,
         },
         .extraAnimations = N(ExtraAnims_KoopaBros),
     },
@@ -1213,22 +1229,22 @@ NpcData N(NpcData_KoopaBros)[] = {
         .flags = ENEMY_FLAG_PASSIVE | ENEMY_FLAG_ENABLE_HIT_SCRIPT | ENEMY_FLAG_IGNORE_WORLD_COLLISION | ENEMY_FLAG_IGNORE_PLAYER_COLLISION | ENEMY_FLAG_IGNORE_ENTITY_COLLISION | ENEMY_FLAG_800 | ENEMY_FLAG_NO_SHADOW_RAYCAST | ENEMY_FLAG_400000,
         .drops = NO_DROPS,
         .animations = {
-            .idle   = ANIM_KoopaBros_Green_Anim04,
-            .walk   = ANIM_KoopaBros_Green_Anim02,
-            .run    = ANIM_KoopaBros_Green_Anim03,
-            .chase  = ANIM_KoopaBros_Green_Anim03,
-            .anim_4 = ANIM_KoopaBros_Green_Anim04,
-            .anim_5 = ANIM_KoopaBros_Green_Anim04,
-            .death  = ANIM_KoopaBros_Green_Anim0A,
-            .hit    = ANIM_KoopaBros_Green_Anim0A,
-            .anim_8 = ANIM_KoopaBros_Green_Anim03,
-            .anim_9 = ANIM_KoopaBros_Green_Anim03,
-            .anim_A = ANIM_KoopaBros_Green_Anim03,
-            .anim_B = ANIM_KoopaBros_Green_Anim03,
-            .anim_C = ANIM_KoopaBros_Green_Anim03,
-            .anim_D = ANIM_KoopaBros_Green_Anim03,
-            .anim_E = ANIM_KoopaBros_Green_Anim03,
-            .anim_F = ANIM_KoopaBros_Green_Anim03,
+            .idle   = ANIM_KoopaBros_Green_Idle,
+            .walk   = ANIM_KoopaBros_Green_Walk,
+            .run    = ANIM_KoopaBros_Green_Run,
+            .chase  = ANIM_KoopaBros_Green_Run,
+            .anim_4 = ANIM_KoopaBros_Green_Idle,
+            .anim_5 = ANIM_KoopaBros_Green_Idle,
+            .death  = ANIM_KoopaBros_Green_HurtStill,
+            .hit    = ANIM_KoopaBros_Green_HurtStill,
+            .anim_8 = ANIM_KoopaBros_Green_Run,
+            .anim_9 = ANIM_KoopaBros_Green_Run,
+            .anim_A = ANIM_KoopaBros_Green_Run,
+            .anim_B = ANIM_KoopaBros_Green_Run,
+            .anim_C = ANIM_KoopaBros_Green_Run,
+            .anim_D = ANIM_KoopaBros_Green_Run,
+            .anim_E = ANIM_KoopaBros_Green_Run,
+            .anim_F = ANIM_KoopaBros_Green_Run,
         },
         .extraAnimations = N(ExtraAnims_KoopaBros),
     },
@@ -1274,7 +1290,7 @@ EvtScript N(EVS_NpcIdle_Toad_04) = {
     EVT_CALL(WaitForPlayerInputEnabled)
     EVT_CALL(DisablePlayerInput, TRUE)
     EVT_CALL(GetNpcPos, NPC_SELF, LVar0, LVar1, LVar2)
-    EVT_CALL(NpcJump0, NPC_SELF, LVar0, LVar1, LVar2, 10)
+    EVT_CALL(NpcJump0, NPC_SELF, LVar0, LVar1, LVar2, 10 * DT)
     EVT_CALL(SpeakToPlayer, NPC_Toad_04, ANIM_Toad_Red_Talk, ANIM_Toad_Red_Idle, 0, MSG_MAC_Plaza_007D)
     EVT_SET(GB_StoryProgress, STORY_CH0_RETURNED_TO_TOAD_TOWN)
     EVT_CALL(DisablePlayerInput, FALSE)
@@ -1776,8 +1792,8 @@ EvtScript N(EVS_ToadHouse_GetInBed) = {
     EVT_CALL(InterpPlayerYaw, 263, 1)
     EVT_CALL(HidePlayerShadow, TRUE)
     EVT_CALL(SetPlayerAnimation, ANIM_Mario1_Still)
-    EVT_CALL(func_802D286C, 0x800)
-    EVT_CALL(func_802D2520, ANIM_Mario1_Idle, 5, 7, 1, 1, 0)
+    EVT_CALL(SetPlayerImgFXFlags, IMGFX_FLAG_800)
+    EVT_CALL(UpdatePlayerImgFX, ANIM_Mario1_Idle, IMGFX_SET_ANIM, IMGFX_ANIM_GET_IN_BED, 1, 1, 0)
     EVT_THREAD
         EVT_WAIT(60)
         EVT_CALL(SetPlayerAnimation, ANIM_MarioW2_SleepStanding)
@@ -1798,7 +1814,7 @@ EvtScript N(EVS_ToadHouse_GetInBed) = {
 EvtScript N(EVS_ToadHouse_ReturnFromRest) = {
     EVT_EXEC(N(EVS_SetupMusic))
     EVT_CALL(HidePlayerShadow, FALSE)
-    EVT_CALL(func_802D2520, ANIM_Mario1_Idle, 0, 0, 0, 0, 0)
+    EVT_CALL(UpdatePlayerImgFX, ANIM_Mario1_Idle, IMGFX_CLEAR, 0, 0, 0, 0)
     EVT_CALL(SetPlayerSpeed, EVT_FLOAT(3.0))
     EVT_CALL(SetPlayerPos, 568, 20, -186)
     EVT_CALL(PlayerMoveTo, 525, -168, 20)
@@ -1954,23 +1970,23 @@ EvtScript N(EVS_NpcIdle_Twink) = {
     EVT_END_LOOP
     EVT_CALL(SetMusicTrack, 0, SONG_TWINK_THEME, 0, 8)
     EVT_CALL(DisablePlayerInput, TRUE)
-    EVT_CALL(SetPlayerSpeed, EVT_FLOAT(3.0))
+    EVT_CALL(SetPlayerSpeed, EVT_FLOAT(3.0 / DT))
     EVT_CALL(PlayerMoveTo, 500, -20, 0)
     EVT_CALL(WaitForPlayerMoveToComplete)
     EVT_CALL(InterpPlayerYaw, 270, 0)
     EVT_CALL(ShowMessageAtScreenPos, MSG_MAC_Plaza_00DB, 160, 40)
     EVT_LOOP(2)
         EVT_CALL(InterpPlayerYaw, 90, 7)
-        EVT_WAIT(10)
+        EVT_WAIT(10 * DT)
         EVT_CALL(InterpPlayerYaw, 270, 7)
-        EVT_WAIT(10)
+        EVT_WAIT(10 * DT)
     EVT_END_LOOP
-    EVT_WAIT(30)
+    EVT_WAIT(30 * DT)
     EVT_CALL(GetPlayerPos, LVar4, LVar5, LVar6)
     EVT_SUBF(LVar4, EVT_FLOAT(50.0))
     EVT_ADDF(LVar5, EVT_FLOAT(40.0))
     EVT_CALL(InterpNpcYaw, NPC_Twink, 90, 0)
-    EVT_CALL(LoadPath, 35, EVT_PTR(N(FlightPath_TwinkArrive)), ARRAY_COUNT(N(FlightPath_TwinkArrive)), EASING_COS_IN_OUT)
+    EVT_CALL(LoadPath, 35 * DT, EVT_PTR(N(FlightPath_TwinkArrive)), ARRAY_COUNT(N(FlightPath_TwinkArrive)), EASING_COS_IN_OUT)
     EVT_LOOP(0)
         EVT_CALL(GetNextPathPos)
         EVT_ADDF(LVar1, LVar4)
@@ -1982,28 +1998,28 @@ EvtScript N(EVS_NpcIdle_Twink) = {
         EVT_END_IF
     EVT_END_LOOP
     EVT_CALL(SetPlayerAnimation, ANIM_Mario1_LookUp)
-    EVT_CALL(AdjustCam, CAM_DEFAULT, EVT_FLOAT(3.0), -10, -300, 15, -9)
+    EVT_CALL(AdjustCam, CAM_DEFAULT, EVT_FLOAT(3.0/ DT), -10, -300, 15, -9)
     EVT_CALL(SpeakToPlayer, NPC_Twink, ANIM_Twink_Talk, ANIM_Twink_Idle, 0, MSG_MAC_Plaza_00DC)
-    EVT_WAIT(5)
+    EVT_WAIT(5 * DT)
     EVT_CALL(SetPlayerAnimation, ANIM_MarioW2_SpeakUp)
-    EVT_WAIT(30)
+    EVT_WAIT(30 * DT)
     EVT_CALL(SetPlayerAnimation, ANIM_Mario1_LookUp)
-    EVT_WAIT(15)
+    EVT_WAIT(15 * DT)
     EVT_CALL(SetNpcJumpscale, NPC_Twink, EVT_FLOAT(1.0))
     EVT_CALL(GetNpcPos, NPC_Twink, LVar0, LVar1, LVar2)
-    EVT_CALL(NpcJump0, NPC_Twink, LVar0, LVar1, LVar2, 10)
+    EVT_CALL(NpcJump0, NPC_Twink, LVar0, LVar1, LVar2, 10 * DT)
     EVT_CALL(SpeakToPlayer, NPC_Twink, ANIM_Twink_Talk, ANIM_Twink_Idle, 0, MSG_MAC_Plaza_00DD)
-    EVT_WAIT(5)
+    EVT_WAIT(5 * DT)
     EVT_CALL(SetPlayerAnimation, ANIM_Mario1_Chuckle)
-    EVT_WAIT(30)
+    EVT_WAIT(30 * DT)
     EVT_CALL(SetPlayerAnimation, ANIM_Mario1_LookUp)
-    EVT_CALL(AdjustCam, CAM_DEFAULT, EVT_FLOAT(3.0), -40, -200, 15, -15)
+    EVT_CALL(AdjustCam, CAM_DEFAULT, EVT_FLOAT(3.0 / DT), -40, -200, 15, -15)
     EVT_CALL(SpeakToPlayer, NPC_Twink, ANIM_Twink_Talk, ANIM_Twink_Idle, 0, MSG_MAC_Plaza_00DE)
-    EVT_WAIT(5)
+    EVT_WAIT(5 * DT)
     EVT_CALL(PanToTarget, CAM_DEFAULT, 0, 0)
     EVT_CALL(InterpNpcYaw, NPC_Twink, 270, 0)
     EVT_CALL(GetNpcPos, NPC_Twink, LVar4, LVar5, LVar6)
-    EVT_CALL(LoadPath, 35, EVT_PTR(N(FlightPath_TwinkDepart)), ARRAY_COUNT(N(FlightPath_TwinkDepart)), EASING_QUADRATIC_IN)
+    EVT_CALL(LoadPath, 35 * DT, EVT_PTR(N(FlightPath_TwinkDepart)), ARRAY_COUNT(N(FlightPath_TwinkDepart)), EASING_QUADRATIC_IN)
     EVT_LOOP(0)
         EVT_CALL(GetNextPathPos)
         EVT_ADD(LVar1, LVar4)

@@ -55,7 +55,7 @@ void flower_splash_main(f32 posX, f32 posY, f32 posZ, f32 angle) {
     bp.update = flower_splash_update;
     bp.renderWorld = flower_splash_render;
     bp.unk_00 = 0;
-    bp.unk_14 = NULL;
+    bp.renderUI = NULL;
     bp.effectID = EFFECT_FLOWER_SPLASH;
 
     effect = shim_create_effect_instance(&bp);
@@ -80,7 +80,7 @@ void flower_splash_main(f32 posX, f32 posY, f32 posZ, f32 angle) {
         part->scale.x = 1.0f;
         part->scale.y = 1.0f;
         part->scale.z = 1.0f;
-        
+
         part->primAlpha = 255;
         part->timeLeft = 60;
 
@@ -147,8 +147,8 @@ void flower_splash_appendGfx(void* effect) {
     FlowerFXData* data = effectTemp->data.flowerSplash;
     s32 i;
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(effectTemp->graphics->data));
+    gDPPipeSync(gMainGfxPos++);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(effectTemp->graphics->data));
 
     for (i = 0; i < effectTemp->numParts; i++, data++) {
         if (data->alive) {
@@ -156,12 +156,12 @@ void flower_splash_appendGfx(void* effect) {
 
             gDisplayContext->matrixStack[gMatrixListPos] = data->transformMtx;
 
-            gDPSetPrimColor(gMasterGfxPos++, 0, 0, 112, 96, 24, data->primAlpha);
-            gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++],
+            gDPSetPrimColor(gMainGfxPos++, 0, 0, 112, 96, 24, data->primAlpha);
+            gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++],
                         G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-            gSPDisplayList(gMasterGfxPos++, dlist);
-            gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+            gSPDisplayList(gMainGfxPos++, dlist);
+            gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
         }
     }
-    gDPPipeSync(gMasterGfxPos++);
+    gDPPipeSync(gMainGfxPos++);
 }

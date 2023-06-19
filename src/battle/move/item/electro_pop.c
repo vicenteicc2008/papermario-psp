@@ -11,7 +11,7 @@ API_CALLABLE(N(func_802A123C_7307DC)) {
     BattleStatus* battleStatus = &gBattleStatus;
     Actor* player = battleStatus->playerActor;
 
-    inflict_status(player, STATUS_STATIC, script->varTable[0]);
+    inflict_status(player, STATUS_KEY_STATIC, script->varTable[0]);
     player->statusAfflicted = 0;
     return ApiStatus_DONE2;
 }
@@ -40,6 +40,7 @@ API_CALLABLE(N(ShowFlowerRecoveryFX)) {
     return ApiStatus_DONE2;
 }
 
+#if !VERSION_PAL
 #include "common/AddHP.inc.c"
 
 API_CALLABLE(N(func_802A1450_7309F0)) {
@@ -71,12 +72,17 @@ API_CALLABLE(N(AddFP)) {
 
     return ApiStatus_DONE2;
 }
+#endif
 
 API_CALLABLE(N(func_802A14F0_730A90)) {
     ItemData* item = &gItemTable[ITEM_ELECTRO_POP];
     PlayerData* playerData = &gPlayerData;
 
+#if VERSION_PAL
+    playerData->curFP += item->potencyB;
+#else
     playerData->curFP += item->potencyA;
+#endif
     if (playerData->curFP > playerData->curMaxFP) {
         playerData->curFP = playerData->curMaxFP;
     }
@@ -107,7 +113,9 @@ EvtScript N(EVS_UseItem) = {
     EVT_CALL(GetActorPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)
     EVT_ADD(LVar1, 25)
     EVT_CALL(ShowStartRecoveryShimmer, LVar0, LVar1, LVar2, LVar3)
+#if !VERSION_PAL
     EVT_CALL(N(AddFP), LVar3)
+#endif
     EVT_WAIT(10)
     EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_Mario1_ThumbsUp)
     EVT_WAIT(30)
@@ -115,7 +123,7 @@ EvtScript N(EVS_UseItem) = {
     EVT_CALL(ShowRecoveryShimmer, LVar0, LVar1, LVar2, LVar3)
     EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_Mario1_Idle)
     EVT_WAIT(20)
-    EVT_CALL(ShowMessageBox, BTL_MSG_10, 60)
+    EVT_CALL(ShowMessageBox, BTL_MSG_PLAYER_CHARGED, 60)
     EVT_CALL(WaitForMessageBoxDone)
     EVT_EXEC_WAIT(N(PlayerGoHome))
     EVT_RETURN

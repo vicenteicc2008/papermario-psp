@@ -118,7 +118,7 @@ ApiStatus SetNpcRotationPivot(Evt* script, s32 isInitialCall) {
         return ApiStatus_DONE2;
     }
 
-    npc->rotationVerticalPivotOffset = value;
+    npc->rotationPivotOffsetY = value;
     return ApiStatus_DONE2;
 }
 
@@ -152,7 +152,7 @@ ApiStatus SetNpcCollisionSize(Evt* script, s32 isInitialCall) {
     }
 
     npc->collisionHeight = height;
-    npc->collisionRadius = radius;
+    npc->collisionDiameter = radius;
     return ApiStatus_DONE2;
 }
 
@@ -780,7 +780,7 @@ ApiStatus func_802CF56C(Evt* script, s32 isInitialCall) {
     return ApiStatus_DONE2;
 }
 
-s32 BringPartnerOut(Evt *script, s32 isInitialCall) {
+s32 BringPartnerOut(Evt* script, s32 isInitialCall) {
     Bytecode* args = script->ptrReadPos;
     NpcBlueprint bp;
     NpcBlueprint* bpPointer = &bp;
@@ -813,7 +813,7 @@ s32 BringPartnerOut(Evt *script, s32 isInitialCall) {
 
         wExtraPartnerNpcID = create_basic_npc(bpPointer);
         npc = get_npc_by_index(wExtraPartnerNpcID);
-        npc->collisionRadius = 10;
+        npc->collisionDiameter = 10;
         npc->collisionHeight = 10;
         npc->npcID = NPC_PARTNER;
         npc->scale.x = 0.0f;
@@ -952,23 +952,23 @@ ApiStatus GetCurrentPartnerID(Evt* script, s32 isInitialCall) {
 }
 
 ApiStatus PartnerCanUseAbility(Evt* script, s32 isInitialCall) {
-    Bytecode arg0 = *script->ptrReadPos;
+    Bytecode outVar = *script->ptrReadPos;
 
-    evt_set_variable(script, arg0, partner_can_use_ability());
+    evt_set_variable(script, outVar, partner_can_use_ability());
     return ApiStatus_DONE2;
 }
 
 ApiStatus PartnerIsFlying(Evt* script, s32 isInitialCall) {
-    Bytecode arg0 = *script->ptrReadPos;
+    Bytecode outVar = *script->ptrReadPos;
 
-    evt_set_variable(script, arg0, partner_is_flying());
+    evt_set_variable(script, outVar, partner_is_flying());
     return ApiStatus_DONE2;
 }
 
-ApiStatus func_802CFD30(Evt* script, s32 isInitialCall) {
+ApiStatus SetNpcImgFXParams(Evt* script, s32 isInitialCall) {
     Bytecode* args = script->ptrReadPos;
     s32 npcId = evt_get_variable(script, *args++);
-    Bytecode foldType = evt_get_variable(script, *args++);
+    Bytecode imgfxType = evt_get_variable(script, *args++);
     Bytecode var2 = evt_get_variable(script, *args++);
     Bytecode var3 = evt_get_variable(script, *args++);
     Bytecode var4 = evt_get_variable(script, *args++);
@@ -979,21 +979,21 @@ ApiStatus func_802CFD30(Evt* script, s32 isInitialCall) {
         return ApiStatus_DONE2;
     }
 
-    func_8003D624(npc, foldType, var2, var3, var4, var5, npc->foldArg5);
+    npc_set_imgfx_params(npc, imgfxType, var2, var3, var4, var5, npc->imgfxFlags);
     return ApiStatus_DONE2;
 }
 
-ApiStatus func_802CFE2C(Evt* script, s32 isInitialCall) {
+ApiStatus SetNpcImgFXFlags(Evt* script, s32 isInitialCall) {
     Bytecode* args = script->ptrReadPos;
     s32 npcId = evt_get_variable(script, *args++);
-    Bytecode arg1 = *args;
+    Bytecode flags = *args;
     Npc* npc = resolve_npc(script, npcId);
 
     if (npc == NULL) {
         return ApiStatus_DONE2;
     }
 
-    npc->foldArg5 = arg1;
+    npc->imgfxFlags = flags;
     return ApiStatus_DONE2;
 }
 

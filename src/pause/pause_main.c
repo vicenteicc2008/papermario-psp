@@ -28,7 +28,7 @@ BSS s8 gPauseMenuCurrentTab;
 BSS s8 D_802700D[7]; //padding
 
 static s32 gPauseTutorialFrameCounter;
-#if !VERSION_CN
+#if !VERSION_IQUE
 static s32 D_802700E4;
 #endif
 static s32 gPauseCommonIconIDs[8];
@@ -66,12 +66,42 @@ s16 gPauseWindowFlipDownAngles_2[] = {  10,  25,  42,  60,  80 };
 s32 gPauseTutorialState = -1;
 s32 gPauseTutorialInputState = 3;
 s32 gPauseTutorialButtons[] = { BUTTON_A, BUTTON_STICK_RIGHT, BUTTON_A, BUTTON_A, BUTTON_A, BUTTON_A, BUTTON_START };
-s32 gPauseTutorialDescMessages[] = { 9, 10, 11, 12, 13, 14, 15 };
-s32 gPauseTutorialCmdMessages[] = { 16, 17, 18, 19, 20, 21, 22 };
-s32 D_8024F074[] = { 2, 3, 4, 5, 6, 7, 8 }; // unused
+
+s32 gPauseTutorialDescMessages[] = {
+    PAUSE_MSG_TUT_DESC_1,
+    PAUSE_MSG_TUT_DESC_2,
+    PAUSE_MSG_TUT_DESC_3,
+    PAUSE_MSG_TUT_DESC_4,
+    PAUSE_MSG_TUT_DESC_5,
+    PAUSE_MSG_TUT_DESC_6,
+    PAUSE_MSG_TUT_DESC_7,
+};
+
+s32 gPauseTutorialCmdMessages[] = {
+    PAUSE_MSG_TUT_CMD_1,
+    PAUSE_MSG_TUT_CMD_2,
+    PAUSE_MSG_TUT_CMD_3,
+    PAUSE_MSG_TUT_CMD_4,
+    PAUSE_MSG_TUT_CMD_5,
+    PAUSE_MSG_TUT_CMD_6,
+    PAUSE_MSG_TUT_CMD_7,
+};
+
+ // unused
+s32 D_8024F074[] = {
+    PAUSE_MSG_TUT_UNUSED_1,
+    PAUSE_MSG_TUT_UNUSED_2,
+    PAUSE_MSG_TUT_UNUSED_3,
+    PAUSE_MSG_TUT_UNUSED_4,
+    PAUSE_MSG_TUT_UNUSED_5,
+    PAUSE_MSG_TUT_UNUSED_6,
+    PAUSE_MSG_TUT_UNUSED_7,
+};
+
 s32 gPauseTutorialIconIDs[] = { 5, 4, 5, 5, 5, 5, 6 };
 u8 gPauseMenuTextScrollInterpEasingLUT[] = { 0, 1, 2, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8};
 u8 gPauseMenuPageScrollInterpEasingLUT[] = { 0, 1, 2, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8};
+
 s32 gPauseTutorialSpriteAnims[][4] = {
     {
         ANIM_Goombaria_Still,
@@ -473,11 +503,11 @@ void pause_textbox_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 widt
         hud_element_draw_without_clipping(gPauseCommonIconIDs[2]);
     }
 
-    gDPPipeSync(gMasterGfxPos++);
-    gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, baseX + 1, baseY + 1, baseX + width - 1, baseY + height - 1);
+    gDPPipeSync(gMainGfxPos++);
+    gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, baseX + 1, baseY + 1, baseX + width - 1, baseY + height - 1);
     draw_msg(msgID, baseX + 10, baseY - gPauseDescTextOffset, 255, MSG_PAL_STANDARD, 0);
     if (gPauseShownDescIconScript != 0) {
-        gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+        gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
         hud_element_set_render_pos(gPauseCommonIconIDs[3], baseX - 4, baseY + 16);
         hud_element_set_script(gPauseCommonIconIDs[3], gPauseShownDescIconScript);
         hud_element_set_flags(gPauseCommonIconIDs[3], HUD_ELEMENT_FLAG_DROP_SHADOW);
@@ -509,19 +539,19 @@ void pause_tutorial_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 wid
         return;
     }
 
-    gDPSetCycleType(gMasterGfxPos++, G_CYC_1CYCLE);
-    gDPSetRenderMode(gMasterGfxPos++, G_RM_CLD_SURF, G_RM_CLD_SURF2);
-    gDPSetCombineMode(gMasterGfxPos++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, 55, 55, 55, 255);
+    gDPSetCycleType(gMainGfxPos++, G_CYC_1CYCLE);
+    gDPSetRenderMode(gMainGfxPos++, G_RM_CLD_SURF, G_RM_CLD_SURF2);
+    gDPSetCombineMode(gMainGfxPos++, G_CC_PRIMITIVE, G_CC_PRIMITIVE);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, 55, 55, 55, 255);
     pause_draw_rect(baseX * 4, baseY * 4, (baseX + width) * 4, (baseY + 12) * 4, 0, 0, 0, 0, 0);
-    gDPPipeSync(gMasterGfxPos++);
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, 185, 185, 185, 255);
+    gDPPipeSync(gMainGfxPos++);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, 185, 185, 185, 255);
     pause_draw_rect(baseX * 4, (baseY + 12) * 4, (baseX + width) * 4, (baseY + height) * 4, 0, 0, 0, 0, 0);
-    gDPPipeSync(gMasterGfxPos++);
-    gSPViewport(gMasterGfxPos++, &gPauseTutorialViewport);
+    gDPPipeSync(gMainGfxPos++);
+    gSPViewport(gMainGfxPos++, &gPauseTutorialViewport);
     guOrthoF(matrix1, 0.0f, 320.0f, 240.0f, 0.0f, -100.0f, 100.0f, 1.0f);
     guMtxF2L(matrix1, &gDisplayContext->matrixStack[gMatrixListPos]);
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
 
     for (i = 0; i < 3; i++) {
         //needed to match
@@ -547,17 +577,17 @@ void pause_tutorial_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 wid
         guRotateF(matrix2ptr, 180.0f, 0.0f, 1.0f, 0.0f);
         guMtxCatF(matrix2ptr, matrix1, matrix1);
         guMtxF2L(matrix1, &gDisplayContext->matrixStack[gMatrixListPos]);
-        gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-        func_802DE894(gPauseTutorialSprites[i], FOLD_TYPE_6, 255, 255, 255, 255, 64);
+        gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+        set_npc_imgfx_all(gPauseTutorialSprites[i], IMGFX_SET_COLOR, 255, 255, 255, 255, 64);
         spr_draw_npc_sprite(gPauseTutorialSprites[i], 0, 0, 0, matrix1);
-        gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+        gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
     }
 
-    get_msg_properties(pause_get_menu_msg(1), &msgHeight, &msgWidth, &msgMaxLineChars, &msgNumLines, &msgMaxLinesPerPage, NULL, 1);
+    get_msg_properties(pause_get_menu_msg(PAUSE_MSG_TUT_NAME_BADGES), &msgHeight, &msgWidth, &msgMaxLineChars, &msgNumLines, &msgMaxLinesPerPage, NULL, 1);
     margin = (s32)(width - msgWidth) >> 1;
-    draw_msg(pause_get_menu_msg(1), baseX + margin, baseY, 255, MSG_PAL_WHITE, DRAW_MSG_STYLE_MENU);
+    draw_msg(pause_get_menu_msg(PAUSE_MSG_TUT_NAME_BADGES), baseX + margin, baseY, 255, MSG_PAL_WHITE, DRAW_MSG_STYLE_MENU);
     gPauseTutorialScrollPos += pause_interp_text_scroll(gPauseTutorialState * 140 - gPauseTutorialScrollPos);
-    gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, baseX + 1, baseY + 1, baseX + width - 1, baseY + height - 1);
+    gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, baseX + 1, baseY + 1, baseX + width - 1, baseY + height - 1);
     state = gPauseTutorialState;
     get_msg_properties(pause_get_menu_msg(gPauseTutorialDescMessages[state]), &msgHeight2, &msgWidth2, &msgMaxLineChars2, &msgNumLines2, &msgMaxLinesPerPage2, NULL, 1);
     margin2 = (s32)(width - msgWidth2) >> 1;
@@ -600,7 +630,7 @@ void pause_init(void) {
     gPauseDescTextOffset = 0;
     gPauseDescTextMaxPos = 0;
     gPauseShownDescIconScript = 0;
-    gPauseCurrentDescMsg = 0;
+    gPauseCurrentDescMsg = MSG_NONE;
     gPauseCurrentDescIconScript = 0;
     gPauseMenuCurrentTab = 0;
 
@@ -620,7 +650,7 @@ void pause_init(void) {
             posX -= 45;
         }
     }
-    pauseWindows = &gWindows[25];
+    pauseWindows = &gWindows[WINDOW_ID_PAUSE_TAB_STATS];
     x = pauseWindows[gPausePanels[0]->col].pos.x;
     gWindows[WINDOW_ID_PAUSE_TAB_INVIS].pos.x = x + 6;
 
@@ -822,7 +852,7 @@ void pause_draw_rect(s32 ulx, s32 uly, s32 lrx, s32 lry, s32 tileDescriptor, s32
     if (ulx >= 1280 || uly >= 960 || lrx >= 2688 || lry >= 2688) {
         return;
     }
-    gSPScisTextureRectangle(gMasterGfxPos++, ulx, uly, lrx, lry, tileDescriptor, uls, ult, dsdx, dtdy);
+    gSPScisTextureRectangle(gMainGfxPos++, ulx, uly, lrx, lry, tileDescriptor, uls, ult, dsdx, dtdy);
 }
 
 void pause_sort_item_list(s16* arr, s32 len, s32 (*compare)(s16*, s16 *)) {

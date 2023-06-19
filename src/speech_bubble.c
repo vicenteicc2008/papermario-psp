@@ -45,7 +45,7 @@ void interact_speech_setup(void) {
 }
 
 void appendGfx_speech_bubble(void) {
-    FoldImageRecPart foldImg;
+    ImgFXTexture ifxImg;
     Matrix4f mtxTemp, mtxTransform;
 
     if (gPlayerStatus.animFlags & PA_FLAG_SPEECH_PROMPT_AVAILABLE) {
@@ -56,23 +56,23 @@ void appendGfx_speech_bubble(void) {
         guMtxCatF(mtxTemp, mtxTransform, mtxTransform);
         guMtxF2L(mtxTransform, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-        gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++],
+        gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++],
                   G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-        gSPDisplayList(gMasterGfxPos++, &speech_bubble_gfx);
+        gSPDisplayList(gMainGfxPos++, &speech_bubble_gfx);
 
-        foldImg.raster  = speech_bubble_img;
-        foldImg.palette = speech_bubble_pal;
-        foldImg.width   = speech_bubble_img_width;
-        foldImg.height  = speech_bubble_img_height;
-        foldImg.xOffset = -16;
-        foldImg.yOffset = 26;
-        foldImg.opacity = 255;
-        fold_update(0, FOLD_TYPE_NONE, 0, 0, 0, 0, 0x440);
-        fold_update(0, FOLD_TYPE_6,
+        ifxImg.raster  = speech_bubble_img;
+        ifxImg.palette = speech_bubble_pal;
+        ifxImg.width   = speech_bubble_img_width;
+        ifxImg.height  = speech_bubble_img_height;
+        ifxImg.xOffset = -16;
+        ifxImg.yOffset = 26;
+        ifxImg.alpha = 255;
+        imgfx_update(0, IMGFX_CLEAR, 0, 0, 0, 0, IMGFX_FLAG_400 | IMGFX_FLAG_40);
+        imgfx_update(0, IMGFX_SET_COLOR,
                     SpeechBubblePtr->brightness, SpeechBubblePtr->brightness, SpeechBubblePtr->brightness, 255, 0x440);
-        fold_appendGfx_component(0, &foldImg, 0x40, mtxTransform);
+        imgfx_appendGfx_component(0, &ifxImg, IMGFX_FLAG_40, mtxTransform);
 
-        gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+        gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
     }
 }
 

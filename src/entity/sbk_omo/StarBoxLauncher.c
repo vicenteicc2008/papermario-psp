@@ -30,7 +30,7 @@ u8 D_802BCAA0_E313F0[] = {
 };
 
 void entity_StarBoxLauncher_setupGfx(s32 entityIndex) {
-    Gfx* gfxPos = gMasterGfxPos;
+    Gfx* gfxPos = gMainGfxPos;
     Entity* entity = get_entity_by_index(entityIndex);
     StarBoxLauncherData* data = entity->dataBuf.starBoxLauncher;
     Matrix4f sp10;
@@ -56,7 +56,7 @@ void entity_StarBoxLauncher_setupGfx(s32 entityIndex) {
     gDPSetTextureFilter(gfxPos++, G_TF_BILERP);
     gDPSetTileSize(gfxPos++, G_TX_RENDERTILE, data->faceTexOffset * 4, 0, (data->faceTexOffset + 124) * 4, 31 * 4);
 
-    gMasterGfxPos = gfxPos;
+    gMainGfxPos = gfxPos;
 }
 
 void entity_StarBoxLauncher_check_launch(Entity* entity) {
@@ -139,7 +139,7 @@ void entity_StarBoxLauncher_launch(Entity* entity) {
             data->faceTexOffset = D_802BCAA0_E313F0[0];
             data->faceAnimTimer = D_802BCAA0_E313F0[1];
             sfx_play_sound(SOUND_2085);
-            /* fallthrough */
+            // fallthrough
         case 1:
             temp = entity->position.y;
             entity->position.y = temp + 8.0 * sin_rad(DEG_TO_RAD(data->riseSpeedPhase));

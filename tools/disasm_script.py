@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#!/usr/bin/env python3
 
 import sym_info
 from pathlib import Path
@@ -399,16 +399,16 @@ replace_funcs = {
     "ForceHomePos"              :{0:"ActorIDs"},
 
     "func_8026DF88"             :{0:"ActorIDs"},
-    "func_8026EA7C"             :{0:"ActorIDs"},
-    "func_8026EBF8"             :{0:"ActorIDs"},
+    "SetActorPaletteEffect"             :{0:"ActorIDs"},
+    "SetActorPaletteSwapParams"             :{0:"ActorIDs"},
     "func_8026ED20"             :{0:"ActorIDs"},
-    "func_8027D32C"             :{0:"ActorIDs"},
+    "HideHealthBar"             :{0:"ActorIDs"},
     "func_8027D434"             :{0:"ActorIDs"},
     "SetProjectileTargetOffset"             :{0:"ActorIDs"},
     "GetInstigatorValue"             :{0:"ActorIDs"},
-    "func_802CFD30"             :{0:"NpcIDs"},
-    "func_802CFE2C"             :{0:"NpcIDs"},
-    "func_802D2520"             :{0:"PlayerAnims"},
+    "SetNpcFoldParams"             :{0:"NpcIDs"},
+    "SetNpcFoldFlags"             :{0:"NpcIDs"},
+    "UpdatePlayerFold"             :{0:"PlayerAnims"},
 
     "GetAnimation"              :{0:"ActorIDs", 2:"CustomAnim"},
     "GetActorFlags"             :{0:"ActorIDs", 1:"ActorFlags"},

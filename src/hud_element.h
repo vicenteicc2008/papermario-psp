@@ -135,6 +135,9 @@ typedef struct PopupMenu {
     /* 0x328 */ s32 initialPos;
     /* 0x32C */ s16 result;
     /* 0x32E */ char unk_32E[0x2];
+#if VERSION_PAL
+    /* 0x330 */ char unk_330[0x14];
+#endif
 } PopupMenu; // size = 0x330
 
 typedef struct Shop {
@@ -164,7 +167,7 @@ typedef struct VtxRect {
 } VtxRect; // size = 0x40
 
 typedef struct HudTransform {
-    /* 0x00 */ s32 foldIdx;
+    /* 0x00 */ s32 imgfxIdx;
     /* 0x04 */ Vec3f position;
     /* 0x10 */ Vec3f rotation;
     /* 0x1C */ Vec3f scale;
@@ -207,6 +210,11 @@ typedef HudElement* HudElementList[320];
 extern HudScript HES_AnimatedHandPointer;
 extern HudScript HES_StatusCoin;
 extern HudScript HES_Refund;
+#if VERSION_PAL
+extern HudScript HES_Refund_de;
+extern HudScript HES_Refund_fr;
+extern HudScript HES_Refund_es;
+#endif
 extern HudScript HES_MenuTimes;
 
 typedef struct PartnerPopupProperties {
@@ -257,23 +265,23 @@ extern HudScript* wPartnerHudScripts[];
 /// Basic HudScript used for static CI images, setting size with hs_SetTileSize
 #define HES_TEMPLATE_CI_ENUM_SIZE(name, sizeX, sizeY) \
     { \
-		hs_SetVisible \
-		hs_SetTileSize(HUD_ELEMENT_SIZE_##sizeX##x##sizeY) \
-		hs_Loop \
-			hs_SetCI(60, name) \
-		hs_Restart \
-		hs_End \
+        hs_SetVisible \
+        hs_SetTileSize(HUD_ELEMENT_SIZE_##sizeX##x##sizeY) \
+        hs_Loop \
+            hs_SetCI(60, name) \
+        hs_Restart \
+        hs_End \
     }
 
 /// Basic HudScript used for static CI images, setting size with hs_SetCustomSize
 #define HES_TEMPLATE_CI_CUSTOM_SIZE(name, sizeX, sizeY) \
     { \
-		hs_SetVisible \
-		hs_SetCustomSize(sizeX, sizeY) \
-		hs_Loop \
-			hs_SetCI(60, name) \
-		hs_Restart \
-		hs_End \
+        hs_SetVisible \
+        hs_SetCustomSize(sizeX, sizeY) \
+        hs_Loop \
+            hs_SetCI(60, name) \
+        hs_Restart \
+        hs_End \
     }
 
 void hud_element_load_script(HudElement* hudElement, HudScript* anim);

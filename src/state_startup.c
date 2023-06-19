@@ -25,11 +25,11 @@ void state_step_startup(void) {
     gameStatus->entryID = 0;
     gGameStatusPtr->unk_76 = 0;
     gGameStatusPtr->disableScripts = 0;
-    gGameStatusPtr->keepUsingPartnerOnMapChange = 0;
+    gGameStatusPtr->keepUsingPartnerOnMapChange = FALSE;
     gGameStatusPtr->creditsViewportMode = -1;
     gGameStatusPtr->demoFlags = 0;
     gGameStatusPtr->unk_A9 = -1;
-    gGameStatusPtr->demoState = 0;
+    gGameStatusPtr->demoState = DEMO_STATE_NONE;
 
     general_heap_create();
     clear_render_tasks();

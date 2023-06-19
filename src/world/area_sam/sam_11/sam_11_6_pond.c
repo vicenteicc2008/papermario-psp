@@ -68,7 +68,7 @@ API_CALLABLE(N(GetBombetteExplodeGround)) {
     Npc* partner = get_npc_safe(NPC_PARTNER);
     s32 colliderID = NO_COLLIDER;
 
-    if (gCollisionStatus.bombetteExploded > NO_COLLIDER) {
+    if (gCollisionStatus.bombetteExploded >= 0) {
         f32 depth = 11.0f;
         f32 x = partner->pos.x;
         f32 y = partner->pos.y + depth;
@@ -76,7 +76,7 @@ API_CALLABLE(N(GetBombetteExplodeGround)) {
 
         depth = 12.0f;
         if (npc_raycast_down_around(partner->collisionChannel, &x, &y, &z, &depth,
-            partner->yaw, partner->collisionRadius) && depth <= 12.0f)
+            partner->yaw, partner->collisionDiameter) && depth <= 12.0f)
         {
             colliderID = NpcHitQueryColliderID;
         }
@@ -86,9 +86,9 @@ API_CALLABLE(N(GetBombetteExplodeGround)) {
 }
 
 s32 N(IcebergBobbingOffsets)[] = {
-    0,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,  2,  2,  1,  1,  1, 
-    0, -1, -1, -1, -2, -2, -2, -2, -2, -2, -2, -2, -2, -1, -1, -1, 
-    0x8000, 
+    0,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,  2,  2,  1,  1,  1,
+    0, -1, -1, -1, -2, -2, -2, -2, -2, -2, -2, -2, -2, -1, -1, -1,
+    0x8000,
 };
 
 EvtScript N(EVS_UpdateIceberg) = {

@@ -21,7 +21,7 @@ void floating_flower_main(s32 type, f32 posX, f32 posY, f32 posZ, s32 duration) 
     bp.init = floating_flower_init;
     bp.update = floating_flower_update;
     bp.renderWorld = floating_flower_render;
-    bp.unk_14 = 0;
+    bp.renderUI = NULL;
     bp.effectID = EFFECT_FLOATING_FLOWER;
 
     effect = shim_create_effect_instance(&bp);
@@ -147,15 +147,15 @@ void floating_flower_appendGfx(void* effect) {
     u32 alpha;
     u8 rgb, a;
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(effectTemp->graphics->data));
+    gDPPipeSync(gMainGfxPos++);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(effectTemp->graphics->data));
 
     shim_guPositionF(mtxTransform, part->rot.x, part->rot.y, 0.0f, 1.0f, part->pos.x, part->pos.y, part->pos.z);
     shim_guMtxF2L(mtxTransform, &gDisplayContext->matrixStack[gMatrixListPos]);
 
     a = alpha = 255;
 
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
 
     if (*gBackgroundFogModePtr == FOG_MODE_1) {
         shim_get_background_color_blend(&rgb, &rgb, &rgb, &a);
@@ -163,8 +163,8 @@ void floating_flower_appendGfx(void* effect) {
     }
 
     if (alpha != 0) {
-        gDPSetPrimColor(gMasterGfxPos++, 0, 0, 0, 0, 0, alpha);
-        gSPDisplayList(gMasterGfxPos++, D_090002F0_330750);
-        gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+        gDPSetPrimColor(gMainGfxPos++, 0, 0, 0, 0, 0, alpha);
+        gSPDisplayList(gMainGfxPos++, D_090002F0_330750);
+        gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
     }
 }

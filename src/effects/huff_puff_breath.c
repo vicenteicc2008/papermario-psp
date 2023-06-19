@@ -23,7 +23,7 @@ EffectInstance* huff_puff_breath_main(s32 type, f32 posX, f32 posY, f32 posZ, f3
     effectBp.update = huff_puff_breath_update;
     effectBp.renderWorld = huff_puff_breath_render;
     effectBp.unk_00 = 0;
-    effectBp.unk_14 = 0;
+    effectBp.renderUI = NULL;
     effectBp.effectID = EFFECT_HUFF_PUFF_BREATH;
 
     effect = shim_create_effect_instance(&effectBp);
@@ -74,8 +74,8 @@ void huff_puff_breath_update(EffectInstance* effect) {
     HuffPuffBreathFXData* data = effect->data.huffPuffBreath;
     s32 temp_a2;
 
-    if (effect->flags & 16) {
-        effect->flags &= ~16;
+    if (effect->flags & FX_INSTANCE_FLAG_DISMISS) {
+        effect->flags &= ~FX_INSTANCE_FLAG_DISMISS;
         data->timeLeft = 16;
     }
     if (data->timeLeft < 1000) {
@@ -134,8 +134,8 @@ void huff_puff_breath_appendGfx(void* effect) {
     Matrix4f sp18;
     Matrix4f sp58;
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
+    gDPPipeSync(gMainGfxPos++);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
 
     shim_guTranslateF(sp18, data->pos.x, data->pos.y, data->pos.z);
     shim_guRotateF(sp58, data->angle, 0.0f, 0.0f, 1.0f);
@@ -144,12 +144,12 @@ void huff_puff_breath_appendGfx(void* effect) {
     shim_guMtxCatF(sp58, sp18, sp18);
     shim_guMtxF2L(sp18, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-    gSPMatrix(gMasterGfxPos++, camera->unkMatrix, G_MTX_NOPUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, data->primR, data->primG, data->primB, primA);
-    gDPSetEnvColor(gMasterGfxPos++, data->envR, data->envG, data->envB, data->envA);
-    gSPDisplayList(gMasterGfxPos++, D_E00DC648[unk_00]);
-    gDPSetTileSize(gMasterGfxPos++, G_TX_RENDERTILE, uls, ult, uls + 31 * 4, ult + 15 * 4);
-    gSPDisplayList(gMasterGfxPos++, D_E00DC640[unk_00]);
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPMatrix(gMainGfxPos++, camera->unkMatrix, G_MTX_NOPUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, data->primR, data->primG, data->primB, primA);
+    gDPSetEnvColor(gMainGfxPos++, data->envR, data->envG, data->envB, data->envA);
+    gSPDisplayList(gMainGfxPos++, D_E00DC648[unk_00]);
+    gDPSetTileSize(gMainGfxPos++, G_TX_RENDERTILE, uls, ult, uls + 31 * 4, ult + 15 * 4);
+    gSPDisplayList(gMainGfxPos++, D_E00DC640[unk_00]);
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
 }

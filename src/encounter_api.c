@@ -183,7 +183,7 @@ ApiStatus DoNpcDefeat(Evt* script, s32 isInitialCall) {
 
     kill_script(script);
     npc->currentAnim = owner->animList[6];
-    newScript = start_script(&SCRIPT_NpcDefeat, EVT_PRIORITY_A, 0);
+    newScript = start_script(&EVS_NpcDefeat, EVT_PRIORITY_A, 0);
     owner->defeatScript = newScript;
     owner->defeatScriptID = newScript->id;
     newScript->owner1.enemy = owner;
@@ -796,7 +796,7 @@ ApiStatus GetSelfAnimationFromTable(Evt* script, s32 isInitialCall) {
 ApiStatus func_80045798(Evt* script, s32 isInitialCall) {
     Bytecode* args = script->ptrReadPos;
 
-    gPartnerActionStatus.unk_358 = evt_get_variable(script, *args++);
+    gPartnerStatus.unk_358 = evt_get_variable(script, *args++);
     return ApiStatus_DONE2;
 }
 

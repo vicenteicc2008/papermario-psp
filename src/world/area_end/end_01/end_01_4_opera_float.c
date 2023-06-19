@@ -111,10 +111,8 @@ API_CALLABLE(N(SetSpotlightsAlpha)) {
 }
 
 void N(gfx_build_set_spotlight_alpha)(void) {
-    gDPSetCombineLERP(gMasterGfxPos++,
-        TEXEL0, 0, SHADE, 0, SHADE, 0, PRIMITIVE, 0,
-        TEXEL0, 0, SHADE, 0, SHADE, 0, PRIMITIVE, 0);
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, 0, 0, 0, N(SpotlightsAlpha));
+    gDPSetCombineLERP(gMainGfxPos++, TEXEL0, 0, SHADE, 0, SHADE, 0, PRIMITIVE, 0, TEXEL0, 0, SHADE, 0, SHADE, 0, PRIMITIVE, 0);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, 0, 0, 0, N(SpotlightsAlpha));
 }
 
 EvtScript N(EVS_MakeSpiritAppear) = {
@@ -309,7 +307,7 @@ EvtScript N(EVS_ParadePhase_Opera) = {
     EVT_EXEC_GET_TID(N(EVS_TexPan_OperaFloat_MainStageLights), LVarA)
     EVT_EXEC_GET_TID(N(EVS_UpdateLightshow), LVarC)
     EVT_CALL(SetNpcFlagBits, NPC_Singer, NPC_FLAG_8, TRUE)
-    EVT_CALL(MakeLerp, 0, 55, 90, EASING_LINEAR)
+    EVT_CALL(MakeLerp, 0, 55, 90 * DT, EASING_LINEAR)
     EVT_LOOP(0)
         EVT_CALL(UpdateLerp)
         EVT_CALL(TranslateModel, MODEL_kino1, 0, LVar0, 0)

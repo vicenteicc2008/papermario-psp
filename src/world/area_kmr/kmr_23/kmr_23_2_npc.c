@@ -227,10 +227,10 @@ API_CALLABLE(N(FlashScreenWhite)) {
 
     switch(script->functionTemp[0]) {
         case FADE_TO_WHITE:
-            set_screen_overlay_color(0, 208, 208, 208);
-            set_screen_overlay_params_front(1, data->screenWhiteness);
+            set_screen_overlay_color(SCREEN_LAYER_FRONT, 208, 208, 208);
+            set_screen_overlay_params_front(OVERLAY_VIEWPORT_COLOR, data->screenWhiteness);
             if (data->screenWhiteness == 255) {
-                data->spiritCardEffect->flags |= EFFECT_INSTANCE_FLAG_10;
+                data->spiritCardEffect->flags |= FX_INSTANCE_FLAG_DISMISS;
                 data->spiritCardEffect = NULL;
                 gCameras->bgColor[0] = 208;
                 gCameras->bgColor[1] = 208;
@@ -251,7 +251,7 @@ API_CALLABLE(N(FlashScreenWhite)) {
             }
             break;
         case BACK_TO_NORMAL:
-            set_screen_overlay_params_front(1, data->screenWhiteness);
+            set_screen_overlay_params_front(OVERLAY_VIEWPORT_COLOR, data->screenWhiteness);
             if (data->screenWhiteness == 0) {
                 set_curtain_scale_goal(1.0f);
                 return ApiStatus_DONE1;
@@ -453,7 +453,7 @@ void func_80240DA4_9087D4(void) {
         f64 uly = baseY + (fullHeight * 0.5) - (D_802417D0_909200 * 0.5);
         f64 lrx = baseX + (fullWidth * 0.5) + (D_802417CC_9091FC * 0.5);
         f64 lry = baseY + (fullHeight * 0.5) + (D_802417D0_909200 * 0.5);
-        gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, ulx, uly, lrx, lry);
+        gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, ulx, uly, lrx, lry);
         draw_box(DRAW_FLAG_NO_CLIP, &D_802417D8_909208, ulx, uly, 0, D_802417CC_9091FC, D_802417D0_909200, 180, 0, 1.0f, 1.0f,
                  0.0f, 0.0f, 0.0f, NULL, NULL, NULL, 320, 240, NULL);
     }
@@ -468,23 +468,23 @@ EvtScript N(EVS_Scene_EndOfChapter) = {
     EVT_END_THREAD
     EVT_WAIT(1)
     EVT_THREAD
-        EVT_CALL(N(AddCardAngularVelocity), 10)
+        EVT_CALL(N(AddCardAngularVelocity), 10 / DT)
     EVT_END_THREAD
     EVT_THREAD
-        EVT_CALL(N(AccelerateCardSpin), 20, 150)
+        EVT_CALL(N(AccelerateCardSpin), 20, 150 * DT)
     EVT_END_THREAD
-    EVT_CALL(N(MakeCardFloatUpward), 5, 0, 60, 150)
+    EVT_CALL(N(MakeCardFloatUpward), 5, 0, 60, 150 * DT)
     EVT_WAIT(30)
-    EVT_CALL(N(ShowRadialShimmer), 1, 120)
-    EVT_CALL(N(FadeInSpiritNpc), 60)
-    EVT_WAIT(30)
+    EVT_CALL(N(ShowRadialShimmer), 1, 120 * DT)
+    EVT_CALL(N(FadeInSpiritNpc), 60 * DT)
+    EVT_WAIT(30 * DT)
     EVT_CALL(N(FlashScreenWhite))
-    EVT_CALL(N(SpinDownStarSpirit), 1800, 100)
+    EVT_CALL(N(SpinDownStarSpirit), 1800, 100 * DT)
     EVT_CALL(N(EndOfChapterBounceIn), 36, 0, 55, 60)
     EVT_THREAD
         EVT_CALL(N(AddCardAngularVelocity), 0)
     EVT_END_THREAD
-    EVT_WAIT(60)
+    EVT_WAIT(60 * DT)
     EVT_SET(MF_Unk_0B, TRUE)
     EVT_WAIT(1)
     EVT_CALL(SetNpcAnimation, NPC_StarSpirit, ENEMY_ANIM_8)
@@ -510,7 +510,7 @@ EvtScript N(EVS_Scene_EndOfChapter) = {
     EVT_END_SWITCH
     EVT_CALL(ShowMessageAtScreenPos, LVar1, 160, 40)
     EVT_CALL(N(ShowMessagesBehindCurtains))
-    EVT_WAIT(15)
+    EVT_WAIT(15 * DT)
     EVT_SET(AF_JAN01_TreeDrop_StarPiece, TRUE)
     EVT_RETURN
     EVT_END
@@ -528,7 +528,7 @@ EvtScript N(EVS_NpcInit_Eldstar_01) = {
 
 EvtScript N(EVS_NpcInit_Eldstar_02) = {
     EVT_CALL(SetNpcAnimation, NPC_SELF, ENEMY_ANIM_8)
-    EVT_CALL(func_802CFD30, NPC_SELF, FOLD_TYPE_8, 0, 0, 0, 0)
+    EVT_CALL(SetNpcImgFXParams, NPC_SELF, IMGFX_SET_TINT, 0, 0, 0, 0)
     EVT_CALL(SetNpcPos, NPC_SELF, 0, 94, 0)
     EVT_CALL(EnableNpcShadow, NPC_SELF, FALSE)
     EVT_RETURN

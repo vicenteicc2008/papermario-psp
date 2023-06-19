@@ -89,7 +89,7 @@ void entity_Chest_reset_camera(Entity* entity) {
 }
 
 void entity_Chest_setupGfx(s32 entityIndex) {
-    Gfx* gfxPos = gMasterGfxPos;
+    Gfx* gfxPos = gMainGfxPos;
     Entity* entity = get_entity_by_index(entityIndex);
     ChestData* data = entity->dataBuf.chest;
     Matrix4f sp18;
@@ -104,7 +104,7 @@ void entity_Chest_setupGfx(s32 entityIndex) {
     gfx = ENTITY_ADDR(entity, Gfx*, Entity_Chest_RenderLid);
     gSPDisplayList(gfxPos++, gfx);
     gSPPopMatrix(gfxPos++, G_MTX_MODELVIEW);
-    gMasterGfxPos = gfxPos;
+    gMainGfxPos = gfxPos;
 }
 
 void entity_Chest_check_opened(Entity* entity) {
@@ -255,7 +255,7 @@ void entity_GiantChest_hide_effect(Entity* entity) {
     EffectInstance* effect = chest->gotItemEffect;
 
     if (effect != NULL) {
-        effect->data.gotItemOutline->unk_14 = 10;
+        effect->data.gotItemOutline->timeLeft = 10;
     }
 }
 

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import argparse
 import os
@@ -57,7 +57,7 @@ for root, dirs, files in os.walk(src_dir):
 # # Rename symbols in from_funcs to namespace equivalents
 # for root, dirs, files in os.walk
 
-to_replace = []                    
+to_replace = []
 
 for root, dirs, files in os.walk(asm_dir):
     for f_name in files:

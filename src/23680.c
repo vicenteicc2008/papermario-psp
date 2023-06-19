@@ -25,7 +25,7 @@ void spawn_drops(Enemy* enemy) {
     s32 spawnCounter;
     s32 dropCount;
     s32 totalWeight;
-    s32 facingAngleSign;
+    s32 angle;
     s32 angleMult;
     s32 i, j;
     s32 flags;
@@ -39,7 +39,7 @@ void spawn_drops(Enemy* enemy) {
 
     spawnCounter = 0;
     availableRenderTasks = 256 - 10 - gLastRenderTaskCount;
-    facingAngleSign = clamp_angle(camera->currentYaw + 90.0f);
+    angle = clamp_angle(camera->currentYaw + 90.0f);
     x = npc->pos.x;
     y = npc->pos.y + (npc->collisionHeight / 2);
     z = npc->pos.z;
@@ -70,7 +70,7 @@ void spawn_drops(Enemy* enemy) {
 
             totalWeight += drops->itemDrops[3 * i + 1];
             if (drops->itemDrops[3 * i + 2] > 0) {
-                if (get_global_flag(drops->itemDrops[3 * i + 2] + 0x714) != 0) {
+                if (get_global_flag(EVT_INDEX_OF_GAME_FLAG(GF_Unused_NPC_6C) + drops->itemDrops[3 * i + 2])) {
                     continue;
                 }
             }
@@ -89,33 +89,31 @@ void spawn_drops(Enemy* enemy) {
         }
 
         if (itemToDrop != ITEM_NONE) {
-            make_item_entity(itemToDrop, x, y, z, ITEM_SPAWN_MODE_BATTLE_REWARD,
-                pickupDelay, facingAngleSign + angleMult * 360, 0);
+            make_item_entity(itemToDrop, x, y, z, ITEM_SPAWN_MODE_BATTLE_REWARD, pickupDelay, angle + angleMult * 360, 0);
             spawnCounter++;
             pickupDelay += 2;
-            facingAngleSign += 30.0;
+            angle += 30.0;
             if (spawnCounter >= 12) {
                 angleMult++;
-                facingAngleSign = angleMult * 8;
+                angle = angleMult * 8;
                 spawnCounter = 0;
             }
 
             if (drops->itemDrops[3 * i + 2] >= 0) {
-                set_global_flag(drops->itemDrops[3 * i + 2] + 0x715);
+                set_global_flag(EVT_INDEX_OF_GAME_FLAG(GF_SpawnedItemDrop_00) + drops->itemDrops[3 * i + 2]);
             }
         }
     }
 
     if (encounter->dropWhackaBump) {
         encounter->dropWhackaBump = FALSE;
-        make_item_entity(ITEM_WHACKAS_BUMP, x, y, z, ITEM_SPAWN_MODE_BATTLE_REWARD,
-            pickupDelay, facingAngleSign + angleMult * 360, 0);
+        make_item_entity(ITEM_WHACKAS_BUMP, x, y, z, ITEM_SPAWN_MODE_BATTLE_REWARD, pickupDelay, angle + angleMult * 360, 0);
         spawnCounter++;
         pickupDelay += 2;
-        facingAngleSign += 30.0;
+        angle += 30.0;
         if (spawnCounter >= 12) {
             angleMult++;
-            facingAngleSign = angleMult * 8;
+            angle = angleMult * 8;
             spawnCounter = 0;
         }
     }
@@ -163,15 +161,14 @@ void spawn_drops(Enemy* enemy) {
     availableShadows -= dropCount;
 
     for (i = 0; i < dropCount; i++) {
-        make_item_entity(itemToDrop, x, y, z, ITEM_SPAWN_MODE_BATTLE_REWARD,
-            pickupDelay, facingAngleSign + (angleMult * 360), 0);
+        make_item_entity(itemToDrop, x, y, z, ITEM_SPAWN_MODE_BATTLE_REWARD, pickupDelay, angle + (angleMult * 360), 0);
         spawnCounter++;
         pickupDelay += 2;
-        facingAngleSign += 30.0;
+        angle += 30.0;
         if (spawnCounter >= 12) {
             spawnCounter = 0;
             angleMult++;
-            facingAngleSign = angleMult * 8;
+            angle = angleMult * 8;
         }
     }
 
@@ -218,15 +215,14 @@ void spawn_drops(Enemy* enemy) {
     availableShadows -= dropCount;
 
     for (i = 0; i < dropCount; i++) {
-        make_item_entity(itemToDrop, x, y, z, ITEM_SPAWN_MODE_BATTLE_REWARD,
-            pickupDelay, facingAngleSign + (angleMult * 360), 0);
+        make_item_entity(itemToDrop, x, y, z, ITEM_SPAWN_MODE_BATTLE_REWARD, pickupDelay, angle + (angleMult * 360), 0);
         spawnCounter++;
         pickupDelay += 2;
-        facingAngleSign += 30.0;
+        angle += 30.0;
         if (spawnCounter >= 12) {
             spawnCounter = 0;
             angleMult++;
-            facingAngleSign = angleMult * 8;
+            angle = angleMult * 8;
         }
     }
 
@@ -261,8 +257,8 @@ void spawn_drops(Enemy* enemy) {
         dropCount += encounter->damageTaken / 2;
         encounter->damageTaken = 0;
     }
-    if (encounter->merleeCoinBonus != 0) {
-        encounter->merleeCoinBonus = 0;
+    if (encounter->hasMerleeCoinBonus) {
+        encounter->hasMerleeCoinBonus = FALSE;
         dropCount *= 3;
     }
     if (is_ability_active(ABILITY_MONEY_MONEY) != 0) {
@@ -284,15 +280,14 @@ void spawn_drops(Enemy* enemy) {
     }
 
     for (i = 0; i < dropCount; i++) {
-        make_item_entity(itemToDrop, x, y, z, ITEM_SPAWN_MODE_BATTLE_REWARD,
-            pickupDelay, facingAngleSign + (angleMult * 360), 0);
+        make_item_entity(itemToDrop, x, y, z, ITEM_SPAWN_MODE_BATTLE_REWARD, pickupDelay, angle + (angleMult * 360), 0);
         spawnCounter++;
         pickupDelay += 2;
-        facingAngleSign = facingAngleSign + 30.0;
+        angle = angle + 30.0;
         if (spawnCounter >= 12) {
             spawnCounter = 0;
             angleMult++;
-            facingAngleSign = angleMult * 8;
+            angle = angleMult * 8;
         }
     }
 }
@@ -322,7 +317,7 @@ s32 get_coin_drop_amount(Enemy* enemy) {
         amt += currentEncounter->damageTaken / 2;
     }
 
-    if (currentEncounter->merleeCoinBonus) {
+    if (currentEncounter->hasMerleeCoinBonus) {
         amt *= 3;
     }
 
@@ -417,7 +412,7 @@ s32 is_point_within_region(s32 shape, f32 pointX, f32 pointY, f32 centerX, f32 c
 s32 basic_ai_check_player_dist(EnemyDetectVolume* territory, Enemy* enemy, f32 radius, f32 fwdPosOffset, s8 useWorldYaw) {
     Npc* npc = get_npc_unsafe(enemy->npcID);
     PlayerStatus* playerStatus = &gPlayerStatus;
-    PartnerActionStatus* partnerActionStatus;
+    PartnerStatus* partnerStatus;
     f32 x, y, z;
     f32 dist;
     s32 skipCheckForPlayer;
@@ -426,13 +421,13 @@ s32 basic_ai_check_player_dist(EnemyDetectVolume* territory, Enemy* enemy, f32 r
         return FALSE;
     }
 
-    partnerActionStatus = &gPartnerActionStatus;
-    if (partnerActionStatus->actingPartner == PARTNER_BOW && partnerActionStatus->partnerActionState
+    partnerStatus = &gPartnerStatus;
+    if (partnerStatus->actingPartner == PARTNER_BOW && partnerStatus->partnerActionState
             && !(territory->detectFlags & AI_TERRITORY_IGNORE_HIDING)) {
         return FALSE;
     }
 
-    if (partnerActionStatus->actingPartner == PARTNER_SUSHIE && partnerActionStatus->partnerActionState
+    if (partnerStatus->actingPartner == PARTNER_SUSHIE && partnerStatus->partnerActionState
             && !(territory->detectFlags & AI_TERRITORY_IGNORE_HIDING)) {
         return FALSE;
     }
@@ -463,7 +458,7 @@ s32 basic_ai_check_player_dist(EnemyDetectVolume* territory, Enemy* enemy, f32 r
         y = npc->pos.y + npc->collisionHeight * 0.5;
         z = npc->pos.z;
         dist = dist2D(npc->pos.x, npc->pos.z, playerStatus->position.x, playerStatus->position.z);
-        if (npc_test_move_simple_with_slipping(0x50000,
+        if (npc_test_move_simple_with_slipping(COLLISION_CHANNEL_10000 | COLLISION_IGNORE_ENTITIES,
                 &x, &y, &z,
                 dist, atan2(npc->pos.x, npc->pos.z, playerStatus->position.x, playerStatus->position.z),
                 0.1f, 0.1f)) {
@@ -589,7 +584,7 @@ void basic_ai_wander(Evt* script, MobileAISettings* aiSettings, EnemyDetectVolum
                 y = npc->pos.y;
                 z = npc->pos.z;
                 yaw = atan2(npc->pos.x, npc->pos.z, gPlayerStatusPtr->position.x, gPlayerStatusPtr->position.z);
-                if (!npc_test_move_simple_with_slipping(npc->collisionChannel, &x, &y, &z, aiSettings->chaseSpeed, yaw, npc->collisionHeight, npc->collisionRadius)) {
+                if (!npc_test_move_simple_with_slipping(npc->collisionChannel, &x, &y, &z, aiSettings->chaseSpeed, yaw, npc->collisionHeight, npc->collisionDiameter)) {
                     npc->yaw = yaw;
                     ai_enemy_play_sound(npc, SOUND_2F4, SOUND_PARAM_MORE_QUIET);
                     fx_emote(EMOTE_EXCLAMATION, npc, 0, npc->collisionHeight, 1.0f, 2.0f, -20.0f, 15, &sp34);
@@ -629,7 +624,7 @@ void basic_ai_wander(Evt* script, MobileAISettings* aiSettings, EnemyDetectVolum
         x = npc->pos.x;
         y = npc->pos.y;
         z = npc->pos.z;
-        if (npc_test_move_simple_with_slipping(npc->collisionChannel, &x, &y, &z, 2.0 * npc->moveSpeed, npc->yaw, npc->collisionHeight, npc->collisionRadius)) {
+        if (npc_test_move_simple_with_slipping(npc->collisionChannel, &x, &y, &z, 2.0 * npc->moveSpeed, npc->yaw, npc->collisionHeight, npc->collisionDiameter)) {
             yaw = clamp_angle(atan2(npc->pos.x, npc->pos.z, enemy->territory->wander.centerPos.x, enemy->territory->wander.centerPos.z));
             enemy->aiFlags &= ~ENEMY_AI_FLAG_40;
             ai_check_fwd_collisions(npc, 5.0f, &yaw, NULL, NULL, NULL);
@@ -686,7 +681,7 @@ void basic_ai_loiter(Evt* script, MobileAISettings* aiSettings, EnemyDetectVolum
             y = npc->pos.y;
             z = npc->pos.z;
             yaw = atan2(npc->pos.x, npc->pos.z, gPlayerStatusPtr->position.x, gPlayerStatusPtr->position.z);
-            if (!npc_test_move_simple_with_slipping(npc->collisionChannel, &x, &y, &z, aiSettings->chaseSpeed, yaw, npc->collisionHeight, npc->collisionRadius)) {
+            if (!npc_test_move_simple_with_slipping(npc->collisionChannel, &x, &y, &z, aiSettings->chaseSpeed, yaw, npc->collisionHeight, npc->collisionDiameter)) {
                 npc->yaw = yaw;
                 ai_enemy_play_sound(npc, SOUND_2F4, SOUND_PARAM_MORE_QUIET);
                 fx_emote(EMOTE_EXCLAMATION, npc, 0, npc->collisionHeight, 1.0f, 2.0f, -20.0f, 15, &emoteTemp);
@@ -758,7 +753,7 @@ void basic_ai_chase_init(Evt* script, MobileAISettings* npcAISettings, EnemyDete
 
     if ((gPlayerStatusPtr->actionState == ACTION_STATE_JUMP || gPlayerStatusPtr->actionState == ACTION_STATE_BOUNCE ||
         gPlayerStatusPtr->actionState == ACTION_STATE_HOP || gPlayerStatusPtr->actionState == ACTION_STATE_FALLING) &&
-        (f64)dist2D(npc->pos.x, npc->pos.z, gPlayerStatusPtr->position.x, gPlayerStatusPtr->position.z) < npc->collisionRadius)
+        (f64)dist2D(npc->pos.x, npc->pos.z, gPlayerStatusPtr->position.x, gPlayerStatusPtr->position.z) < npc->collisionDiameter)
     {
         skipTurnAround = TRUE;
     }
@@ -805,7 +800,7 @@ void basic_ai_chase(Evt* script, MobileAISettings* aiSettings, EnemyDetectVolume
             x = npc->pos.x;
             y = npc->pos.y;
             z = npc->pos.z;
-            if (npc_test_move_simple_with_slipping(npc->collisionChannel, &x, &y, &z, 1.0f, npc->yaw, npc->collisionHeight, npc->collisionRadius)) {
+            if (npc_test_move_simple_with_slipping(npc->collisionChannel, &x, &y, &z, 1.0f, npc->yaw, npc->collisionHeight, npc->collisionDiameter)) {
                 fx_emote(EMOTE_QUESTION, npc, 0, npc->collisionHeight, 1.0f, 2.0f, -20.0f, 0xC, &sp28);
                 npc->currentAnim = enemy->animList[ENEMY_ANIM_INDEX_IDLE];
                 npc->duration = 15;

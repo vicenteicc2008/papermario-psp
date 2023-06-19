@@ -38,7 +38,7 @@ void ending_decals_main(s32 type, f32 posX, f32 posY, f32 posZ, f32 arg4, Effect
     bp.update = ending_decals_update;
     bp.renderWorld = ending_decals_render;
     bp.unk_00 = 0;
-    bp.unk_14 = NULL;
+    bp.renderUI = NULL;
     bp.effectID = EFFECT_ENDING_DECALS;
 
     effect = shim_create_effect_instance(&bp);
@@ -86,8 +86,8 @@ void ending_decals_init(EffectInstance* effect) {
 void ending_decals_update(EffectInstance* effect) {
     EndingDecalsFXData* data = effect->data.endingDecals;
 
-    if (effect->flags & 0x10) {
-        effect->flags &= ~0x10;
+    if (effect->flags & FX_INSTANCE_FLAG_DISMISS) {
+        effect->flags &= ~FX_INSTANCE_FLAG_DISMISS;
         data->unk_1C = 10;
     }
 
@@ -142,13 +142,13 @@ void ending_decals_appendGfx(void* effect) {
     dlist1 = D_E00685F4[data->type];
     dlist2 = D_E00685B0[data->type];
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
+    gDPPipeSync(gMainGfxPos++);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
 
     shim_guPositionF(sp20, 0.0f, -gCameras[gCurrentCameraID].currentYaw, 0.0f, data->scale, data->pos.x, data->pos.y, data->pos.z);
     shim_guMtxF2L(sp20, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
 
     temp_f64 = data->haloAlpha;
     if (unk_20 % 2 == 0) {
@@ -157,21 +157,21 @@ void ending_decals_appendGfx(void* effect) {
         alpha = temp_f64;
     }
 
-    gDPSetEnvColor(gMasterGfxPos++, 26, 121, 29, 158);
-    gDPSetColorDither(gMasterGfxPos++, G_CD_BAYER);
-    gDPSetAlphaDither(gMasterGfxPos++, G_AD_PATTERN);
-    gSPDisplayList(gMasterGfxPos++, dlist1);
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, data->unk_24, data->unk_25, data->unk_26, alpha);
-    gDPSetEnvColor(gMasterGfxPos++, data->unk_27, data->unk_28, data->unk_29, 0);
+    gDPSetEnvColor(gMainGfxPos++, 26, 121, 29, 158);
+    gDPSetColorDither(gMainGfxPos++, G_CD_BAYER);
+    gDPSetAlphaDither(gMainGfxPos++, G_AD_PATTERN);
+    gSPDisplayList(gMainGfxPos++, dlist1);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, data->unk_24, data->unk_25, data->unk_26, alpha);
+    gDPSetEnvColor(gMainGfxPos++, data->unk_27, data->unk_28, data->unk_29, 0);
 
     if (dlist2 == D_09001E40_36CD20) {
         dlist2 = D_E00685BC[unk_20 % 14];
     }
 
-    gSPDisplayList(gMasterGfxPos++, dlist2);
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
-    gDPPipeSync(gMasterGfxPos++);
-    gDPSetColorDither(gMasterGfxPos++, G_CD_DISABLE);
-    gDPSetAlphaDither(gMasterGfxPos++, G_AD_DISABLE);
-    gDPPipeSync(gMasterGfxPos++);
+    gSPDisplayList(gMainGfxPos++, dlist2);
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
+    gDPPipeSync(gMainGfxPos++);
+    gDPSetColorDither(gMainGfxPos++, G_CD_DISABLE);
+    gDPSetAlphaDither(gMainGfxPos++, G_AD_DISABLE);
+    gDPPipeSync(gMainGfxPos++);
 }

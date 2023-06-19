@@ -43,7 +43,7 @@ EffectInstance* shimmer_burst_main(s32 arg0, f32 arg1, f32 arg2, f32 arg3, f32 a
     bp.update = shimmer_burst_update;
     bp.renderWorld = shimmer_burst_render;
     bp.unk_00 = 0;
-    bp.unk_14 = NULL;
+    bp.renderUI = NULL;
     bp.effectID = EFFECT_SHIMMER_BURST;
 
     effect = shim_create_effect_instance(&bp);
@@ -106,8 +106,8 @@ void shimmer_burst_update(EffectInstance* effect) {
     f32 unk_14;
     s32 i;
 
-    if (effect->flags & EFFECT_INSTANCE_FLAG_10) {
-        effect->flags &= ~EFFECT_INSTANCE_FLAG_10;
+    if (effect->flags & FX_INSTANCE_FLAG_DISMISS) {
+        effect->flags &= ~FX_INSTANCE_FLAG_DISMISS;
         part->unk_38 = 16;
     }
 
@@ -210,20 +210,20 @@ void shimmer_burst_appendGfx(void* effect) {
     Matrix4f sp60;
     s32 i;
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
+    gDPPipeSync(gMainGfxPos++);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
 
     shim_guTranslateF(sp20, part->unk_04, part->unk_08, part->unk_0C);
     shim_guScaleF(sp60, part->unk_60, part->unk_60, part->unk_60);
     shim_guMtxCatF(sp60, sp20, sp20);
     shim_guMtxF2L(sp20, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-    gDPSetEnvColor(gMasterGfxPos++, part->unk_40, part->unk_44, part->unk_48, part->unk_5C);
-    gSPDisplayList(gMasterGfxPos++, D_09000F20_338EE0);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gDPSetEnvColor(gMainGfxPos++, part->unk_40, part->unk_44, part->unk_48, part->unk_5C);
+    gSPDisplayList(gMainGfxPos++, D_09000F20_338EE0);
 
-    savedGfxPos = gMasterGfxPos;
-    gMasterGfxPos++;
+    savedGfxPos = gMainGfxPos;
+    gMainGfxPos++;
 
     part++;
     for (i = 1; i < ((EffectInstance*)effect)->numParts; i++, part++) {
@@ -231,29 +231,29 @@ void shimmer_burst_appendGfx(void* effect) {
             shim_guPositionF(sp20, 0.0f, 0.0f, part->unk_34, part->unk_60 * temp_f20, part->unk_04, part->unk_08, part->unk_0C);
             shim_guMtxF2L(sp20, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-            gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-            gDPSetPrimColor(gMasterGfxPos++, 0, 0, unk_50, unk_54, unk_58, part->unk_4C * temp_f20);
-            gSPDisplayList(gMasterGfxPos++, D_E0070CD0[i & 7]);
-            gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+            gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+            gDPSetPrimColor(gMainGfxPos++, 0, 0, unk_50, unk_54, unk_58, part->unk_4C * temp_f20);
+            gSPDisplayList(gMainGfxPos++, D_E0070CD0[i & 7]);
+            gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
         }
     }
 
-    gSPEndDisplayList(gMasterGfxPos++);
-    gSPBranchList(savedGfxPos, gMasterGfxPos);
-    gSPDisplayList(gMasterGfxPos++, savedGfxPos + 1);
+    gSPEndDisplayList(gMainGfxPos++);
+    gSPBranchList(savedGfxPos, gMainGfxPos);
+    gSPDisplayList(gMainGfxPos++, savedGfxPos + 1);
 
     shim_guRotateF(sp20, 120.0f, 0.4f, 0.0f, 0.8f);
     shim_guMtxF2L(sp20, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-    gSPDisplayList(gMasterGfxPos++, savedGfxPos + 1);
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+    gSPDisplayList(gMainGfxPos++, savedGfxPos + 1);
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
 
     shim_guRotateF(sp20, -120.0f, 0.4f, 0.0f, 0.8f);
     shim_guMtxF2L(sp20, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-    gSPDisplayList(gMasterGfxPos++, savedGfxPos + 1);
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+    gSPDisplayList(gMainGfxPos++, savedGfxPos + 1);
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
 }

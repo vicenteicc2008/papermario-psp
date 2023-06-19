@@ -80,7 +80,7 @@ void sparkles_main(s32 arg0, f32 arg1, f32 arg2, f32 arg3, f32 arg4) {
     bpPtr->update = sparkles_update;
     bpPtr->renderWorld = sparkles_render;
     bpPtr->unk_00 = 0;
-    bpPtr->unk_14 = NULL;
+    bpPtr->renderUI = NULL;
     bpPtr->effectID = EFFECT_SPARKLES;
 
     effect = shim_create_effect_instance(bpPtr);
@@ -250,9 +250,9 @@ void sparkles_appendGfx(void* effect) {
     s32 colorIdx;
     s32 i;
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
-    gSPDisplayList(gMasterGfxPos++, D_09000F20_338EE0);
+    gDPPipeSync(gMainGfxPos++);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
+    gSPDisplayList(gMainGfxPos++, D_09000F20_338EE0);
 
     colorIdx = (part->unk_20 - 1) * 3;
 
@@ -277,12 +277,12 @@ void sparkles_appendGfx(void* effect) {
 
             colorIdx %= ARRAY_COUNT(D_E0022CF0);
 
-            gDPSetPrimColor(gMasterGfxPos++, 0, 0, D_E0022CF0[colorIdx], D_E0022CF0[colorIdx + 1], D_E0022CF0[colorIdx + 2], 255);
-            gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-            gSPDisplayList(gMasterGfxPos++, D_E0022CD0[unk_2C & 7]);
-            gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+            gDPSetPrimColor(gMainGfxPos++, 0, 0, D_E0022CF0[colorIdx], D_E0022CF0[colorIdx + 1], D_E0022CF0[colorIdx + 2], 255);
+            gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+            gSPDisplayList(gMainGfxPos++, D_E0022CD0[unk_2C & 7]);
+            gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
         }
     }
 
-    gDPPipeSync(gMasterGfxPos++);
+    gDPPipeSync(gMainGfxPos++);
 }

@@ -1,6 +1,14 @@
 #include "pause_common.h"
 #include "message_ids.h"
 
+#if VERSION_PAL
+#define MAP_TITLE_X 36
+#define MAP_TITLE_WIDTH 220
+#else
+#define MAP_TITLE_X 56
+#define MAP_TITLE_WIDTH 180
+#endif
+
 extern Gfx gPauseDLWorldMap[];
 extern u8 pause_world_map_png[];
 extern Gfx gPauseDLPathPoints[];
@@ -27,7 +35,7 @@ static s32 gPauseMapSpacesInSnapRange;
 HudScript* gPauseMapIconScripts[] = { &HES_MapWalk0 };
 s32 D_8024FA34 = -1;
 Vec2b gPauseMapPaths[][32] = {
-    { { 1, -10 }, { 1, -8 }, { -9, -2 }, { -8, 0 }, { -8, 0 }, { -7, -3 }, { -5, -3 }, },
+    { { 1, -10 }, { 1, -8 }, { -9, -2 }, { -8, 0 }, { -8, 0 }, { -7, -3 }, { -5, -3 } },
     { { -1, 24 }, { 1, -8 }, { 2, -7 } },
     { { -3, 7 }, { -7, 4 }, { -8, 2 } },
     { },
@@ -98,6 +106,7 @@ PauseMapSpace gPauseMapSpaces[] = {
     { .pos = { .x =  88, .y =  22 }, .parent = 31, .pathLength =  3, .path = gPauseMapPaths[32], .afterRequirement = STORY_EPILOGUE,                    .id = LOCATION_PEACHS_CASTLE },
     { .pos = { .x =  98, .y = 147 }, .parent =  0, .pathLength =  0, .path = gPauseMapPaths[33], .afterRequirement = STORY_61,                          .id = LOCATION_MARIOS_HOUSE }
 };
+
 s32 gPauseMapArrowWobble[] = { 0, 2, 3, 3, 4, 4, 4, 4, 3, 2, 1, 0 };
 MenuWindowBP gPauseMapWindowBPs[] = {
     {
@@ -117,8 +126,8 @@ MenuWindowBP gPauseMapWindowBPs[] = {
     {
         .windowID = WINDOW_ID_PAUSE_MAP_TITLE,
         .unk_01 = 0,
-        .pos = { .x = 56, .y = 124 },
-        .width = 180,
+        .pos = { .x = MAP_TITLE_X, .y = 124 },
+        .width = MAP_TITLE_WIDTH,
         .height = 20,
         .priority = WINDOW_PRIORITY_0,
         .fpDrawContents = &pause_map_draw_title,
@@ -210,7 +219,7 @@ void pause_map_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 width, s
     Vec2b* path;
     s32 pathLength;
 
-    gSPDisplayList(gMasterGfxPos++, gPauseDLWorldMap);
+    gSPDisplayList(gMainGfxPos++, gPauseDLWorldMap);
     ult = -cameraX * 32;
     for (i = 0; i < 60; i++) {
         if (4 * i + 4 < 111) {
@@ -219,19 +228,19 @@ void pause_map_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 width, s
             tileHeight = 111 - 4 * i;
         }
 
-        gDPLoadTextureTile(gMasterGfxPos++, pause_world_map_png, G_IM_FMT_CI, G_IM_SIZ_8b, 320, 320,
+        gDPLoadTextureTile(gMainGfxPos++, pause_world_map_png, G_IM_FMT_CI, G_IM_SIZ_8b, 320, 320,
                         0, i * 4 - cameraY, 319, i * 4 + tileHeight - 1 - cameraY, 0,
                         G_TX_CLAMP, G_TX_CLAMP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
         pause_draw_rect((baseX + 26) * 4, (baseY + 22 + 4 * i) * 4, (baseX + 260) * 4,
         (baseY + 22 + i * 4 + tileHeight) * 4, 0, ult, (-cameraY + i * 4) * 32, 0x400, 0x400);
-        gDPPipeSync(gMasterGfxPos++);
+        gDPPipeSync(gMainGfxPos++);
 
         if (4 * i + 4 >= 110) {
             break;
         }
     }
 
-    gSPDisplayList(gMasterGfxPos++, gPauseDLPathPoints);
+    gSPDisplayList(gMainGfxPos++, gPauseDLPathPoints);
 
     x1 = baseX + 26;
     y1 = baseY + 22;
@@ -256,7 +265,7 @@ void pause_map_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 width, s
         y2 = SCREEN_HEIGHT - 1;
     }
 
-    gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, x1, y1, x2, y2);
+    gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, x1, y1, x2, y2);
 
     mapSpace = gPauseMapSpaces;
     camX = cameraX + baseX;
@@ -271,9 +280,9 @@ void pause_map_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 width, s
         }
 
         if (i != gPauseMapCursorCurrentOption) {
-            gDPSetPrimColor(gMasterGfxPos++, 0, 0, 220, 80, 30, 255);
+            gDPSetPrimColor(gMainGfxPos++, 0, 0, 220, 80, 30, 255);
         } else {
-            gDPSetPrimColor(gMasterGfxPos++, 0, 0, (gGameStatusPtr->frameCounter * 10) % 120 + 120,
+            gDPSetPrimColor(gMainGfxPos++, 0, 0, (gGameStatusPtr->frameCounter * 10) % 120 + 120,
                                                    (gGameStatusPtr->frameCounter * 10) % 120 + 120,
                                                    (gGameStatusPtr->frameCounter * 10) % 120, 255);
         }
@@ -281,8 +290,8 @@ void pause_map_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 width, s
         bigPointX = camX + 26 + posX;
         bigPointY = camY + 22 + posY;
         pause_draw_rect((bigPointX - 8) * 4, (bigPointY - 8) * 4, (bigPointX + 8) * 4, (bigPointY + 8) * 4, 0, 0, 0, 0x400, 0x400);
-        gDPPipeSync(gMasterGfxPos++);
-        gDPSetPrimColor(gMasterGfxPos++, 0, 0, 230, 190, 180, 255);
+        gDPPipeSync(gMainGfxPos++);
+        gDPSetPrimColor(gMainGfxPos++, 0, 0, 230, 190, 180, 255);
 
         pathLength = mapSpace->pathLength;
         path = mapSpace->path;
@@ -313,7 +322,7 @@ void pause_map_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 width, s
             offsetUp = offset;
             offsetDown = offset;
 
-            gSPDisplayList(gMasterGfxPos++, gPauseDLArrows);
+            gSPDisplayList(gMainGfxPos++, gPauseDLArrows);
 
             if (!(gPauseMapCameraX < 0.0f)) {
                 offsetLeft = 0;
@@ -362,7 +371,7 @@ void pause_map_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 width, s
             y2 = SCREEN_HEIGHT - 1;
         }
 
-        gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, x1, y1, x2, y2);
+        gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, x1, y1, x2, y2);
     }
     draw_box(0, &gPauseWS_27, baseX + 18, baseY + 14, 0, 250, 126, opacity, darkening, 1.0f, 1.0f, 0, 0, 0, 0, 0, 0, width, height, 0);
 }
@@ -517,7 +526,7 @@ void pause_map_handle_input(MenuPanel* tab) {
 
     gPauseCurrentDescIconScript = 0;
     if (gPauseMapCursorCurrentOption == -1) {
-        gPauseCurrentDescMsg = 0;
+        gPauseCurrentDescMsg = MSG_NONE;
         return;
     }
 

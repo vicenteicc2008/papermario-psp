@@ -24,7 +24,7 @@ void big_snowflakes_main(s32 arg0, f32 arg1, f32 arg2, f32 arg3) {
     bp.init = big_snowflakes_init;
     bp.update = big_snowflakes_update;
     bp.renderWorld = big_snowflakes_render;
-    bp.unk_14 = 0;
+    bp.renderUI = NULL;
     bp.effectID = EFFECT_BIG_SNOWFLAKES;
 
     effect = shim_create_effect_instance(&bp);
@@ -46,12 +46,12 @@ void big_snowflakes_main(s32 arg0, f32 arg1, f32 arg2, f32 arg3) {
 
     data++;
     for (i = 1; i < numParts; i++, data++) {
-        data->unk_04 = func_E0200000(10) - 5;
-        data->unk_08 = func_E0200000(10) + 5;
+        data->unk_04 = effect_rand_int(10) - 5;
+        data->unk_08 = effect_rand_int(10) + 5;
         data->unk_0C = 10.0f;
-        data->unk_18 = func_E0200000(360);
-        data->unk_20 = func_E0200000(360);
-        data->unk_1C = func_E0200000(100) / 10;
+        data->unk_18 = effect_rand_int(360);
+        data->unk_20 = effect_rand_int(360);
+        data->unk_1C = effect_rand_int(100) / 10;
         data->unk_10 = 0;
         data->unk_14 = 2.0f;
     }
@@ -115,9 +115,9 @@ void big_snowflakes_appendGfx(void* effect) {
     Gfx* dlist = D_E0060738[0];
     s32 i;
 
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
-    gSPDisplayList(gMasterGfxPos++, dlist);
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, 20, 100, 20, data->unk_24);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
+    gSPDisplayList(gMainGfxPos++, dlist);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, 20, 100, 20, data->unk_24);
 
     shim_guTranslateF(sp18, data->unk_04, data->unk_08, data->unk_0C);
     shim_guRotateF(sp58, -gCameras[gCurrentCameraID].currentYaw, 0.0f, 1.0f, 0.0f);
@@ -138,8 +138,8 @@ void big_snowflakes_appendGfx(void* effect) {
         }
         shim_guMtxF2L(sp18, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-        gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-        gSPDisplayList(gMasterGfxPos++, dlist2);
-        gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+        gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+        gSPDisplayList(gMainGfxPos++, dlist2);
+        gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
     }
 }

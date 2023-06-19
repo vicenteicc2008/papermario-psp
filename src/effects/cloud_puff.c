@@ -21,7 +21,7 @@ void cloud_puff_main(f32 arg0, f32 arg1, f32 arg2, f32 arg3) {
     bp.init = cloud_puff_init;
     bp.update = cloud_puff_update;
     bp.renderWorld = cloud_puff_render;
-    bp.unk_14 = NULL;
+    bp.renderUI = NULL;
     bp.effectID = EFFECT_CLOUD_PUFF;
 
     effect = shim_create_effect_instance(&bp);
@@ -44,7 +44,7 @@ void cloud_puff_main(f32 arg0, f32 arg1, f32 arg2, f32 arg3) {
         part->alpha = 255;
         part->unk_24 = (shim_rand_int(10) * 0.03) + 1.0;
         part->unk_28 = (shim_rand_int(10) * 0.03) + 1.7;
-        part->unk_2C = func_E0200000(60);
+        part->unk_2C = effect_rand_int(60);
         part->timeLeft = 30;
         part->unk_34 = 0.5f;
         part->unk_38 = -0.02f;
@@ -119,9 +119,9 @@ void cloud_puff_appendGfx(void* effect) {
     Matrix4f sp60;
     s32 i;
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(effectTemp->graphics->data));
-    gSPDisplayList(gMasterGfxPos++, D_090000E0_32ED30);
+    gDPPipeSync(gMainGfxPos++);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(effectTemp->graphics->data));
+    gSPDisplayList(gMainGfxPos++, D_090000E0_32ED30);
 
     for (i = 0; i < effectTemp->numParts; i++, part++) {
         if (part->alive) {
@@ -131,12 +131,12 @@ void cloud_puff_appendGfx(void* effect) {
             shim_guMtxCatF(sp60, sp20, sp20);
             shim_guMtxF2L(sp20, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-            gDPSetPrimColor(gMasterGfxPos++, 0, 0, 112, 96, 24, part->alpha);
-            gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++],
+            gDPSetPrimColor(gMainGfxPos++, 0, 0, 112, 96, 24, part->alpha);
+            gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++],
                         G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-            gSPDisplayList(gMasterGfxPos++, D_090001B8_32EE08);
-            gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+            gSPDisplayList(gMainGfxPos++, D_090001B8_32EE08);
+            gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
         }
     }
-    gDPPipeSync(gMasterGfxPos++);
+    gDPPipeSync(gMainGfxPos++);
 }

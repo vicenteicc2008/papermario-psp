@@ -39,7 +39,7 @@ void big_smoke_puff_main(f32 x, f32 y, f32 z) {
     bp.init = big_smoke_puff_init;
     bp.update = big_smoke_puff_update;
     bp.renderWorld = big_smoke_puff_render;
-    bp.unk_14 = NULL;
+    bp.renderUI = NULL;
     bp.effectID = EFFECT_BIG_SMOKE_PUFF;
 
     effect = shim_create_effect_instance(&bp);
@@ -52,7 +52,7 @@ void big_smoke_puff_main(f32 x, f32 y, f32 z) {
 
     for (i = 0; i < effect->numParts; i++, data++) {
         data->unk_00 = 0;
-        data->unk_02 = data->unk_04 = func_E0200000(6) + 0x10;
+        data->unk_02 = data->unk_04 = effect_rand_int(6) + 0x10;
         data->unk_06 = 4;
         data->unk_08 = 0;
         data->x = x;
@@ -125,13 +125,13 @@ void big_smoke_puff_appendGfx(void* effect) {
     Matrix4f mtx;
     s32 i;
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
+    gDPPipeSync(gMainGfxPos++);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
 
     shim_guPositionF(mtx, 0.0f, -gCameras[gCurrentCameraID].currentYaw, 0.0f, 1.0f, data->x, data->y, data->z);
     shim_guMtxF2L(mtx, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-    gSPMatrix(gMasterGfxPos++,
+    gSPMatrix(gMainGfxPos++,
               &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
 
     for (i = 0; i < ((EffectInstance*)effect)->numParts; i++, data++) {
@@ -149,7 +149,7 @@ void big_smoke_puff_appendGfx(void* effect) {
                              data->partY, 0.0f);
             shim_guMtxF2L(mtx, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-            gSPMatrix(gMasterGfxPos++,
+            gSPMatrix(gMainGfxPos++,
                       &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
 
             temp_f12 = data->unk_00 - 1;
@@ -164,15 +164,15 @@ void big_smoke_puff_appendGfx(void* effect) {
                 dlist = sDlists[(s32)temp];
             }
 
-            gDPSetPrimColor(gMasterGfxPos++, 0, 0, 0, 0, 0, (u32)(primAlpha * 105) / 8);
-            gDPSetEnvColor(gMasterGfxPos++, 0, 0, 0, envAlpha);
-            gSPDisplayList(gMasterGfxPos++, dlist);
-            gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+            gDPSetPrimColor(gMainGfxPos++, 0, 0, 0, 0, 0, (u32)(primAlpha * 105) / 8);
+            gDPSetEnvColor(gMainGfxPos++, 0, 0, 0, envAlpha);
+            gSPDisplayList(gMainGfxPos++, dlist);
+            gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
         }
     }
 
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
-    gDPPipeSync(gMasterGfxPos++);
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
+    gDPPipeSync(gMainGfxPos++);
 }
 
 void func_E0002738(EffectInstance* effect) {

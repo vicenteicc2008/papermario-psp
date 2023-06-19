@@ -33,7 +33,7 @@ void ispy_notification_update(void);
 void appendGfx_ispy_icon(void) {
     Matrix4f matrix1;
     Matrix4f matrix2;
-    FoldImageRecPart foldImage;
+    ImgFXTexture ifxImg;
     s32 flashPhase;
 
     if (gPlayerStatus.animFlags & PA_FLAG_ISPY_VISIBLE) {
@@ -44,46 +44,46 @@ void appendGfx_ispy_icon(void) {
         guMtxCatF(matrix1, matrix2, matrix2);
         guMtxF2L(matrix2, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-        gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], 3);
-        gSPDisplayList(gMasterGfxPos++, ispy_icon_gfx);
+        gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], 3);
+        gSPDisplayList(gMainGfxPos++, ispy_icon_gfx);
 
         if (ISpyPtr->time < 47) {
             ISpyPtr->flashCount++;
         }
 
         flashPhase = ISpyPtr->flashCount;
-        flashPhase = flashPhase - (flashPhase / 12) * 12;
+        flashPhase = flashPhase % 12;
         switch (flashPhase) {
             case 0:
             case 1:
             case 2:
             case 3:
-                foldImage.palette = ispy_icon_1_pal;
+                ifxImg.palette = ispy_icon_1_pal;
                 break;
             case 4:
             case 5:
             case 6:
             case 7:
-                foldImage.palette = ispy_icon_2_pal;
+                ifxImg.palette = ispy_icon_2_pal;
                 break;
             case 8:
             case 9:
             case 10:
             case 11:
-                foldImage.palette = ispy_icon_3_pal;
+                ifxImg.palette = ispy_icon_3_pal;
                 break;
         }
-        fold_update(0, FOLD_TYPE_7, 255, 255, 255, ISpyPtr->alpha, 0);
+        imgfx_update(0, IMGFX_SET_ALPHA, 255, 255, 255, ISpyPtr->alpha, 0);
 
-        foldImage.raster = ispy_icon_img;
-        foldImage.width  = ispy_icon_img_width;
-        foldImage.height = ispy_icon_img_height;
-        foldImage.xOffset = -28;
-        foldImage.yOffset = 46;
-        foldImage.opacity = 255;
+        ifxImg.raster = ispy_icon_img;
+        ifxImg.width  = ispy_icon_img_width;
+        ifxImg.height = ispy_icon_img_height;
+        ifxImg.xOffset = -28;
+        ifxImg.yOffset = 46;
+        ifxImg.alpha = 255;
 
-        fold_appendGfx_component(0, &foldImage, 0, matrix2);
-        gSPPopMatrix(gMasterGfxPos++, 0);
+        imgfx_appendGfx_component(0, &ifxImg, 0, matrix2);
+        gSPPopMatrix(gMainGfxPos++, 0);
     }
 }
 
@@ -102,7 +102,7 @@ void ispy_notification_setup(void) {
 
 void ispy_notification_update(void) {
     PlayerStatus* playerStatus = &gPlayerStatus;
-    PartnerActionStatus* partnerActionStatus = &gPartnerActionStatus;
+    PartnerStatus* partnerStatus = &gPartnerStatus;
     s32 cond;
 
     ISpyPtr->pos.y +=
@@ -112,8 +112,8 @@ void ispy_notification_update(void) {
 
     switch (ISpyPtr->state) {
         case I_SPY_DELAY:
-            if (partnerActionStatus->partnerActionState != PARTNER_ACTION_NONE
-             && partnerActionStatus->actingPartner == PARTNER_LAKILESTER
+            if (partnerStatus->partnerActionState != PARTNER_ACTION_NONE
+             && partnerStatus->actingPartner == PARTNER_LAKILESTER
             ) {
                 cond = gGameStatusPtr->keepUsingPartnerOnMapChange;
             } else {

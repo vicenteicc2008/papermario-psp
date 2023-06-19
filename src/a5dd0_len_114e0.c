@@ -7,8 +7,9 @@
 #include "effects.h"
 #include "nu/nusys.h"
 #include "model_clear_render_tasks.h"
+#include "gcc/string.h"
 
-#if VERSION_CN
+#if VERSION_IQUE
 // TODO: remove if sections are split in iQue release
 extern Addr entity_jan_iwa_ROM_START;
 extern Addr entity_jan_iwa_ROM_END;
@@ -36,10 +37,7 @@ extern Addr WorldEntityHeapBase;
 
 typedef struct Fog {
     /* 0x00 */ s32 enabled;
-    /* 0x04 */ s32 r;
-    /* 0x08 */ s32 g;
-    /* 0x0C */ s32 b;
-    /* 0x10 */ s32 a;
+    /* 0x04 */ Color4i color;
     /* 0x14 */ s32 startDistance;
     /* 0x18 */ s32 endDistance;
 } Fog; // size = 0x1C
@@ -127,7 +125,7 @@ Gfx D_8014B0B8[21][5] = {
         gsDPSetCombineMode(G_CC_MODULATEIDECALA, G_CC_PASS2),
         gsDPSetCombineMode(G_CC_MODULATEIA, G_CC_PASS2),
         gsDPSetCombineLERP(TEXEL0, 0, SHADE, 0, 0, 0, 0, TEXEL0, COMBINED, PRIMITIVE, PRIMITIVE_ALPHA, COMBINED, 0, 0, 0, COMBINED),
-        gsDPSetCombineLERP(TEXEL0, 0, SHADE, 0, TEXEL0, 0, SHADE, 0, COMBINED, 0, PRIMITIVE, ENVIRONMENT, 0, 0, 0, COMBINED),
+        gsDPSetCombineMode(G_CC_MODULATEIA, PM_CC_17),
     }, {
         gsDPSetCombineMode(G_CC_BLENDRGBA, G_CC_BLENDRGBA),
         gsDPSetCombineMode(G_CC_BLENDRGBA, G_CC_PASS2),
@@ -1054,7 +1052,7 @@ s32 mdl_renderTaskBasePriorities[RENDER_MODE_COUNT] = {
     [RENDER_MODE_CLOUD_NO_ZB]               =  700000,
 };
 
-s8 D_8014C248[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, };
+s8 D_8014C248[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 // BSS
 extern ModelCustomGfxBuilderList* gCurrentCustomModelGfxBuildersPtr;
@@ -1397,11 +1395,11 @@ void exec_entity_commandlist(Entity* entity) {
 
 void func_8010FD98(void* arg0, s32 alpha) {
     if (alpha >= 255) {
-        gDPSetRenderMode(gMasterGfxPos++, G_RM_AA_ZB_OPA_SURF, G_RM_AA_ZB_OPA_SURF2);
-        gDPSetCombineMode(gMasterGfxPos++, G_CC_MODULATEIA, G_CC_MODULATEIA);
+        gDPSetRenderMode(gMainGfxPos++, G_RM_AA_ZB_OPA_SURF, G_RM_AA_ZB_OPA_SURF2);
+        gDPSetCombineMode(gMainGfxPos++, G_CC_MODULATEIA, G_CC_MODULATEIA);
     } else {
-        gDPSetCombineLERP(gMasterGfxPos++, 0, 0, 0, TEXEL0, PRIMITIVE, 0, TEXEL0, 0, 0, 0, 0, TEXEL0, TEXEL0, 0, PRIMITIVE, 0);
-        gDPSetPrimColor(gMasterGfxPos++, 0, 0, 0, 0, 0, alpha);
+        gDPSetCombineMode(gMainGfxPos++, PM_CC_01, PM_CC_02);
+        gDPSetPrimColor(gMainGfxPos++, 0, 0, 0, 0, 0, alpha);
     }
 }
 
@@ -1412,8 +1410,8 @@ void func_8010FE44(void* arg0) {
 void entity_model_set_shadow_color(void* data) {
     s32 alpha = (s32)data;
 
-    gDPSetCombineLERP(gMasterGfxPos++, 0, 0, 0, 0, PRIMITIVE, 0, TEXEL0, 0, 0, 0, 0, 0, TEXEL0, 0, PRIMITIVE, 0);
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, 0, 0, 0, alpha);
+    gDPSetCombineLERP(gMainGfxPos++, 0, 0, 0, 0, PRIMITIVE, 0, TEXEL0, 0, 0, 0, 0, 0, TEXEL0, 0, PRIMITIVE, 0);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, 0, 0, 0, alpha);
 }
 
 void render_entities(void) {
@@ -3036,7 +3034,6 @@ void appendGfx_model(void* data) {
     s8 renderMode;
     s32 texturingMode;
     s32 renderModeIdx;
-    s32 new_var;
     s32 flags = model->flags;
 
     ModelNode* modelNode;
@@ -3048,7 +3045,7 @@ void appendGfx_model(void* data) {
 
     s32 fogMin, fogMax;
     s32 fogR, fogG, fogB, fogA;
-    Gfx** gfxPos = &gMasterGfxPos;
+    Gfx** gfxPos = &gMainGfxPos;
 
     mtxPushMode = G_MTX_PUSH;
     mtxLoadMode = G_MTX_LOAD;
@@ -3402,10 +3399,10 @@ void appendGfx_model(void* data) {
                     break;
             }
             gSPDisplayList((*gfxPos)++, D_8014AFC0[renderModeIdx]);
-            gDPSetFogColor((*gfxPos)++, gCurrentFogSettings->r,
-                                            gCurrentFogSettings->g,
-                                            gCurrentFogSettings->b,
-                                            gCurrentFogSettings->a);
+            gDPSetFogColor((*gfxPos)++, gCurrentFogSettings->color.r,
+                                            gCurrentFogSettings->color.g,
+                                            gCurrentFogSettings->color.b,
+                                            gCurrentFogSettings->color.a);
             gSPFogPosition((*gfxPos)++, gCurrentFogSettings->startDistance, gCurrentFogSettings->endDistance);
             break;
         case 4:
@@ -3416,66 +3413,66 @@ void appendGfx_model(void* data) {
             gSPDisplayList((*gfxPos)++, D_8014AFC0[0x10]);
             switch (renderMode) {
                 case RENDER_MODE_SURFACE_OPA:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_OPA_SURF2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_OPA_SURF2);
                     break;
                 case RENDER_MODE_SURFACE_OPA_NO_AA:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_ZB_OPA_SURF2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_ZB_OPA_SURF2);
                     break;
                 case RENDER_MODE_DECAL_OPA:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_OPA_DECAL2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_OPA_DECAL2);
                     break;
                 case RENDER_MODE_DECAL_OPA_NO_AA:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_ZB_OPA_DECAL2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_ZB_OPA_DECAL2);
                     break;
                 case RENDER_MODE_INTERSECTING_OPA:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_OPA_INTER2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_OPA_INTER2);
                     break;
                 case RENDER_MODE_ALPHATEST:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_TEX_EDGE2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_TEX_EDGE2);
                     break;
                 case RENDER_MODE_ALPHATEST_ONESIDED:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_TEX_EDGE2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_TEX_EDGE2);
                     break;
                 case RENDER_MODE_SURFACE_XLU_LAYER1:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_XLU_SURF2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_XLU_SURF2);
                     break;
                 case RENDER_MODE_SURFACE_XLU_LAYER2:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_XLU_SURF2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_XLU_SURF2);
                     break;
                 case RENDER_MODE_SURFACE_XLU_LAYER3:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_XLU_SURF2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_XLU_SURF2);
                     break;
                 case RENDER_MODE_SURFACE_XLU_NO_AA:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_ZB_XLU_SURF2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_ZB_XLU_SURF2);
                     break;
                 case RENDER_MODE_DECAL_XLU:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_XLU_DECAL2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_XLU_DECAL2);
                     break;
                 case RENDER_MODE_DECAL_XLU_NOAA:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_XLU_DECAL2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_XLU_DECAL2);
                     break;
                 case RENDER_MODE_INTERSECTING_XLU:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_XLU_INTER2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_ZB_XLU_INTER2);
                     break;
                 case RENDER_MODE_SURFACE_OPA_NO_ZB:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_OPA_SURF2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_OPA_SURF2);
                     break;
                 case RENDER_MODE_ALPHATEST_NO_ZB:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_TEX_EDGE2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_TEX_EDGE2);
                     break;
                 case RENDER_MODE_SURFACE_XLU_NO_ZB:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_XLU_SURF2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_AA_XLU_SURF2);
                     break;
                 case RENDER_MODE_CLOUD:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_ZB_CLD_SURF2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_ZB_CLD_SURF2);
                     break;
                 case RENDER_MODE_CLOUD_NO_ZB:
-                    gDPSetRenderMode(gMasterGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_CLD_SURF2);
+                    gDPSetRenderMode(gMainGfxPos++, GBL_c1(G_BL_CLR_BL, G_BL_A_FOG, G_BL_CLR_IN, G_BL_1MA), G_RM_CLD_SURF2);
                     break;
             }
-            gDPSetFogColor((*gfxPos)++, gCurrentFogSettings->r,
-                                            gCurrentFogSettings->g,
-                                            gCurrentFogSettings->b,
+            gDPSetFogColor((*gfxPos)++, gCurrentFogSettings->color.r,
+                                            gCurrentFogSettings->color.g,
+                                            gCurrentFogSettings->color.b,
                                             mdl_bgMultiplyColorA);
             gDPSetBlendColor((*gfxPos)++, mdl_bgMultiplyColorR,
                                               mdl_bgMultiplyColorG,
@@ -3547,14 +3544,14 @@ void appendGfx_model(void* data) {
             }
             gSPDisplayList((*gfxPos)++, D_8014AFC0[renderModeIdx]);
 
-            fogR = (gCurrentFogSettings->r * (255 - mdl_bgMultiplyColorA) + mdl_bgMultiplyColorR * mdl_bgMultiplyColorA) / 255;
-            fogG = (gCurrentFogSettings->g * (255 - mdl_bgMultiplyColorA) + mdl_bgMultiplyColorG * mdl_bgMultiplyColorA) / 255;
-            fogB = (gCurrentFogSettings->b * (255 - mdl_bgMultiplyColorA) + mdl_bgMultiplyColorB * mdl_bgMultiplyColorA) / 255;
+            fogR = (gCurrentFogSettings->color.r * (255 - mdl_bgMultiplyColorA) + mdl_bgMultiplyColorR * mdl_bgMultiplyColorA) / 255;
+            fogG = (gCurrentFogSettings->color.g * (255 - mdl_bgMultiplyColorA) + mdl_bgMultiplyColorG * mdl_bgMultiplyColorA) / 255;
+            fogB = (gCurrentFogSettings->color.b * (255 - mdl_bgMultiplyColorA) + mdl_bgMultiplyColorB * mdl_bgMultiplyColorA) / 255;
 
             fogMin = (gCurrentFogSettings->startDistance * (255 - mdl_bgMultiplyColorA) + 900 * mdl_bgMultiplyColorA) / 255;
             fogMax = (gCurrentFogSettings->endDistance * (255 - mdl_bgMultiplyColorA) + 1000 * mdl_bgMultiplyColorA) / 255;
 
-            gDPSetFogColor(gMasterGfxPos++,  fogR, fogG, fogB, gCurrentFogSettings->a);
+            gDPSetFogColor(gMainGfxPos++, fogR, fogG, fogB, gCurrentFogSettings->color.a);
             gSPFogPosition((*gfxPos)++, fogMin, fogMax);
             break;
         case 10:
@@ -4044,12 +4041,12 @@ void clear_model_data(void) {
     }
 
     *gBackgroundFogModePtr = FOG_MODE_0;
-    gCurrentFogSettings->r = 10;
-    gCurrentFogSettings->g = 10;
-    gCurrentFogSettings->b = 10;
+    gCurrentFogSettings->color.r = 10;
+    gCurrentFogSettings->color.g = 10;
+    gCurrentFogSettings->color.b = 10;
     gCurrentFogSettings->startDistance = 950;
     gCurrentFogSettings->enabled = FALSE;
-    gCurrentFogSettings->a = 0;
+    gCurrentFogSettings->color.a = 0;
     gCurrentFogSettings->endDistance = 1000;
 
     for (i = 0; i < ARRAY_COUNT(texPannerAuxV); i++) {
@@ -4145,9 +4142,9 @@ void mdl_create_model(ModelBlueprint* bp, s32 arg1) {
     if (prop != NULL) {
         model->texPannerID = prop->data.s & 0xF;
     } else {
-        model->texPannerID = 0;
+        model->texPannerID = TEX_PANNER_0;
     }
-    model->customGfxIndex = 0;
+    model->customGfxIndex = CUSTOM_GFX_0;
 
     if (node->type != SHAPE_TYPE_GROUP) {
         prop = get_model_property(node, MODEL_PROP_KEY_RENDER_MODE);
@@ -4216,17 +4213,17 @@ void mdl_create_model(ModelBlueprint* bp, s32 arg1) {
 
 // Mysterious no-op
 void iterate_models(void) {
-    Model* nonNull;
-    Model* ret;
+    Model* last = NULL;
+    Model* mdl;
     s32 i;
 
     for (i = 0; i < ARRAY_COUNT(*gCurrentModels); i++) {
-        ret = (*gCurrentModels)[i];
-        if (ret != NULL) {
-            nonNull = ret;
+        mdl = (*gCurrentModels)[i];
+        if (mdl != NULL) {
+            last = mdl;
         }
     }
-    ret = nonNull;
+    mdl = last;
 }
 
 void func_80116698(void) {
@@ -4287,9 +4284,10 @@ void func_80116698(void) {
             if (!(mtg->flags & MODEL_TRANSFORM_GROUP_FLAG_1000)) {
                 if (mtg->matrixMode != 0) {
                     mtg->matrixMode--;
-                    if (!(mtg->matrixMode & 0xFF)) {
+                    if (mtg->matrixMode == 0) {
                         mtg->matrixA = *mtg->transformMtx;
                     }
+                    // store transformMtx on stack
                     mtx = mtg->transformMtx;
                     mtg->transformMtx = &gDisplayContext->matrixStack[gMatrixListPos++];
                     *mtg->transformMtx = *mtx;
@@ -4592,7 +4590,7 @@ void func_80117D00(Model* model) {
 
 // this looks like a switch, but I can't figure it out
 void render_transform_group_node(ModelNode* node) {
-    Gfx** gfx = &gMasterGfxPos;
+    Gfx** gfx = &gMainGfxPos;
     Model* model;
 
     if (node != NULL) {
@@ -4644,7 +4642,7 @@ void render_transform_group_node(ModelNode* node) {
 // gfx temps needed
 void render_transform_group(void* data) {
     ModelTransformGroup* group = data;
-    Gfx** gfx = &gMasterGfxPos;
+    Gfx** gfx = &gMainGfxPos;
 
     if (!(group->flags & MODEL_TRANSFORM_GROUP_FLAG_4)) {
         mdl_currentTransformGroupChildIndex = group->minChildModelIndex;
@@ -5382,10 +5380,10 @@ void set_world_fog_dist(s32 start, s32 end) {
 }
 
 void set_world_fog_color(s32 r, s32 g, s32 b, s32 a) {
-    gCurrentFogSettings->r = r;
-    gCurrentFogSettings->g = g;
-    gCurrentFogSettings->b = b;
-    gCurrentFogSettings->a = a;
+    gCurrentFogSettings->color.r = r;
+    gCurrentFogSettings->color.g = g;
+    gCurrentFogSettings->color.b = b;
+    gCurrentFogSettings->color.a = a;
 }
 
 s32 is_world_fog_enabled(void) {
@@ -5398,10 +5396,10 @@ void get_world_fog_distance(s32* start, s32* end) {
 }
 
 void get_world_fog_color(s32* r, s32* g, s32* b, s32* a) {
-    *r = gCurrentFogSettings->r;
-    *g = gCurrentFogSettings->g;
-    *b = gCurrentFogSettings->b;
-    *a = gCurrentFogSettings->a;
+    *r = gCurrentFogSettings->color.r;
+    *g = gCurrentFogSettings->color.g;
+    *b = gCurrentFogSettings->color.b;
+    *a = gCurrentFogSettings->color.a;
 }
 
 void set_tex_panner(Model* model, s32 texPannerID) {
@@ -5447,36 +5445,35 @@ void set_custom_gfx_builders(s32 customGfxIndex, ModelCustomGfxBuilderFunc pre, 
 }
 
 void build_custom_gfx(void) {
-    Gfx* gfx = gMasterGfxPos;
+    Gfx* gfx = gMainGfxPos;
     ModelCustomGfxBuilderFunc preFunc;
     ModelCustomGfxBuilderFunc postFunc;
     s32 i;
 
-    gSPBranchList(gMasterGfxPos++, 0x00000000);
+    gSPBranchList(gMainGfxPos++, 0x00000000);
 
     for (i = 0; i < ARRAY_COUNT(*gCurrentCustomModelGfxPtr) / 2; i++) {
         preFunc = (*gCurrentCustomModelGfxBuildersPtr)[i * 2];
 
         if (preFunc != NULL) {
-            (*gCurrentCustomModelGfxPtr)[i * 2] = gMasterGfxPos;
+            (*gCurrentCustomModelGfxPtr)[i * 2] = gMainGfxPos;
             preFunc(i);
-            gSPEndDisplayList(gMasterGfxPos++);
+            gSPEndDisplayList(gMainGfxPos++);
         }
 
         postFunc = (*gCurrentCustomModelGfxBuildersPtr)[i * 2 + 1];
         if (postFunc != NULL) {
-            (*gCurrentCustomModelGfxPtr)[i * 2 + 1] = gMasterGfxPos;
+            (*gCurrentCustomModelGfxPtr)[i * 2 + 1] = gMainGfxPos;
             postFunc(i);
-            gSPEndDisplayList(gMasterGfxPos++);
+            gSPEndDisplayList(gMainGfxPos++);
         }
     }
 
-    gSPBranchList(gfx, gMasterGfxPos);
+    gSPBranchList(gfx, gMainGfxPos);
 }
 
 // weird temps necessary to match
 /// @returns TRUE if mtx is NULL or identity.
-// TODO takes a Matrix4f, not a Matrix4s - types being weird
 s32 is_identity_fixed_mtx(Mtx* mtx) {
     s32* mtxIt = (s32*)mtx;
     s32* identityIt;
@@ -5683,71 +5680,54 @@ Gfx* mdl_get_copied_gfx(s32 copyIndex) {
     Gfx* gfxCopy = mlvc->gfxCopy[selector];
 
     mlvc->selector++;
-    if (mlvc->selector >= 2) {
+    if (mlvc->selector > ARRAY_COUNT(mlvc->gfxCopy) - 1) {
         mlvc->selector = 0;
     }
 
     return gfxCopy;
 }
 
-#ifdef WIP
-void mdl_project_tex_coords(s32 modelID, Gfx* destGfx, f32 (*destMtx)[4], void* destVertices) {
-    s32 numVertices;
+void mdl_project_tex_coords(s32 modelID, Gfx* arg1, Matrix4f arg2, Vtx* arg3) {
+    s32 sp18;
     Vtx* baseVtx;
-    s32 gfxCount;
+    s32 sp20;
+    f32 v1tc1;
+    f32 v2tc1;
     f32 sp2C;
+    f32 v0tc1;
     f32 sp40;
-    Vtx* temp_a0;
-    f32 temp_f10;
-    f32 temp_f12;
-    f32 temp_f12_2;
-    f32 temp_f14;
-    f32 temp_f14_2;
-    f32 temp_f2;
-    f32 temp_f2_2;
-    f32 temp_f4_2;
-    f32 temp_f4_3;
-    f32 temp_f8;
-    f32 temp_f8_3;
-    f32 var_f0;
-    f32 var_f10;
-    f32 var_f24;
-    f32 var_f26;
-    f32 var_f2;
-    f32 var_f30;
-    f32 var_f6;
-    f32 var_f6_2;
-
+    f32 v1tc0;
+    f32 v1ob2;
+    f32 ob2;
+    f32 ob1;
     f32 v0ob0;
     f32 v0ob2;
     f32 v0tc0;
-    f32 v0tc1;
-
-    f32 v1ob0;
-    f32 v1ob2;
     f32 v2ob0;
-    f32 v1tc0;
-    f32 v1tc1;
-    f32 v2ob2;
     f32 v2tc0;
-    f32 v2tc1;
-
+    f32 v1ob0;
+    f32 v2ob2;
     f32 ob0;
-    f32 ob1;
-    f32 ob2;
-
-    f32 tc0;
+    f32 var_f10;
+    f32 var_f24;
+    f32 var_f26;
     f32 tc1;
-
-    s32 cn0;
-    s32 cn1;
-    s32 cn2;
-    s32 cmd;
+    f32 var_f30;
+    f32 tc0;
+    f32 var_f6_2;
     s32 i;
+    u32 cnB;
+    u32 cnG;
+    u32 cnR;
+    f32 var_f20;
 
     s32 listIndex;
     Model* model;
     Gfx* dlist;
+    s32 cmd;
+    Vtx* tempVert;
+
+    s8 zero = 0; // TODO needed to match
 
     listIndex = get_model_list_index_from_tree_index(modelID & 0xFFFF);
     model = get_model_from_list_index(listIndex);
@@ -5755,22 +5735,21 @@ void mdl_project_tex_coords(s32 modelID, Gfx* destGfx, f32 (*destMtx)[4], void* 
 
     while (TRUE) {
         cmd = dlist->words.w0 >> 0x18;
-        //temp_a0 = var_v0->words.w1;
+        tempVert = (Vtx*)dlist->words.w1;
         if (cmd == G_ENDDL) {
             break;
         }
-
         if (cmd == G_VTX) {
-            baseVtx = dlist->words.w1;
+            baseVtx = tempVert;
             break;
         }
         dlist++;
     }
 
-    v0ob0 = baseVtx[0].v.ob[0];
-    v0ob2 = baseVtx[0].v.ob[2];
-    v0tc0 = baseVtx[0].v.tc[0];
-    v0tc1 = baseVtx[0].v.tc[1];
+    v0ob0 = baseVtx[zero].v.ob[0];
+    v0ob2 = baseVtx[zero].v.ob[2];
+    v0tc0 = baseVtx[zero].v.tc[0];
+    v0tc1 = baseVtx[zero].v.tc[1];
 
     v1ob0 = baseVtx[1].v.ob[0];
     v1ob2 = baseVtx[1].v.ob[2];
@@ -5782,59 +5761,81 @@ void mdl_project_tex_coords(s32 modelID, Gfx* destGfx, f32 (*destMtx)[4], void* 
     v2tc0 = baseVtx[2].v.tc[0];
     v2tc1 = baseVtx[2].v.tc[1];
 
-    cn0 = baseVtx[0].v.cn[0];
-    cn1 = baseVtx[0].v.cn[1];
-    cn2 = baseVtx[0].v.cn[2];
+    cnR = baseVtx[0].v.cn[0];
+    cnG = baseVtx[0].v.cn[1];
+    cnB = baseVtx[0].v.cn[2];
 
     if (v0ob0 != v1ob0) {
-        temp_f14_2 = v0ob0 - v1ob0;
-        temp_f8_3 = v0tc0 - v1tc0;
-        temp_f2_2 = (v0ob0 - v2ob0) / temp_f14_2;
-        temp_f12_2 = v0ob2 - v1ob2;
-        temp_f10 = (temp_f2_2 * temp_f12_2) - (v0ob2 - v2ob2);
-        sp40 = ((temp_f2_2 * temp_f8_3) - (v0tc0 - v2tc0)) / temp_f10;
-        temp_f4_3 = v0tc1 - v1tc1;
-        var_f30 = (temp_f8_3 - (temp_f12_2 * sp40)) / temp_f14_2;
-        var_f26 = ((temp_f2_2 * temp_f4_3) - (v0tc1 - v2tc1)) / temp_f10;
-        var_f2 = var_f26 * v0ob2;
-        var_f24 = (temp_f4_3 - (temp_f12_2 * var_f26)) / temp_f14_2;
-        var_f6 = (v0tc0 - (var_f30 * v0ob0)) - (sp40 * v0ob2);
-        var_f0 = v0tc1 - (var_f24 * v0ob0);
+        f32 f2 = v0ob0 - v2ob0;
+        f32 f14 = v0ob0 - v1ob0;
+        f32 f8 = v0tc0 - v1tc0;
+        f32 f2a = f2 / f14;
+        f32 f0 = f2a * f8;
+        f32 f12 = v0ob2 - v1ob2;
+        f32 f10 = f2a * f12;
+        f32 f4 = v0tc0 - v2tc0;
+        f32 f6 = v0ob2 - v2ob2;
+        f32 f0a = f0 - f4;
+        f32 f10a = f10 - f6;
+
+        f32 f0b, f4a, f2b, f8a, f6a, f0c, f8b, f2c, f12a, f2d, f4b, f0d, f6b, f0e;
+
+        sp40 = f0a / f10a; // used later
+        f0b = f12 * sp40;
+        f4a = v0tc1 - v1tc1;
+        f2b = f2a * f4a;
+        f8a = f8 - f0b;
+        var_f30 = f8a / f14; // used later
+        f6a = var_f30 * v0ob0;
+        f0c = v0tc1 - v2tc1;
+        f2c = f2b - f0c;
+        var_f26 = f2c / f10a; // used later
+        f12a = f12 * var_f26;
+        var_f24 = (f4a - f12a) / f14; // used later
+        sp2C = v0tc0 - f6a - sp40 * v0ob2; // used later
+        var_f20 = v0tc1 - var_f24 * v0ob0 - var_f26 * v0ob2; // used later
     } else {
-        temp_f14 = (v0ob2 - v1ob2);
-        temp_f8 = v0tc0 - v1tc0;
-        temp_f2 = (v0ob2 - v2ob2) / temp_f14;
-        temp_f12 = v0ob0 - v1ob0;
-        temp_f10 = (temp_f2 * temp_f12) - (v0ob0 - v2ob0);
-        var_f30 = ((temp_f2 * temp_f8) - (v0tc0 - v2tc0)) / temp_f10;
-        temp_f4_2 = v0tc1 - v1tc1;
-        sp40 = (temp_f8 - (temp_f12 * var_f30)) / temp_f14;
-        var_f24 = ((temp_f2 * temp_f4_2) - (v0tc1 - v2tc1)) / temp_f10;
-        var_f26 = (temp_f4_2 - (temp_f12 * var_f24)) / temp_f14;
-        var_f2 = var_f26 * v0ob2;
-        var_f6 = (v0tc0 - (var_f30 * v0ob0)) - (sp40 * v0ob2);
-        var_f0 = v0tc1 - (var_f24 * v0ob0);
+        f32 f2 = v0ob2 - v2ob2;
+        f32 f14 = v0ob2 - v1ob2;
+        f32 f8 = v0tc0 - v1tc0;
+        f32 f12 = v0ob0 - v1ob0;
+        f32 f4 = v0tc0 - v2tc0;
+        f32 f6 = v0ob0 - v2ob0;
+        f32 f0 = f2 / f14 * f8;
+        f32 f10 = f2 / f14 * f12;
+
+        f32 f0b, f4a, f2b, f8a, f6a, f0c, f8b, f2c, f12a, f2d, f4b, f0d, f6b, f0e;
+
+        var_f30 = (f0 - f4) / (f10 - f6); // used later
+        f0b = f12 * var_f30;
+        f6a = var_f30 * v0ob0;
+        f4a = v0tc1 - v1tc1;
+        f2b = f2 / f14 * f4a;
+        f8a = f8 - f0b;
+        sp40 = f8a / f14; // used later
+        f8b = sp40 * v0ob2;
+        f0c = v0tc1 - v2tc1;
+        var_f24 = (f2b - f0c) / (f10 - f6); // used later
+        var_f26 = (f4a - f12 * var_f24) / f14; // used later
+        sp2C = v0tc0 - f6a - f8b; // used later
+        var_f20 = v0tc1 - var_f24 * v0ob0 - var_f26 * v0ob2; // used later
     }
-    sp2C = var_f6;
 
-    mdl_get_vertex_count(destGfx, &numVertices, &baseVtx, &gfxCount, destVertices);
+    mdl_get_vertex_count(arg1, &sp18, &baseVtx, &sp20, arg3);
 
-    for (i = 0; i < numVertices; i++) {
+    for (i = 0; i < sp18; i++) {
         ob0 = baseVtx->v.ob[0];
         ob1 = baseVtx->v.ob[1];
         ob2 = baseVtx->v.ob[2];
-
-        if (destMtx != NULL) {
-            var_f10 = (destMtx[0][0] * ob0) + (destMtx[1][0] * ob1) + (destMtx[2][0] * ob2) + destMtx[3][0];
-            var_f6_2 = (destMtx[0][2] * ob0) + (destMtx[1][2] * ob1) + (destMtx[2][2] * ob2) + destMtx[3][2];
+        if (arg2 != NULL) {
+            var_f10 = (arg2[0][0] * ob0) + (arg2[1][0] * ob1) + (arg2[2][0] * ob2) + arg2[3][0];
+            var_f6_2 = (arg2[0][2] * ob0) + (arg2[1][2] * ob1) + (arg2[2][2] * ob2) + arg2[3][2];
         } else {
             var_f10 = ob0;
             var_f6_2 = ob2;
         }
-
         tc0 = (var_f30 * var_f10) + (sp40 * var_f6_2) + sp2C;
-        tc1 = (var_f24 * var_f10) + (var_f26 * var_f6_2) + (var_f0 - var_f2);
-
+        tc1 = (var_f24 * var_f10) + (var_f26 * var_f6_2) + var_f20;
         if (tc0 < 0.0f) {
             tc0 -= 0.5;
         } else if (tc0 > 0.0f) {
@@ -5849,15 +5850,12 @@ void mdl_project_tex_coords(s32 modelID, Gfx* destGfx, f32 (*destMtx)[4], void* 
 
         baseVtx->v.tc[0] = tc0;
         baseVtx->v.tc[1] = tc1;
-        baseVtx->v.cn[0] = cn0;
-        baseVtx->v.cn[1] = cn1;
-        baseVtx->v.cn[2] = cn2;
+        baseVtx->v.cn[0] = cnR;
+        baseVtx->v.cn[1] = cnG;
+        baseVtx->v.cn[2] = cnB;
         baseVtx++;
     }
 }
-#else
-INCLUDE_ASM(s32, "a5dd0_len_114e0", mdl_project_tex_coords);
-#endif
 
 // Checks if the center of a model is visible.
 // If `depthQueryID` is nonnegative, the depth buffer is checked to see if the model's center is occluded by geometry.
@@ -5917,39 +5915,39 @@ s32 is_model_center_visible(u16 modelID, s32 depthQueryID, f32* screenX, f32* sc
         }
     }
     if (outX >= 0.0f && outY >= 0.0f && outX < 320.0f && outY < 240.0f) {
-        gDPPipeSync(gMasterGfxPos++);
+        gDPPipeSync(gMainGfxPos++);
         // Load a 4x1 pixel tile of the depth buffer
-        gDPLoadTextureTile(gMasterGfxPos++, osVirtualToPhysical(&nuGfxZBuffer[(s32) outY * 320]), G_IM_FMT_RGBA, G_IM_SIZ_16b, 320, 1,
+        gDPLoadTextureTile(gMainGfxPos++, osVirtualToPhysical(&nuGfxZBuffer[(s32) outY * 320]), G_IM_FMT_RGBA, G_IM_SIZ_16b, 320, 1,
             (s32) outX, 0, (s32) outX + 3, 0,
             0,
             G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP,
             9, G_TX_NOMASK,
             G_TX_NOLOD, G_TX_NOLOD);
-        gDPPipeSync(gMasterGfxPos++);
+        gDPPipeSync(gMainGfxPos++);
         // Set the current color image to the buffer where copied depth values are stored.
-        gDPSetColorImage(gMasterGfxPos++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 320, depthCopyBuffer);
-        gDPPipeSync(gMasterGfxPos++);
+        gDPSetColorImage(gMainGfxPos++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 320, depthCopyBuffer);
+        gDPPipeSync(gMainGfxPos++);
         // Set up 1 cycle mode and all other relevant othermode params.
         // One cycle mode must be used here because only one pixel is copied, and copy mode only supports multiples of 4 pixels.
-        gDPSetCycleType(gMasterGfxPos++, G_CYC_1CYCLE);
-        gDPSetRenderMode(gMasterGfxPos++, G_RM_OPA_SURF, G_RM_OPA_SURF2);
-        gDPSetCombineMode(gMasterGfxPos++, G_CC_DECALRGBA, G_CC_DECALRGBA);
-        gDPSetTextureFilter(gMasterGfxPos++, G_TF_POINT);
-        gDPSetTexturePersp(gMasterGfxPos++, G_TP_NONE);
-        gSPTexture(gMasterGfxPos++, 0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON);
-        gDPSetTextureLUT(gMasterGfxPos++, G_TT_NONE);
-        gDPSetTextureDetail(gMasterGfxPos++, G_TD_CLAMP);
-        gDPSetTextureLOD(gMasterGfxPos++, G_TL_TILE);
+        gDPSetCycleType(gMainGfxPos++, G_CYC_1CYCLE);
+        gDPSetRenderMode(gMainGfxPos++, G_RM_OPA_SURF, G_RM_OPA_SURF2);
+        gDPSetCombineMode(gMainGfxPos++, G_CC_DECALRGBA, G_CC_DECALRGBA);
+        gDPSetTextureFilter(gMainGfxPos++, G_TF_POINT);
+        gDPSetTexturePersp(gMainGfxPos++, G_TP_NONE);
+        gSPTexture(gMainGfxPos++, 0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON);
+        gDPSetTextureLUT(gMainGfxPos++, G_TT_NONE);
+        gDPSetTextureDetail(gMainGfxPos++, G_TD_CLAMP);
+        gDPSetTextureLOD(gMainGfxPos++, G_TL_TILE);
         // Adjust the scissor to only draw to the specified pixel.
-        gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, depthQueryID, 0, depthQueryID + 1, 1);
+        gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, depthQueryID, 0, depthQueryID + 1, 1);
         // Draw a texrect to copy one pixel of the loaded depth tile to the output buffer.
-        gSPTextureRectangle(gMasterGfxPos++, depthQueryID << 2, 0 << 2, 4 << 2, 1 << 2, G_TX_RENDERTILE, (s32) outX << 5, 0, 1 << 10, 1 << 10);
+        gSPTextureRectangle(gMainGfxPos++, depthQueryID << 2, 0 << 2, 4 << 2, 1 << 2, G_TX_RENDERTILE, (s32) outX << 5, 0, 1 << 10, 1 << 10);
         // Sync and swap the color image back to the current framebuffer.
-        gDPPipeSync(gMasterGfxPos++);
-        gDPSetColorImage(gMasterGfxPos++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 320, osVirtualToPhysical(nuGfxCfb_ptr));
-        gDPPipeSync(gMasterGfxPos++);
+        gDPPipeSync(gMainGfxPos++);
+        gDPSetColorImage(gMainGfxPos++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 320, osVirtualToPhysical(nuGfxCfb_ptr));
+        gDPPipeSync(gMainGfxPos++);
         // Reconfigure the frame's normal scissor.
-        gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, camera->viewportStartX, camera->viewportStartY, camera->viewportStartX + camera->viewportW, camera->viewportStartY + camera->viewportH);
+        gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, camera->viewportStartX, camera->viewportStartY, camera->viewportStartX + camera->viewportW, camera->viewportStartY + camera->viewportH);
 
         // The following code will use last frame's depth value, since the copy that was just written won't be executed until the current frame is drawn.
 
@@ -6023,39 +6021,39 @@ s32 is_point_visible(f32 x, f32 y, f32 z, s32 depthQueryID, f32* screenX, f32* s
         return outZ > 0.0f;
     }
     if (outX >= 0.0f && outY >= 0.0f && outX < 320.0f && outY < 240.0f) {
-        gDPPipeSync(gMasterGfxPos++);
+        gDPPipeSync(gMainGfxPos++);
         // Load a 4x1 pixel tile of the depth buffer
-        gDPLoadTextureTile(gMasterGfxPos++, osVirtualToPhysical(&nuGfxZBuffer[(s32) outY * 320]), G_IM_FMT_RGBA, G_IM_SIZ_16b, 320, 1,
+        gDPLoadTextureTile(gMainGfxPos++, osVirtualToPhysical(&nuGfxZBuffer[(s32) outY * 320]), G_IM_FMT_RGBA, G_IM_SIZ_16b, 320, 1,
             (s32) outX, 0, (s32) outX + 3, 0,
             0,
             G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP,
             9, G_TX_NOMASK,
             G_TX_NOLOD, G_TX_NOLOD);
-        gDPPipeSync(gMasterGfxPos++);
+        gDPPipeSync(gMainGfxPos++);
         // Set the current color image to the buffer where copied depth values are stored.
-        gDPSetColorImage(gMasterGfxPos++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 320, depthCopyBuffer);
-        gDPPipeSync(gMasterGfxPos++);
+        gDPSetColorImage(gMainGfxPos++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 320, depthCopyBuffer);
+        gDPPipeSync(gMainGfxPos++);
         // Set up 1 cycle mode and all other relevant othermode params.
         // One cycle mode must be used here because only one pixel is copied, and copy mode only supports multiples of 4 pixels.
-        gDPSetCycleType(gMasterGfxPos++, G_CYC_1CYCLE);
-        gDPSetRenderMode(gMasterGfxPos++, G_RM_OPA_SURF, G_RM_OPA_SURF2);
-        gDPSetCombineMode(gMasterGfxPos++, G_CC_DECALRGBA, G_CC_DECALRGBA);
-        gDPSetTextureFilter(gMasterGfxPos++, G_TF_POINT);
-        gDPSetTexturePersp(gMasterGfxPos++, G_TP_NONE);
-        gSPTexture(gMasterGfxPos++, 0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON);
-        gDPSetTextureLUT(gMasterGfxPos++, G_TT_NONE);
-        gDPSetTextureDetail(gMasterGfxPos++, G_TD_CLAMP);
-        gDPSetTextureLOD(gMasterGfxPos++, G_TL_TILE);
+        gDPSetCycleType(gMainGfxPos++, G_CYC_1CYCLE);
+        gDPSetRenderMode(gMainGfxPos++, G_RM_OPA_SURF, G_RM_OPA_SURF2);
+        gDPSetCombineMode(gMainGfxPos++, G_CC_DECALRGBA, G_CC_DECALRGBA);
+        gDPSetTextureFilter(gMainGfxPos++, G_TF_POINT);
+        gDPSetTexturePersp(gMainGfxPos++, G_TP_NONE);
+        gSPTexture(gMainGfxPos++, 0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON);
+        gDPSetTextureLUT(gMainGfxPos++, G_TT_NONE);
+        gDPSetTextureDetail(gMainGfxPos++, G_TD_CLAMP);
+        gDPSetTextureLOD(gMainGfxPos++, G_TL_TILE);
         // Adjust the scissor to only draw to the specified pixel.
-        gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, depthQueryID, 0, depthQueryID + 1, 1);
+        gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, depthQueryID, 0, depthQueryID + 1, 1);
         // Draw a texrect to copy one pixel of the loaded depth tile to the output buffer.
-        gSPTextureRectangle(gMasterGfxPos++, depthQueryID << 2, 0 << 2, (depthQueryID + 1) << 2, 1 << 2, G_TX_RENDERTILE, (s32) outX << 5, 0, 1 << 10, 1 << 10);
+        gSPTextureRectangle(gMainGfxPos++, depthQueryID << 2, 0 << 2, (depthQueryID + 1) << 2, 1 << 2, G_TX_RENDERTILE, (s32) outX << 5, 0, 1 << 10, 1 << 10);
         // Sync and swap the color image back to the current framebuffer.
-        gDPPipeSync(gMasterGfxPos++);
-        gDPSetColorImage(gMasterGfxPos++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 320, osVirtualToPhysical(nuGfxCfb_ptr));
-        gDPPipeSync(gMasterGfxPos++);
+        gDPPipeSync(gMainGfxPos++);
+        gDPSetColorImage(gMainGfxPos++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 320, osVirtualToPhysical(nuGfxCfb_ptr));
+        gDPPipeSync(gMainGfxPos++);
         // Reconfigure the frame's normal scissor.
-        gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, camera->viewportStartX, camera->viewportStartY, camera->viewportStartX + camera->viewportW, camera->viewportStartY + camera->viewportH);
+        gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, camera->viewportStartX, camera->viewportStartY, camera->viewportStartX + camera->viewportW, camera->viewportStartY + camera->viewportH);
 
         // The following code will use last frame's depth value, since the copy that was just written won't be executed until the current frame is drawn.
 
@@ -6082,20 +6080,20 @@ void mdl_draw_hidden_panel_surface(Gfx** arg0, u16 treeIndex) {
     Gfx* oldGfxPos;
     s32 flag;
 
-    if (*arg0 == gMasterGfxPos) {
+    if (*arg0 == gMainGfxPos) {
         flag = 1;
     }
 
-    oldGfxPos = gMasterGfxPos;
-    gMasterGfxPos = *arg0;
+    oldGfxPos = gMainGfxPos;
+    gMainGfxPos = *arg0;
 
     copied.flags = MODEL_FLAG_HAS_LOCAL_VERTEX_COPY | MODEL_FLAG_FLAG_1;
     appendGfx_model(&copied);
 
-    *arg0 = gMasterGfxPos;
+    *arg0 = gMainGfxPos;
 
     if (flag == 0) {
-        gMasterGfxPos = oldGfxPos;
+        gMainGfxPos = oldGfxPos;
     }
 }
 
@@ -6254,18 +6252,18 @@ void execute_render_tasks(void) {
             appendGfx = task->appendGfx;
 
             if (task->renderMode & RENDER_TASK_FLAG_REFLECT_FLOOR) {
-                savedGfxPos = gMasterGfxPos++;
+                savedGfxPos = gMainGfxPos++;
             }
 
             appendGfx(task->appendGfxArg);
 
             if (task->renderMode & RENDER_TASK_FLAG_REFLECT_FLOOR) {
-                gSPEndDisplayList(gMasterGfxPos++);
-                gSPBranchList(savedGfxPos, gMasterGfxPos);
-                gSPDisplayList(gMasterGfxPos++, savedGfxPos + 1);
-                gSPMatrix(gMasterGfxPos++, dispMtx, G_MTX_NOPUSH | G_MTX_MUL | G_MTX_PROJECTION);
-                gSPDisplayList(gMasterGfxPos++, savedGfxPos + 1);
-                gSPMatrix(gMasterGfxPos++, &gDisplayContext->camPerspMatrix[gCurrentCamID], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
+                gSPEndDisplayList(gMainGfxPos++);
+                gSPBranchList(savedGfxPos, gMainGfxPos);
+                gSPDisplayList(gMainGfxPos++, savedGfxPos + 1);
+                gSPMatrix(gMainGfxPos++, dispMtx, G_MTX_NOPUSH | G_MTX_MUL | G_MTX_PROJECTION);
+                gSPDisplayList(gMainGfxPos++, savedGfxPos + 1);
+                gSPMatrix(gMainGfxPos++, &gDisplayContext->camPerspMatrix[gCurrentCamID], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
             }
         }
     } else {
@@ -6277,7 +6275,7 @@ void execute_render_tasks(void) {
     }
 
     mdl_renderTaskQueueIdx++;
-    if (mdl_renderTaskQueueIdx > 2) {
+    if (mdl_renderTaskQueueIdx > ARRAY_COUNT(mdl_renderTaskLists) - 1) {
         mdl_renderTaskQueueIdx = 0;
     }
     mdl_renderTaskCount = 0;

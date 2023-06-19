@@ -37,7 +37,7 @@ API_CALLABLE(N(ImprisonedCardUpdate)) {
     effect->data.spiritCard->pos.x = card->pos.x;
     effect->data.spiritCard->pos.y = card->pos.y;
     effect->data.spiritCard->pos.z = card->pos.z;
-    
+
     card->rot.y = clamp_angle(card->rot.y + 6.6f);
     effect->data.spiritCard->yaw = card->rot.y;
 
@@ -108,7 +108,7 @@ EvtScript N(EVS_NpcInit_Skolar) = {
     EVT_CALL(SetNpcAnimation, NPC_SELF, ANIM_WorldSkolar_IdleSad)
     EVT_CALL(SetNpcPos, NPC_SELF, 0, NPC_DISPOSE_POS_Y, -100)
     EVT_CALL(EnableNpcShadow, NPC_SELF, FALSE)
-    EVT_CALL(func_802CFD30, NPC_SELF, FOLD_TYPE_7, 170, 0, 0, 0)
+    EVT_CALL(SetNpcImgFXParams, NPC_SELF, IMGFX_SET_ALPHA, 170, 0, 0, 0)
     EVT_IF_GE(GB_StoryProgress, STORY_CH3_BOW_JOINED_PARTY)
         EVT_CALL(RemoveNpc, NPC_SELF)
     EVT_END_IF

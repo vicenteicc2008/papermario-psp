@@ -9,7 +9,7 @@ EvtScript N(EVS_ExitWalk_nok_11_0) = {
     EVT_IF_EQ(GF_StartedChapter1, FALSE)
         EVT_SET(GF_StartedChapter1, TRUE)
         EVT_CALL(FadeOutMusic, 0, 1500)
-        EVT_CALL(GotoMapSpecial, EVT_PTR("kmr_22"), kmr_22_ENTRY_1, TRANSITION_6)
+        EVT_CALL(GotoMapSpecial, EVT_PTR("kmr_22"), kmr_22_ENTRY_1, TRANSITION_BEGIN_OR_END_CHAPTER)
         EVT_WAIT(100)
         EVT_RETURN
     EVT_END_IF
@@ -113,10 +113,14 @@ EvtScript N(EVS_EnterMap) = {
 EvtScript N(EVS_Main) = {
     EVT_SET(GB_WorldLocation, LOCATION_TOAD_TOWN)
     EVT_CALL(SetSpriteShading, SHADING_NONE)
-    EVT_CALL(SetCamPerspective, CAM_DEFAULT, CAM_UPDATE_MODE_3, 25, 90, 4096) // note: unusually large near clip dist: 90 vs 16
+    EVT_CALL(SetCamPerspective, CAM_DEFAULT, CAM_UPDATE_FROM_ZONE, 25, 90, 4096) // note: unusually large near clip dist: 90 vs 16
     EVT_CALL(SetCamBGColor, CAM_DEFAULT, 0, 0, 0)
     EVT_CALL(SetCamEnabled, CAM_DEFAULT, TRUE)
     EVT_CALL(SetCamLeadPlayer, CAM_DEFAULT, FALSE)
+#if VERSION_PAL
+    EVT_CALL(GetLanguage, LVar0)
+    EVT_CALL(SetModelTexVariant, MODEL_k11, LVar0)
+#endif
     EVT_SET(AF_MAC_0E, FALSE)
     EVT_SET(AF_MAC_0F, FALSE)
     EVT_SET(AF_MAC_10, FALSE)

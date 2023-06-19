@@ -698,7 +698,7 @@ API_CALLABLE(N(CamPushIn_BowserInhale)) {
     N(interp_value_with_easing)(INTRO_MATH_EASING_LINEAR, 121.6f, 90.0f, N(CamMoveInhaleTime), 40.0f, &N(BoomLengthInhale));
     camera->panActive = TRUE;
     camera->controlSettings.boomLength = N(BoomLengthInhale);
-    if ((N(CamMoveInhaleTime) == ((N(CamMoveInhaleTime) / 5) * 5)) && (N(BoomLengthInhale) != 90.0f)) {
+    if (N(CamMoveInhaleTime) % 5 == 0 && N(BoomLengthInhale) != 90.0f) {
         f32 temp_f4 = resolve_npc(script, NPC_Bowser_Body)->pos.y - 150.0f;
 
         fx_fire_breath(
@@ -712,7 +712,7 @@ API_CALLABLE(N(CamPushIn_BowserInhale)) {
     }
 
     N(CamMoveInhaleTime)++;
-    if (N(CamMoveInhaleTime) <= 40) {
+    if (N(CamMoveInhaleTime) <= (s32)(40 * DT)) {
         return ApiStatus_BLOCK;
     }
     return ApiStatus_DONE1;
@@ -728,7 +728,7 @@ API_CALLABLE(N(CamPullBack_BowserExhale)) {
     camera->panActive = TRUE;
     camera->controlSettings.boomLength = N(BoomLengthExhale);
     N(CamMoveExhaleTime)++;
-    if (N(CamMoveExhaleTime) < 21) {
+    if (N(CamMoveExhaleTime) < (s32)(21 * DT)) {
         return ApiStatus_BLOCK;
     }
     return ApiStatus_DONE1;
@@ -757,7 +757,7 @@ API_CALLABLE(N(BowserFlyToStarRod)) {
     bowserProp->colliderPos.z = bowserProp->pos.z;
 
     N(FlyToStarRodTime)++;
-    if (N(FlyToStarRodTime) <= 40) {
+    if (N(FlyToStarRodTime) <= (s32)(40 * DT)) {
         return ApiStatus_BLOCK;
     }
     return ApiStatus_DONE1;
@@ -796,14 +796,14 @@ BSS char N(D_8024F37C)[0x4];
 BSS s32 N(D_8024F380);
 BSS char N(D_8024F384)[0x74];
 
-typedef struct UnkHos05Struct {
-    /* 0x00 */ Vec3f unk_00;
-    /* 0x0C */ Vec3f unk_0C;
-    /* 0x18 */ Vec3f unk_18;
-    /* 0x24 */ f32 unk_24;
-} UnkHos05Struct; // size = 0x28
+typedef struct UnkHos05Path {
+    /* 0x00 */ Vec3f startPoint;
+    /* 0x0C */ Vec3f midPoint;
+    /* 0x18 */ Vec3f endPoint;
+    /* 0x24 */ char unk_24[4];
+} UnkHos05Path; // size = 0x28
 
-BSS UnkHos05Struct N(D_8024F3F8)[7];
+BSS UnkHos05Path N(D_8024F3F8)[7];
 
 BSS StoryGraphicData N(StoryGraphics);
 
@@ -823,7 +823,7 @@ API_CALLABLE(N(CamPullBack_BowserHoldingStarRod)) {
     camera->movePos.z = N(HoldStarRodCamZ);
 
     N(HoldStarRodTime)++;
-    if (N(HoldStarRodTime) <= 90) {
+    if (N(HoldStarRodTime) <= (s32)(90 * DT)) {
         return ApiStatus_BLOCK;
     }
     return ApiStatus_DONE1;
@@ -848,7 +848,7 @@ API_CALLABLE(N(CamPanAcrossRoom)) {
     camera->controlSettings.points.two.Bz = cos_deg(N(PanAcrossRoomAngle)) * 500.0f;
 
     N(PanAcrossRoomTime)++;
-    if (N(PanAcrossRoomTime) == 170) {
+    if (N(PanAcrossRoomTime) == (s32)(170 * DT)) {
         return ApiStatus_DONE1;
     }
     return ApiStatus_BLOCK;
@@ -875,179 +875,201 @@ API_CALLABLE(N(CamMove_OrbitKammy)) {
     camera->movePos.y = N(OrbitKammyCamY);
 
     N(OrbitKammyTime)++;
-    if (N(OrbitKammyTime) <= 120) {
+    if (N(OrbitKammyTime) <= (s32)(120 * DT)) {
         return ApiStatus_BLOCK;
     } else {
         return ApiStatus_DONE1;
     }
 }
 
-// float regalloc stuff
-#ifdef WIP
-ApiStatus func_802428C8_A2CB08(Evt* script, s32 isInitialCall) {
+// TODO document this function
+API_CALLABLE(func_802428C8_A2CB08) {
     Bytecode* args = script->ptrReadPos;
-    s32 temp_s6 = evt_get_variable(script, *args++);
-    f32 sp10;
-    f32 temp_f28;
-    EffectInstance* temp_a0;
+    s32 arg0 = evt_get_variable(script, *args++);
+    f32 arg1 = evt_get_float_variable(script, *args++);
+    f32 arg2 = evt_get_float_variable(script, *args++);
+    EffectInstance* arrayVar0;
     f32 xPos, yPos, zPos;
-    f32 temp_f24;
     EffectInstance* effect;
-    UnkHos05Struct* unkData;
-    Vec3f* vec01; // vectors 0, 1
-    Vec3f* vec2; // vector 2
-    f32 angle;
-    s32 s4;
-    s32 s5;
+    UnkHos05Path* path;
+    Vec3f* point;
+    Vec3f* endPoint;
+    s32 numPoints;
+    s32 pathTime;
+    s32 i;
 
+    arrayVar0 = (EffectInstance*) evt_get_variable(script, ArrayVar(0));
+    effect = arrayVar0;
 
-    sp10 = evt_get_float_variable(script, *args++);
-    temp_f28 = evt_get_float_variable(script, *args++);
-    temp_a0 = evt_get_variable(script, ArrayVar(0));
-
-
-    effect = temp_a0;
-
-    switch (temp_s6) {
+    // set endPoint
+    switch (arg0) {
         case 1:
-            unkData = &N(D_8024F3F8)[0];
-            vec01 = &unkData->unk_00;
-            s5 = 30;
-            s4 = 3;
-            angle = 90.0f;
-            yPos = (u32) (effect->data.somethingRotating->unk_14 + 30);
-            yPos = yPos * 4.0f;
-            temp_f24 = sin_deg(yPos + 51.43);
-            xPos = effect->data.somethingRotating->pos.x + (sin_deg(angle) * 50.0f * temp_f24);
-            yPos = effect->data.somethingRotating->pos.y + (cos_deg(yPos + 51.43) * 50.0f);
-            zPos = effect->data.somethingRotating->pos.z + (sin_deg(angle) * 50.0f * temp_f24);
-            unkData->unk_18.x = xPos;
-            unkData->unk_18.y = yPos;
-            unkData->unk_18.z = zPos;
+            path = &N(D_8024F3F8)[0];
+            i = 1;
+            point = &path->startPoint;
+            pathTime = 30;
+            numPoints = 3;
+            {
+                f32 angle = 90.0f;
+                u32 unk_14 = effect->data.somethingRotating->unk_14 + 30;
+                f32 angle3 = unk_14 * 4.0f + (f32) i * 51.43;
+                f32 radius = 50.0f;
+                f32 temp_f24 = sin_deg(angle3);
+                xPos = effect->data.somethingRotating->pos.x + sin_deg(angle) * radius * temp_f24 ;
+                yPos = effect->data.somethingRotating->pos.y + cos_deg(angle3) * radius;
+                // @bug should be `zPos = effect->data.somethingRotating->pos.z + cos_deg(angle) * radius * temp_f24;`
+                zPos = effect->data.somethingRotating->pos.z + sin_deg(angle) * radius * temp_f24;
+                path->endPoint.x = xPos;
+                path->endPoint.y = yPos;
+                path->endPoint.z = zPos;
+            }
             break;
         case 2:
-            unkData = &N(D_8024F3F8)[1];
-            vec01 = &unkData->unk_00;
-            s5 = 30;
-            s4 = 3;
-            angle = 90.0f;
-            yPos = (u32) (effect->data.somethingRotating->unk_14 + 30);
-            yPos = yPos * 4.0f;
-            temp_f24 = sin_deg(yPos + 360.01);
-            xPos = effect->data.somethingRotating->pos.x + (sin_deg(angle) * 50.0f * temp_f24);
-            yPos = effect->data.somethingRotating->pos.y + (cos_deg(yPos + 360.01) * 50.0f);
-            zPos = effect->data.somethingRotating->pos.z + (sin_deg(angle) * 50.0f * temp_f24);
-            unkData->unk_18.x = xPos;
-            unkData->unk_18.y = yPos;
-            unkData->unk_18.z = zPos;
+            path = &N(D_8024F3F8)[1];
+            i = 7;
+            point = &path->startPoint;
+            pathTime = 30;
+            numPoints = 3;
+            {
+                f32 angle = 90.0f;
+                u32 unk_14 = effect->data.somethingRotating->unk_14 + 30;
+                f32 angle3 = unk_14 * 4.0f + (f32) i * 51.43;
+                f32 radius = 50.0f;
+                f32 temp_f24 = sin_deg(angle3);
+                xPos = effect->data.somethingRotating->pos.x + sin_deg(angle) * radius * temp_f24 ;
+                yPos = effect->data.somethingRotating->pos.y + cos_deg(angle3) * radius;
+                zPos = effect->data.somethingRotating->pos.z + sin_deg(angle) * radius * temp_f24;
+                path->endPoint.x = xPos;
+                path->endPoint.y = yPos;
+                path->endPoint.z = zPos;
+            }
             break;
         case 3:
-            unkData = &N(D_8024F3F8)[2];
-            vec01 = &unkData->unk_00;
-            s5 = 30;
-            s4 = 3;
-            angle = 90.0f;
-            yPos = (u32) (effect->data.somethingRotating->unk_14 + 30);
-            yPos = yPos * 4.0f;
-            temp_f24 = sin_deg(yPos + 154.29);
-            xPos = effect->data.somethingRotating->pos.x + (sin_deg(angle) * 50.0f * temp_f24);
-            yPos = effect->data.somethingRotating->pos.y + (cos_deg(yPos + 154.29) * 50.0f);
-            zPos = effect->data.somethingRotating->pos.z + (sin_deg(angle) * 50.0f * temp_f24);
-            unkData->unk_18.x = xPos;
-            unkData->unk_18.y = yPos;
-            unkData->unk_18.z = zPos;
+            path = &N(D_8024F3F8)[2];
+            i = 3;
+            point = &path->startPoint;
+            pathTime = 30;
+            numPoints = 3;
+            {
+                f32 angle = 90.0f;
+                u32 unk_14 = effect->data.somethingRotating->unk_14 + 30;
+                f32 angle3 = unk_14 * 4.0f + (f32) i * 51.43;
+                f32 radius = 50.0f;
+                f32 temp_f24 = sin_deg(angle3);
+                xPos = effect->data.somethingRotating->pos.x + sin_deg(angle) * radius * temp_f24 ;
+                yPos = effect->data.somethingRotating->pos.y + cos_deg(angle3) * radius;
+                zPos = effect->data.somethingRotating->pos.z + sin_deg(angle) * radius * temp_f24;
+                path->endPoint.x = xPos;
+                path->endPoint.y = yPos;
+                path->endPoint.z = zPos;
+            }
             break;
         case 4:
-            unkData = &N(D_8024F3F8)->unk_18;
-            vec01 = &unkData->unk_00;
-            s5 = 30;
-            angle = 90.0f;
-            yPos = (u32) (effect->data.somethingRotating->unk_14 + 30);
-            s4 = 3;
-            yPos = yPos * 4.0f;
-            temp_f24 = sin_deg(yPos + 205.72);
-            xPos = effect->data.somethingRotating->pos.x + (sin_deg(angle) * 50.0f * temp_f24);
-            yPos = effect->data.somethingRotating->pos.y + (cos_deg(yPos + 205.72) * 50.0f);
-            zPos = effect->data.somethingRotating->pos.z + (sin_deg(angle) * 50.0f * temp_f24);
-            unkData->unk_18.x = xPos;
-            unkData->unk_18.y = yPos;
-            unkData->unk_18.z = zPos;
+            path = &N(D_8024F3F8)[3];
+            i = 4;
+            point = &path->startPoint;
+            pathTime = 30;
+            {
+                f32 angle = 90.0f;
+                u32 unk_14 = effect->data.somethingRotating->unk_14 + 30;
+                f32 angle3 = unk_14 * 4.0f + (f32) i * 51.43;
+                f32 radius = 50.0f;
+                f32 temp_f24 = sin_deg(angle3);
+                numPoints = 3;
+                xPos = effect->data.somethingRotating->pos.x + sin_deg(angle) * radius * temp_f24 ;
+                yPos = effect->data.somethingRotating->pos.y + cos_deg(angle3) * radius;
+                zPos = effect->data.somethingRotating->pos.z + sin_deg(angle) * radius * temp_f24;
+                path->endPoint.x = xPos;
+                path->endPoint.y = yPos;
+                path->endPoint.z = zPos;
+            }
             break;
         case 5:
-            unkData = &N(D_8024F3F8)[4];
-            vec01 = &unkData->unk_00;
-            s5 = 30;
-            s4 = 3;
-            angle = 90.0f;
-            yPos = (u32) (effect->data.somethingRotating->unk_14 + 30);
-            yPos = yPos * 4.0f;
-            temp_f24 = sin_deg(yPos + 308.58);
-            xPos = effect->data.somethingRotating->pos.x + (sin_deg(angle) * 50.0f * temp_f24);
-            yPos = effect->data.somethingRotating->pos.y + (cos_deg(yPos + 308.58) * 50.0f);
-            zPos = effect->data.somethingRotating->pos.z + (sin_deg(angle) * 50.0f * temp_f24);
-            unkData->unk_18.x = xPos;
-            unkData->unk_18.y = yPos;
-            unkData->unk_18.z = zPos;
+            path = &N(D_8024F3F8)[4];
+            i = 6;
+            point = &path->startPoint;
+            pathTime = 30;
+            numPoints = 3;
+            {
+                f32 angle = 90.0f;
+                u32 unk_14 = effect->data.somethingRotating->unk_14 + 30;
+                f32 angle3 = unk_14 * 4.0f + (f32) i * 51.43;
+                f32 radius = 50.0f;
+                f32 temp_f24 = sin_deg(angle3);
+                xPos = effect->data.somethingRotating->pos.x + sin_deg(angle) * radius * temp_f24 ;
+                yPos = effect->data.somethingRotating->pos.y + cos_deg(angle3) * radius;
+                zPos = effect->data.somethingRotating->pos.z + sin_deg(angle) * radius * temp_f24;
+                path->endPoint.x = xPos;
+                path->endPoint.y = yPos;
+                path->endPoint.z = zPos;
+            }
             break;
         case 6:
-            unkData = &N(D_8024F3F8)[5];
-            vec01 = &unkData->unk_00;
-            s5 = 30;
-            s4 = 3;
-            angle = 90.0f;
-            yPos = (u32) (effect->data.somethingRotating->unk_14 + 30);
-            yPos = yPos * 4.0f;
-            temp_f24 = sin_deg(yPos + 102.86);
-            xPos = effect->data.somethingRotating->pos.x + (sin_deg(angle) * 50.0f * temp_f24);
-            yPos = effect->data.somethingRotating->pos.y + (cos_deg(yPos + 102.86) * 50.0f);
-            zPos = effect->data.somethingRotating->pos.z + (sin_deg(angle) * 50.0f * temp_f24);
-            unkData->unk_18.x = xPos;
-            unkData->unk_18.y = yPos;
-            unkData->unk_18.z = zPos;
+            path = &N(D_8024F3F8)[5];
+            i = 2;
+            point = &path->startPoint;
+            pathTime = 30;
+            numPoints = 3;
+            {
+                f32 angle = 90.0f;
+                u32 unk_14 = effect->data.somethingRotating->unk_14 + 30;
+                f32 angle3 = unk_14 * 4.0f + (f32) i * 51.43;
+                f32 radius = 50.0f;
+                f32 temp_f24 = sin_deg(angle3);
+                xPos = effect->data.somethingRotating->pos.x + sin_deg(angle) * radius * temp_f24 ;
+                yPos = effect->data.somethingRotating->pos.y + cos_deg(angle3) * radius;
+                zPos = effect->data.somethingRotating->pos.z + sin_deg(angle) * radius * temp_f24;
+                path->endPoint.x = xPos;
+                path->endPoint.y = yPos;
+                path->endPoint.z = zPos;
+            }
             break;
         default:
-            unkData = &N(D_8024F3F8)[6];
-            vec01 = &unkData->unk_00;
-            s5 = 30;
-            s4 = 3;
-            angle = 90.0f;
-            yPos = (u32) (effect->data.somethingRotating->unk_14 + 30);
-            yPos = yPos * 4.0f;
-            temp_f24 = sin_deg(yPos + 257.15);
-            xPos = effect->data.somethingRotating->pos.x + (sin_deg(angle) * 50.0f * temp_f24);
-            yPos = effect->data.somethingRotating->pos.y + (cos_deg(yPos + 257.15) * 50.0f);
-            zPos = effect->data.somethingRotating->pos.z + (sin_deg(angle) * 50.0f * temp_f24);
-            unkData->unk_18.x = xPos;
-            unkData->unk_18.y = yPos;
-            unkData->unk_18.z = zPos;
+            path = &N(D_8024F3F8)[6];
+            i = 5;
+            point = &path->startPoint;
+            pathTime = 30;
+            numPoints = 3;
+            {
+                f32 angle = 90.0f;
+                u32 unk_14 = effect->data.somethingRotating->unk_14 + 30;
+                f32 angle3 = unk_14 * 4.0f + (f32) i * 51.43;
+                f32 radius = 50.0f;
+                f32 temp_f24 = sin_deg(angle3);
+                xPos = effect->data.somethingRotating->pos.x + sin_deg(angle) * radius * temp_f24 ;
+                yPos = effect->data.somethingRotating->pos.y + cos_deg(angle3) * radius;
+                zPos = effect->data.somethingRotating->pos.z + sin_deg(angle) * radius * temp_f24;
+                path->endPoint.x = xPos;
+                path->endPoint.y = yPos;
+                path->endPoint.z = zPos;
+            }
             break;
     }
 
-    vec01->x = evt_get_float_variable(script, LocalVar(0));
-    vec01->y = evt_get_float_variable(script, LocalVar(1));
-    vec01->z = evt_get_float_variable(script, LocalVar(2));
+    // set startPoint
+    point->x = evt_get_float_variable(script, LVar0);
+    point->y = evt_get_float_variable(script, LVar1);
+    point->z = evt_get_float_variable(script, LVar2);
 
-    vec2 = &vec01[2];
-    vec01++;
+    endPoint = &point[2];
+    point++;
 
-    if (temp_s6 != 2) {
-        vec01->x = (evt_get_float_variable(script, LocalVar(0)) * temp_f28) + (vec2->x * (1.0f - temp_f28));
-        vec01->y = (evt_get_float_variable(script, LocalVar(1)) * temp_f28) + (vec2->y * (1.0f - temp_f28)) + sp10;
-        vec01->z = (evt_get_float_variable(script, LocalVar(2)) * temp_f28) + (vec2->z * (1.0f - temp_f28));
+    // set midPoint
+    if (arg0 != 2) {
+        point->x = (evt_get_float_variable(script, LVar0) * arg2) + (endPoint->x * (1.0f - arg2));
+        point->y = (evt_get_float_variable(script, LVar1) * arg2) + (endPoint->y * (1.0f - arg2)) + arg1;
+        point->z = (evt_get_float_variable(script, LVar2) * arg2) + (endPoint->z * (1.0f - arg2));
     } else {
-        vec01->x = ((evt_get_float_variable(script, LocalVar(0)) * temp_f28) + (vec2->x * (1.0f - temp_f28))) - 50.0f;
-        vec01->y = (evt_get_float_variable(script, LocalVar(1)) * temp_f28) + (vec2->y * (1.0f - temp_f28)) + sp10;
-        vec01->z = ((evt_get_float_variable(script, LocalVar(2)) * temp_f28) + (vec2->z * (1.0f - temp_f28))) - 50.0f;
+        point->x = ((evt_get_float_variable(script, LVar0) * arg2) + (endPoint->x * (1.0f - arg2))) - 50.0f;
+        point->y = (evt_get_float_variable(script, LVar1) * arg2) + (endPoint->y * (1.0f - arg2)) + arg1;
+        point->z = ((evt_get_float_variable(script, LVar2) * arg2) + (endPoint->z * (1.0f - arg2))) - 50.0f;
     }
-    script->varTable[0] = s5;
-    script->varTablePtr[1] = unkData;
-    script->varTable[2] = s4;
+
+    script->varTable[0] = pathTime;
+    script->varTablePtr[1] = path;
+    script->varTable[2] = numPoints;
     return ApiStatus_DONE2;
 }
-#else
-API_CALLABLE(func_802428C8_A2CB08);
-INCLUDE_ASM(s32, "world/area_hos/hos_05/A2AAC0", func_802428C8_A2CB08);
-#endif
 
 EvtScript N(EVS_UpdateWorldFogParams) = {
     EVT_SET(LVar0, 120)
@@ -1063,7 +1085,7 @@ EvtScript N(EVS_UpdateWorldFogParams) = {
 };
 
 EvtScript N(EVS_CaptureSpirits) = {
-    EVT_CALL(func_802D7B10, ArrayVar(6))
+    EVT_CALL(DismissEffect, ArrayVar(6))
     EVT_CALL(GetNpcPos, NPC_Klevar, LVar0, LVar1, LVar2)
     EVT_PLAY_EFFECT(EFFECT_RING_BLAST, 1, LVar0, LVar1, LVar2, 4, 20)
     EVT_THREAD
@@ -1086,12 +1108,12 @@ EvtScript N(EVS_CaptureSpirits) = {
         EVT_END_IF
         EVT_CALL(N(SetCardCaptureState1))
         EVT_CALL(SetNpcAnimation, NPC_Klevar, ANIM_WorldKlevar_Panic)
-        EVT_CALL(func_802CFD30, NPC_Klevar, FOLD_TYPE_NONE, 0, 0, 0, 0)
+        EVT_CALL(SetNpcImgFXParams, NPC_Klevar, IMGFX_CLEAR, 0, 0, 0, 0)
         EVT_CALL(SetNpcFlagBits, NPC_Klevar, NPC_FLAG_INVISIBLE, TRUE)
-        EVT_CALL(func_802D7B10, ArrayVar(13))
+        EVT_CALL(DismissEffect, ArrayVar(13))
     EVT_END_THREAD
-    EVT_WAIT(20)
-    EVT_CALL(func_802D7B10, ArrayVar(3))
+    EVT_WAIT(20 * DT)
+    EVT_CALL(DismissEffect, ArrayVar(3))
     EVT_CALL(GetNpcPos, NPC_Skolar, LVar0, LVar1, LVar2)
     EVT_PLAY_EFFECT(EFFECT_RING_BLAST, 1, LVar0, LVar1, LVar2, 4, 20)
     EVT_THREAD
@@ -1114,12 +1136,12 @@ EvtScript N(EVS_CaptureSpirits) = {
         EVT_END_IF
         EVT_CALL(N(SetCardCaptureState1))
         EVT_CALL(SetNpcAnimation, NPC_Skolar, ANIM_WorldSkolar_IdleSad)
-        EVT_CALL(func_802CFD30, NPC_Skolar, FOLD_TYPE_NONE, 0, 0, 0, 0)
+        EVT_CALL(SetNpcImgFXParams, NPC_Skolar, IMGFX_CLEAR, 0, 0, 0, 0)
         EVT_CALL(SetNpcFlagBits, NPC_Skolar, NPC_FLAG_INVISIBLE, TRUE)
-        EVT_CALL(func_802D7B10, ArrayVar(10))
+        EVT_CALL(DismissEffect, ArrayVar(10))
     EVT_END_THREAD
-    EVT_WAIT(20)
-    EVT_CALL(func_802D7B10, ArrayVar(4))
+    EVT_WAIT(20 * DT)
+    EVT_CALL(DismissEffect, ArrayVar(4))
     EVT_CALL(GetNpcPos, NPC_Muskular, LVar0, LVar1, LVar2)
     EVT_PLAY_EFFECT(EFFECT_RING_BLAST, 1, LVar0, LVar1, LVar2, 4, 20)
     EVT_THREAD
@@ -1142,12 +1164,12 @@ EvtScript N(EVS_CaptureSpirits) = {
         EVT_END_IF
         EVT_CALL(N(SetCardCaptureState1))
         EVT_CALL(SetNpcAnimation, NPC_Muskular, ANIM_WorldMuskular_Panic)
-        EVT_CALL(func_802CFD30, NPC_Muskular, FOLD_TYPE_NONE, 0, 0, 0, 0)
+        EVT_CALL(SetNpcImgFXParams, NPC_Muskular, IMGFX_CLEAR, 0, 0, 0, 0)
         EVT_CALL(SetNpcFlagBits, NPC_Muskular, NPC_FLAG_INVISIBLE, TRUE)
-        EVT_CALL(func_802D7B10, ArrayVar(11))
+        EVT_CALL(DismissEffect, ArrayVar(11))
     EVT_END_THREAD
-    EVT_WAIT(20)
-    EVT_CALL(func_802D7B10, ArrayVar(7))
+    EVT_WAIT(20 * DT)
+    EVT_CALL(DismissEffect, ArrayVar(7))
     EVT_CALL(GetNpcPos, NPC_Kalmar, LVar0, LVar1, LVar2)
     EVT_PLAY_EFFECT(EFFECT_RING_BLAST, 1, LVar0, LVar1, LVar2, 4, 20)
     EVT_THREAD
@@ -1170,12 +1192,12 @@ EvtScript N(EVS_CaptureSpirits) = {
         EVT_END_IF
         EVT_CALL(N(SetCardCaptureState1))
         EVT_CALL(SetNpcAnimation, NPC_Kalmar, ANIM_WorldKalmar_Panic)
-        EVT_CALL(func_802CFD30, NPC_Kalmar, FOLD_TYPE_NONE, 0, 0, 0, 0)
+        EVT_CALL(SetNpcImgFXParams, NPC_Kalmar, IMGFX_CLEAR, 0, 0, 0, 0)
         EVT_CALL(SetNpcFlagBits, NPC_Kalmar, NPC_FLAG_INVISIBLE, TRUE)
-        EVT_CALL(func_802D7B10, ArrayVar(14))
+        EVT_CALL(DismissEffect, ArrayVar(14))
     EVT_END_THREAD
-    EVT_WAIT(20)
-    EVT_CALL(func_802D7B10, ArrayVar(5))
+    EVT_WAIT(20 * DT)
+    EVT_CALL(DismissEffect, ArrayVar(5))
     EVT_CALL(GetNpcPos, NPC_Misstar, LVar0, LVar1, LVar2)
     EVT_PLAY_EFFECT(EFFECT_RING_BLAST, 1, LVar0, LVar1, LVar2, 4, 20)
     EVT_THREAD
@@ -1198,12 +1220,12 @@ EvtScript N(EVS_CaptureSpirits) = {
         EVT_END_IF
         EVT_CALL(N(SetCardCaptureState1))
         EVT_CALL(SetNpcAnimation, NPC_Misstar, ANIM_WorldMisstar_Panic)
-        EVT_CALL(func_802CFD30, NPC_Misstar, FOLD_TYPE_NONE, 0, 0, 0, 0)
+        EVT_CALL(SetNpcImgFXParams, NPC_Misstar, IMGFX_CLEAR, 0, 0, 0, 0)
         EVT_CALL(SetNpcFlagBits, NPC_Misstar, NPC_FLAG_INVISIBLE, TRUE)
-        EVT_CALL(func_802D7B10, ArrayVar(12))
+        EVT_CALL(DismissEffect, ArrayVar(12))
     EVT_END_THREAD
-    EVT_WAIT(20)
-    EVT_CALL(func_802D7B10, ArrayVar(2))
+    EVT_WAIT(20 * DT)
+    EVT_CALL(DismissEffect, ArrayVar(2))
     EVT_CALL(GetNpcPos, NPC_Mamar, LVar0, LVar1, LVar2)
     EVT_PLAY_EFFECT(EFFECT_RING_BLAST, 1, LVar0, LVar1, LVar2, 4, 20)
     EVT_THREAD
@@ -1226,11 +1248,11 @@ EvtScript N(EVS_CaptureSpirits) = {
         EVT_END_IF
         EVT_CALL(N(SetCardCaptureState1))
         EVT_CALL(SetNpcAnimation, NPC_Mamar, ANIM_WorldMamar_Panic)
-        EVT_CALL(func_802CFD30, NPC_Mamar, FOLD_TYPE_NONE, 0, 0, 0, 0)
+        EVT_CALL(SetNpcImgFXParams, NPC_Mamar, IMGFX_CLEAR, 0, 0, 0, 0)
         EVT_CALL(SetNpcFlagBits, NPC_Mamar, NPC_FLAG_INVISIBLE, TRUE)
-        EVT_CALL(func_802D7B10, ArrayVar(9))
+        EVT_CALL(DismissEffect, ArrayVar(9))
     EVT_END_THREAD
-    EVT_WAIT(20)
+    EVT_WAIT(20 * DT)
     EVT_RETURN
     EVT_END
 };
@@ -1266,7 +1288,7 @@ API_CALLABLE(N(KammyFlyToBowser)) {
     kammy->colliderPos.z = kammy->pos.z;
 
     N(FlyToBowserTime)++;
-    if (N(FlyToBowserTime) <= 40) {
+    if (N(FlyToBowserTime) <= (s32)(40 * DT)) {
         return ApiStatus_BLOCK;
     }
     return ApiStatus_DONE1;
@@ -1304,7 +1326,7 @@ Gfx N(gfx_setup_story_viewport)[] = {
     gsDPSetTextureConvert(G_TC_FILT),
     gsDPSetTexturePersp(G_TP_NONE),
     gsDPSetTextureLUT(G_TT_RGBA16),
-    gsDPSetCombineLERP(0, 0, 0, TEXEL0, 0, 0, 0, PRIMITIVE, 0, 0, 0, TEXEL0, 0, 0, 0, PRIMITIVE),
+    gsDPSetCombineMode(PM_CC_10, PM_CC_10),
     gsDPSetScissor(G_SC_NON_INTERLACE, 29, 28, 291, 190),
     gsDPSetColorDither(G_CD_DISABLE),
     gsDPSetAlphaDither(G_AD_PATTERN),
@@ -1337,40 +1359,38 @@ void N(appendGfx_image_strips)(s32 baseX, s32 baseY, IMG_PTR img, PAL_PTR pal, s
         return;
     }
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPDisplayList(gMasterGfxPos++, N(gfx_setup_story_viewport));
+    gDPPipeSync(gMainGfxPos++);
+    gSPDisplayList(gMainGfxPos++, N(gfx_setup_story_viewport));
 
     if (pal != NULL) {
-        gDPLoadTLUT_pal256(gMasterGfxPos++, pal);
+        gDPLoadTLUT_pal256(gMainGfxPos++, pal);
     } else {
-        gDPSetTextureLUT(gMasterGfxPos++, G_TT_NONE);
+        gDPSetTextureLUT(gMainGfxPos++, G_TT_NONE);
     }
 
-    get_screen_overlay_params(1, &overlayType, &overlayAlphaBack);
-    get_screen_overlay_params(0, &overlayType, &overlayAlphaFront);
+    get_screen_overlay_params(SCREEN_LAYER_BACK, &overlayType, &overlayAlphaBack);
+    get_screen_overlay_params(SCREEN_LAYER_FRONT, &overlayType, &overlayAlphaFront);
     alpha = alpha * (255.0f - overlayAlphaBack) * (255.0f - overlayAlphaFront) / 255.0f / 255.0f;
     if (alpha != 255) {
-        gDPSetCombineLERP(gMasterGfxPos++,
-            0, 0, 0, TEXEL0, PRIMITIVE, 0, TEXEL0, 0,
-            0, 0, 0, TEXEL0, PRIMITIVE, 0, TEXEL0, 0);
-        gDPSetPrimColor(gMasterGfxPos++, 0, 0, 0, 0, 0, alpha);
+        gDPSetCombineMode(gMainGfxPos++, PM_CC_01, PM_CC_01);
+        gDPSetPrimColor(gMainGfxPos++, 0, 0, 0, 0, 0, alpha);
     } else {
-        gDPSetCombineMode(gMasterGfxPos++, G_CC_DECALRGBA, G_CC_DECALRGBA);
+        gDPSetCombineMode(gMainGfxPos++, G_CC_DECALRGBA, G_CC_DECALRGBA);
     }
 
-    gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-    gDPSetRenderMode(gMasterGfxPos++, G_RM_CLD_SURF, G_RM_CLD_SURF2);
+    gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    gDPSetRenderMode(gMainGfxPos++, G_RM_CLD_SURF, G_RM_CLD_SURF2);
 
 
     for (i = 0; i < height / lineHeight; i++) {
-        gDPLoadTextureTile(gMasterGfxPos++, img, pal != NULL ? G_IM_FMT_CI : G_IM_FMT_IA, G_IM_SIZ_8b, width, height,
+        gDPLoadTextureTile(gMainGfxPos++, img, pal != NULL ? G_IM_FMT_CI : G_IM_FMT_IA, G_IM_SIZ_8b, width, height,
                         0, i * lineHeight, width - 1, i * lineHeight + lineHeight - 1, 0,
                         G_TX_WRAP, G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
-        gSPScisTextureRectangle(gMasterGfxPos++, baseX * 4, (baseY + i * lineHeight) * 4, (baseX + width) * 4,
+        gSPScisTextureRectangle(gMainGfxPos++, baseX * 4, (baseY + i * lineHeight) * 4, (baseX + width) * 4,
                         (baseY + i * lineHeight + lineHeight) * 4, G_TX_RENDERTILE, 0, (i * lineHeight) * 32, 1024, 1024);
     }
 
-    gDPPipeSync(gMasterGfxPos++);
+    gDPPipeSync(gMainGfxPos++);
 }
 
 void N(draw_background_tape)(void) {
@@ -1385,23 +1405,23 @@ void N(appendGfx_image_ci)(s32 baseX, s32 baseY, IMG_PTR img, PAL_PTR pal) {
     s32 i;
     s32 m = 1;
 
-    gDPPipeSync(gMasterGfxPos++);
-    gDPLoadTLUT_pal256(gMasterGfxPos++, pal);
+    gDPPipeSync(gMainGfxPos++);
+    gDPLoadTLUT_pal256(gMainGfxPos++, pal);
     for (i = 0; i < 23; i++) {
-        gDPLoadTextureTile(gMasterGfxPos++, img, G_IM_FMT_CI, G_IM_SIZ_8b, 264, 162,
+        gDPLoadTextureTile(gMainGfxPos++, img, G_IM_FMT_CI, G_IM_SIZ_8b, 264, 162,
                            0, i * 7, 263, i * 7 + 7 - 1, 0,
                            G_TX_WRAP, G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
-        gSPScisTextureRectangle(gMasterGfxPos++, baseX * 4, (baseY + i * 7) * 4, (baseX + 264) * 4, (baseY + i * 7 + 7) * 4,
+        gSPScisTextureRectangle(gMainGfxPos++, baseX * 4, (baseY + i * 7) * 4, (baseX + 264) * 4, (baseY + i * 7 + 7) * 4,
                                 G_TX_RENDERTILE, 0, (i * 7) << 5, 1024, 1024);
     }
     if (m != 0) {
-        gDPLoadTextureTile(gMasterGfxPos++, img, G_IM_FMT_CI, G_IM_SIZ_8b, 264, 0,
+        gDPLoadTextureTile(gMainGfxPos++, img, G_IM_FMT_CI, G_IM_SIZ_8b, 264, 0,
                            0, i * 7, 263, i * 7 + m - 1, 0,
                            G_TX_WRAP, G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
-        gSPScisTextureRectangle(gMasterGfxPos++, baseX * 4, (baseY + i * 7) * 4, (baseX + 264) * 4, (baseY + i * 7 + m) * 4,
+        gSPScisTextureRectangle(gMainGfxPos++, baseX * 4, (baseY + i * 7) * 4, (baseX + 264) * 4, (baseY + i * 7 + m) * 4,
                                 G_TX_RENDERTILE, 0, (i * 7) << 5, 1024, 1024);
     }
-    gDPPipeSync(gMasterGfxPos++);
+    gDPPipeSync(gMainGfxPos++);
 }
 
 void N(worker_draw_story_graphics)(void) {
@@ -1413,19 +1433,17 @@ void N(worker_draw_story_graphics)(void) {
 
     N(draw_background_tape)();
 
-    gSPDisplayList(gMasterGfxPos++, N(gfx_setup_story_viewport));
-    gDPSetColorImage(gMasterGfxPos++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH, nuGfxCfb_ptr);
+    gSPDisplayList(gMainGfxPos++, N(gfx_setup_story_viewport));
+    gDPSetColorImage(gMainGfxPos++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH, nuGfxCfb_ptr);
 
     if (N(StoryGraphicsPtr)->storyPageAlpha < 255) {
-        gDPSetRenderMode(gMasterGfxPos++, G_RM_CLD_SURF, G_RM_CLD_SURF2);
-        gDPSetPrimColor(gMasterGfxPos++, 0, 0, 0, 0, 0, N(StoryGraphicsPtr)->storyPageAlpha);
+        gDPSetRenderMode(gMainGfxPos++, G_RM_CLD_SURF, G_RM_CLD_SURF2);
+        gDPSetPrimColor(gMainGfxPos++, 0, 0, 0, 0, 0, N(StoryGraphicsPtr)->storyPageAlpha);
     }
-    get_screen_overlay_params(1, &overlayType, &overlayAlpha);
+    get_screen_overlay_params(SCREEN_LAYER_BACK, &overlayType, &overlayAlpha);
     if (overlayAlpha != 0.0f) {
-        gDPSetCombineLERP(gMasterGfxPos++,
-            PRIMITIVE, TEXEL0, PRIMITIVE_ALPHA, TEXEL0, 0, 0, 0, 1,
-            PRIMITIVE, TEXEL0, PRIMITIVE_ALPHA, TEXEL0, 0, 0, 0, 1);
-        gDPSetPrimColor(gMasterGfxPos++, 0, 0, 208, 208, 208, (s32) overlayAlpha);
+        gDPSetCombineLERP(gMainGfxPos++, PRIMITIVE, TEXEL0, PRIMITIVE_ALPHA, TEXEL0, 0, 0, 0, 1, PRIMITIVE, TEXEL0, PRIMITIVE_ALPHA, TEXEL0, 0, 0, 0, 1);
+        gDPSetPrimColor(gMainGfxPos++, 0, 0, 208, 208, 208, (s32) overlayAlpha);
     }
 
     if (!N(StoryGraphicsPtr)->flipOrder) {
@@ -1563,20 +1581,64 @@ s32 N(CurrentStoryPageTime)= 0;
 u32 N(BowserSilhouetteTime) = 0;
 
 s32 N(StoryPageDuration)[] = {
-    [STORY_PAGE_BLANK]          222,
-    [STORY_PAGE_STARRY_SKY]     338,
-    [STORY_PAGE_SHRINE_EXT]     338,
-    [STORY_PAGE_STAR_ROD]       338,
-    [STORY_PAGE_SHRINE_INT]     622,
+    [STORY_PAGE_BLANK]          222 * DT,
+    [STORY_PAGE_STARRY_SKY]     338 * DT,
+    [STORY_PAGE_SHRINE_EXT]     338 * DT,
+    [STORY_PAGE_STAR_ROD]       338 * DT,
+    [STORY_PAGE_SHRINE_INT]     622 * DT,
 };
 
 s32 N(NextPageAnimOffsetsX)[] = {
+#if VERSION_PAL
+    0, 0, 0, -1, -3, -7, -12, -18, -28, -43, -60, -80, -100, -120, -140, -160, -180, -200, -220, -515, -270,
+#else
     0, 0, 0, -1, -2, -3, -4, -9, -15, -22,
     -30, -39, -49, -60, -72, -85, -99, -114, -130, -147,
     -165, -184, -204, -225, -247, -270,
+#endif
 };
 
+#if VERSION_PAL
+static u32 padding = 0;
+#endif
+
 u8 N(BowserSilhouetteShakeY)[] = {
+#if VERSION_PAL
+    240, 240, 240, 240, 210, 185, 174, 168,
+    170, 170, 170, 170, 170, 167, 165, 163,
+    162, 162, 161, 161, 162, 163, 164, 165,
+    167, 173, 175, 176, 176, 175, 171, 170,
+    170, 167, 165, 164, 165, 167, 170, 173,
+    176, 176, 175, 173, 170, 165, 164, 164,
+    165, 167, 173, 175, 176, 176, 175, 170,
+    167, 165, 164, 165, 165, 164, 165, 164,
+    165, 165, 164, 165, 164, 165, 165, 164,
+    164, 165, 167, 173, 175, 176, 176, 176,
+    176, 176, 174, 170, 167, 164, 164, 165,
+    167, 170, 167, 165, 164, 164, 165, 170,
+    170, 167, 165, 164, 165, 167, 170, 170,
+    167, 164, 164, 165, 167, 170, 167, 165,
+    164, 164, 165, 170, 170, 167, 165, 164,
+    165, 167, 170, 170, 167, 164, 165, 166,
+    167, 166, 166, 167, 166, 165, 166, 166,
+    165, 166, 167, 166, 168, 169, 170, 170,
+    170, 170, 170, 170, 170, 170, 170, 170,
+    173, 175, 176, 175, 173, 170, 167, 165,
+    164, 165, 167, 170, 173, 176, 176, 175,
+    173, 170, 165, 164, 164, 165, 167, 173,
+    174, 175, 174, 173, 167, 165, 164, 164,
+    165, 170, 173, 175, 176, 176, 173, 170,
+    167, 165, 164, 165, 167, 170, 173, 175,
+    176, 175, 173, 170, 167, 164, 164, 165,
+    167, 169, 170, 170, 170, 170, 170, 170,
+    170, 170, 170, 170, 165, 164, 164, 165,
+    167, 170, 167, 165, 164, 164, 167, 170,
+    173, 175, 176, 175, 173, 170, 167, 165,
+    164, 165, 167, 170, 173, 176, 176, 175,
+    173, 170, 165, 164, 164, 165, 167, 173,
+    175, 176, 176, 175, 170, 167, 165, 164,
+    164, 167, 170,
+#else
     240, 240, 240, 240, 210, 197, 185, 174,
     168, 170, 170, 170, 170, 170, 170, 167,
     165, 164, 163, 162, 162, 161, 161, 162,
@@ -1617,6 +1679,7 @@ u8 N(BowserSilhouetteShakeY)[] = {
     175, 173, 170, 167, 165, 164, 164, 165,
     167, 170, 173, 175, 176, 176, 175, 173,
     170, 167, 165, 164, 164, 165, 167, 170,
+#endif
 };
 
 u16 N(BowserSilhouetteLeapX)[] = {
@@ -1626,6 +1689,12 @@ u16 N(BowserSilhouetteLeapX)[] = {
 u16 N(BowserSilhouetteLeapY)[] = {
     3, 2, -6, -21, -40, -63, -90, -120, -160, -200, -240, -280, -320
 };
+
+#if VERSION_PAL
+#define BOWSER_APPEARS_TIME (233)
+#else
+#define BOWSER_APPEARS_TIME (268)
+#endif
 
 API_CALLABLE(N(AnimateStorybookPages)) {
     switch (N(StoryPageState)) {
@@ -1646,10 +1715,10 @@ API_CALLABLE(N(AnimateStorybookPages)) {
             if (N(CurrentStoryPageTime) != 0) {
                 N(CurrentStoryPageTime)--;
                 if (!N(StoryGraphicsPtr)->flipOrder) {
-                    N(StoryGraphicsPtr)->frontImgPosX = N(NextPageAnimOffsetsX)[25 - N(CurrentStoryPageTime)];
+                    N(StoryGraphicsPtr)->frontImgPosX = N(NextPageAnimOffsetsX)[ARRAY_COUNT(N(NextPageAnimOffsetsX)) - 1 - N(CurrentStoryPageTime)];
                     N(StoryGraphicsPtr)->frontImgPosY = 0;
                 } else {
-                    N(StoryGraphicsPtr)->backImgPosX = N(NextPageAnimOffsetsX)[25 - N(CurrentStoryPageTime)];
+                    N(StoryGraphicsPtr)->backImgPosX = N(NextPageAnimOffsetsX)[ARRAY_COUNT(N(NextPageAnimOffsetsX)) - 1 - N(CurrentStoryPageTime)];
                     N(StoryGraphicsPtr)->backImgPosY = 0;
                 }
             } else {
@@ -1670,7 +1739,7 @@ API_CALLABLE(N(AnimateStorybookPages)) {
                         N(StoryGraphicsPtr)->frontImgPosX = 0;
                         N(StoryGraphicsPtr)->frontImgPosY = 0;
                     }
-                    gCameras[CAM_DEFAULT].flags &= ~CAMERA_FLAG_ENABLED;
+                    gCameras[CAM_DEFAULT].flags &= ~CAMERA_FLAG_DISABLED;
                     N(StoryPageState)++;
                 }
             }
@@ -1682,7 +1751,7 @@ API_CALLABLE(N(AnimateStorybookPages)) {
             break;
         case STORY_PAGE_STATE_BOWSER_ANIM:
             if (N(CurrentStoryPageTime) != 0) {
-                if (N(CurrentStoryPageTime) < N(StoryPageDuration)[N(CurrentStoryPageIdx)] - 268) {
+                if (N(CurrentStoryPageTime) < N(StoryPageDuration)[N(CurrentStoryPageIdx)] - BOWSER_APPEARS_TIME) {
                     u32 timeLeft = N(BowserSilhouetteTime) - ARRAY_COUNT(N(BowserSilhouetteShakeY));
 
                     if (N(BowserSilhouetteTime) < ARRAY_COUNT(N(BowserSilhouetteShakeY))) {
@@ -1702,7 +1771,7 @@ API_CALLABLE(N(AnimateStorybookPages)) {
                 }
                 N(CurrentStoryPageTime)--;
             } else {
-                N(CurrentStoryPageTime) = 26;
+                N(CurrentStoryPageTime) = ARRAY_COUNT(N(NextPageAnimOffsetsX));
                 N(StoryPageState)++;
                 N(StoryGraphicsPtr)->tapeAlpha = 255;
                 sfx_play_sound(SOUND_B0);
@@ -1712,10 +1781,10 @@ API_CALLABLE(N(AnimateStorybookPages)) {
             if (N(CurrentStoryPageTime) != 0) {
                 N(CurrentStoryPageTime)--;
                 if (!N(StoryGraphicsPtr)->flipOrder) {
-                    N(StoryGraphicsPtr)->backImgPosX = N(NextPageAnimOffsetsX)[25 - N(CurrentStoryPageTime)];
+                    N(StoryGraphicsPtr)->backImgPosX = N(NextPageAnimOffsetsX)[ARRAY_COUNT(N(NextPageAnimOffsetsX)) - 1 - N(CurrentStoryPageTime)];
                     N(StoryGraphicsPtr)->backImgPosY = 0;
                 } else {
-                    N(StoryGraphicsPtr)->frontImgPosX = N(NextPageAnimOffsetsX)[25 - N(CurrentStoryPageTime)];
+                    N(StoryGraphicsPtr)->frontImgPosX = N(NextPageAnimOffsetsX)[ARRAY_COUNT(N(NextPageAnimOffsetsX)) - 1 - N(CurrentStoryPageTime)];
                     N(StoryGraphicsPtr)->frontImgPosY = 0;
                 }
             } else {
@@ -1841,6 +1910,11 @@ EvtScript N(EVS_Intro_Main) = {
 
 f32 N(AnimBowser_FlyOff_Time) = 0.0;
 
+#if VERSION_PAL
+API_CALLABLE(N(AnimBowser_FlyOff));
+INCLUDE_ASM(ApiResult, "world/area_hos/hos_05/hos_05_5_intro", AnimBowser_FlyOff);
+asm(".section .data");
+#else
 API_CALLABLE(N(AnimBowser_FlyOff)) {
     Npc* bowserMain = resolve_npc(script, NPC_Bowser_Body);
     Npc* bowserProp = resolve_npc(script, NPC_Bowser_Prop);
@@ -1863,9 +1937,14 @@ API_CALLABLE(N(AnimBowser_FlyOff)) {
         return ApiStatus_BLOCK;
     }
 }
+#endif
 
 f32 N(AnimKammy_FlyOff_Time) = 0.0;
 
+#if VERSION_PAL
+API_CALLABLE(N(AnimKammy_FlyOff));
+INCLUDE_ASM(ApiResult, "world/area_hos/hos_05/hos_05_5_intro", AnimKammy_FlyOff);
+#else
 API_CALLABLE(N(AnimKammy_FlyOff)) {
     Npc* kammy = resolve_npc(script, NPC_Kammy);
 
@@ -1885,22 +1964,23 @@ API_CALLABLE(N(AnimKammy_FlyOff)) {
         return ApiStatus_BLOCK;
     }
 }
+#endif
 
 API_CALLABLE(N(func_80244934_A2EB74)) {
     if (isInitialCall) {
         script->functionTemp[0] = 0;
-        set_screen_overlay_params_back(1, 255.0f);
-        set_screen_overlay_color(1, 250, 250, 250);
+        set_screen_overlay_params_back(OVERLAY_VIEWPORT_COLOR, 255.0f);
+        set_screen_overlay_color(SCREEN_LAYER_BACK, 250, 250, 250);
         return ApiStatus_BLOCK;
     }
     script->functionTemp[0]++;
     if (script->functionTemp[0] == 10) {
-        set_screen_overlay_params_back(0, 0.0f);
-        set_screen_overlay_color(1, 250, 250, 250);
+        set_screen_overlay_params_back(OVERLAY_SCREEN_COLOR, 0.0f);
+        set_screen_overlay_color(SCREEN_LAYER_BACK, 250, 250, 250);
         return ApiStatus_DONE2;
     }
-    set_screen_overlay_params_back(1, (10 - script->functionTemp[0]) * 25);
-    set_screen_overlay_color(1, 250, 250, 250);
+    set_screen_overlay_params_back(OVERLAY_VIEWPORT_COLOR, (10 - script->functionTemp[0]) * 25);
+    set_screen_overlay_color(SCREEN_LAYER_BACK, 250, 250, 250);
     return ApiStatus_BLOCK;
 }
 
@@ -1952,27 +2032,27 @@ EvtScript N(EVS_Scene_IntroStory) = {
     EVT_CALL(SetPanTarget, CAM_DEFAULT, -145, 147, 84)
     EVT_CALL(LoadSettings, CAM_DEFAULT, EVT_PTR(N(IntroCamSettings6)))
     EVT_CALL(N(AnimateStorybookPages))
-    EVT_WAIT(50)
-    EVT_CALL(func_802CFD30, NPC_Bowser_Body, FOLD_TYPE_8, 0, 0, 0, 0)
-    EVT_CALL(func_802CFD30, NPC_Bowser_Prop, FOLD_TYPE_8, 0, 0, 0, 0)
+    EVT_WAIT(50 * DT)
+    EVT_CALL(SetNpcImgFXParams, NPC_Bowser_Body, IMGFX_SET_TINT, 0, 0, 0, 0)
+    EVT_CALL(SetNpcImgFXParams, NPC_Bowser_Prop, IMGFX_SET_TINT, 0, 0, 0, 0)
     EVT_CALL(SetNpcPos, NPC_Bowser_Body, -64, 135, 85)
     EVT_CALL(SetNpcPos, NPC_Bowser_Prop, -64, 135, 85)
     EVT_THREAD
         EVT_SET(LVar0, 0)
-        EVT_LOOP(50)
+        EVT_LOOP(50 * DT)
             EVT_ADD(LVar0, 6)
             EVT_IF_GT(LVar0, 255)
                 EVT_SET(LVar0, 255)
             EVT_END_IF
-            EVT_CALL(func_802CFD30, NPC_Bowser_Body, FOLD_TYPE_8, 0, 0, 0, LVar0)
-            EVT_CALL(func_802CFD30, NPC_Bowser_Prop, FOLD_TYPE_8, 0, 0, 0, LVar0)
+            EVT_CALL(SetNpcImgFXParams, NPC_Bowser_Body, IMGFX_SET_TINT, 0, 0, 0, LVar0)
+            EVT_CALL(SetNpcImgFXParams, NPC_Bowser_Prop, IMGFX_SET_TINT, 0, 0, 0, LVar0)
             EVT_WAIT(1)
         EVT_END_LOOP
     EVT_END_THREAD
     EVT_THREAD
         EVT_CALL(InterpNpcYaw, NPC_Bowser_Prop, 90, 0)
         EVT_SET(LVar0, 0)
-        EVT_LOOP(40)
+        EVT_LOOP(40 * DT)
             EVT_ADD(LVar0, 36)
             EVT_CALL(SetNpcRotation, NPC_Bowser_Body, 0, LVar0, 0)
             EVT_WAIT(1)
@@ -1988,7 +2068,7 @@ EvtScript N(EVS_Scene_IntroStory) = {
     EVT_THREAD
         EVT_CALL(N(FadeAwayTapeGraphic))
     EVT_END_THREAD
-    EVT_WAIT(16)
+    EVT_WAIT(16 * DT)
     EVT_THREAD
         EVT_CALL(N(func_80244934_A2EB74))
     EVT_END_THREAD
@@ -2003,9 +2083,9 @@ EvtScript N(EVS_Scene_IntroStory) = {
         EVT_CALL(N(SetWorldFogParams), 0, 0, 0, 0, 0, 0, 0, 995, 1000)
         EVT_WAIT(5)
     EVT_END_LOOP
-    EVT_WAIT(30)
-    EVT_CALL(func_802CFD30, NPC_Bowser_Body, FOLD_TYPE_8, 0, 0, 0, 255)
-    EVT_CALL(func_802CFD30, NPC_Bowser_Prop, FOLD_TYPE_8, 0, 0, 0, 255)
+    EVT_WAIT(30 * DT)
+    EVT_CALL(SetNpcImgFXParams, NPC_Bowser_Body, IMGFX_SET_TINT, 0, 0, 0, 255)
+    EVT_CALL(SetNpcImgFXParams, NPC_Bowser_Prop, IMGFX_SET_TINT, 0, 0, 0, 255)
     EVT_THREAD
         EVT_SET(LVar0, 0)
         EVT_LOOP(4)
@@ -2013,13 +2093,13 @@ EvtScript N(EVS_Scene_IntroStory) = {
             EVT_IF_GT(LVar0, 255)
                 EVT_SET(LVar0, 255)
             EVT_END_IF
-            EVT_CALL(func_802CFD30, NPC_Bowser_Body, FOLD_TYPE_8, LVar0, LVar0, LVar0, 255)
-            EVT_CALL(func_802CFD30, NPC_Bowser_Prop, FOLD_TYPE_8, LVar0, LVar0, LVar0, 255)
+            EVT_CALL(SetNpcImgFXParams, NPC_Bowser_Body, IMGFX_SET_TINT, LVar0, LVar0, LVar0, 255)
+            EVT_CALL(SetNpcImgFXParams, NPC_Bowser_Prop, IMGFX_SET_TINT, LVar0, LVar0, LVar0, 255)
             EVT_WAIT(1)
         EVT_END_LOOP
     EVT_END_THREAD
     EVT_WAIT(3)
-    EVT_CALL(func_802D7B10, ArrayVar(17))
+    EVT_CALL(DismissEffect, ArrayVar(17))
     EVT_THREAD
         EVT_CALL(EnableTexPanning, MODEL_o33, TRUE)
         EVT_CALL(EnableTexPanning, MODEL_o34, TRUE)
@@ -2040,7 +2120,7 @@ EvtScript N(EVS_Scene_IntroStory) = {
     EVT_THREAD
         EVT_CALL(N(AddKammyHoverOffset))
     EVT_END_THREAD
-    EVT_WAIT(50)
+    EVT_WAIT(50 * DT)
     EVT_CALL(N(AdjustCamVfov), 0, 40)
     EVT_CALL(SetPanTarget, CAM_DEFAULT, 0, 157, 0)
     EVT_CALL(LoadSettings, CAM_DEFAULT, EVT_PTR(N(IntroCamSettings7)))
@@ -2128,8 +2208,8 @@ EvtScript N(EVS_Scene_IntroStory) = {
         EVT_CALL(N(SetWorldFogParams), 0, 0, 0, 0, 0, 0, 0, 995, 1000)
         EVT_WAIT(5)
     EVT_END_LOOP
-    EVT_WAIT(27)
-    EVT_CALL(func_802D7B10, ArrayVar(17))
+    EVT_WAIT(27 * DT)
+    EVT_CALL(DismissEffect, ArrayVar(17))
     EVT_CALL(N(SetWorldFogParams), 0, 0, 0, 0, 0, 0, 0, 995, 1000)
     EVT_CALL(N(AdjustCamVfov), 0, 25)
     EVT_CALL(SetPanTarget, CAM_DEFAULT, -38, 210, 85)
@@ -2172,22 +2252,22 @@ EvtScript N(EVS_Scene_IntroStory) = {
     EVT_THREAD
         EVT_CALL(N(CamPullBack_BowserExhale))
     EVT_END_THREAD
-    EVT_WAIT(20)
+    EVT_WAIT(20 * DT)
     EVT_PLAY_EFFECT(EFFECT_SHIMMER_BURST, 0, 0, 180, 0, EVT_FLOAT(0.703125), 30)
     EVT_THREAD
         EVT_WAIT(2)
         EVT_CALL(RemoveEffect, ArrayVar(15))
     EVT_END_THREAD
-    EVT_WAIT(20)
+    EVT_WAIT(20 * DT)
     EVT_CALL(N(AdjustCamVfov), 0, 25)
     EVT_CALL(SetPanTarget, CAM_DEFAULT, -38, 210, 85)
     EVT_CALL(LoadSettings, CAM_DEFAULT, EVT_PTR(N(IntroCamSettings9)))
-    EVT_WAIT(20)
+    EVT_WAIT(20 * DT)
     EVT_CALL(SetNpcAnimation, NPC_Bowser_Body, ANIM_WorldBowser_ClownCarOpenMouth)
     EVT_THREAD
         EVT_CALL(N(BowserFlyToStarRod))
     EVT_END_THREAD
-    EVT_WAIT(25)
+    EVT_WAIT(25 * DT)
     EVT_CALL(N(AdjustCamVfov), 0, 35)
     EVT_CALL(SetPanTarget, CAM_DEFAULT, -240, 200, 113)
     EVT_CALL(LoadSettings, CAM_DEFAULT, EVT_PTR(N(IntroCamSettings10)))
@@ -2235,7 +2315,7 @@ EvtScript N(EVS_Scene_IntroStory) = {
     EVT_MULF(LVar1, EVT_FLOAT(0.93))
     EVT_MULF(LVar2, EVT_FLOAT(0.9))
     EVT_CALL(SetNpcPos, NPC_Misstar, LVar0, LVar1, LVar2)
-    EVT_WAIT(35)
+    EVT_WAIT(35 * DT)
     EVT_CALL(N(AdjustCamVfov), 0, 35)
     EVT_CALL(SetPanTarget, CAM_DEFAULT, 30, 232, 0)
     EVT_CALL(LoadSettings, CAM_DEFAULT, EVT_PTR(N(IntroCamSettings11)))
@@ -2250,9 +2330,9 @@ EvtScript N(EVS_Scene_IntroStory) = {
     EVT_SET(LVar1, 260)
     EVT_SET(LVar2, -21)
     EVT_CALL(N(SetLightRayPos))
-    EVT_WAIT(35)
+    EVT_WAIT(35 * DT)
     EVT_THREAD
-        EVT_WAIT(70)
+        EVT_WAIT(70 * DT)
         EVT_SET(LVar0, 0)
         EVT_LOOP(10)
             EVT_ADD(LVar0, 12)
@@ -2261,7 +2341,7 @@ EvtScript N(EVS_Scene_IntroStory) = {
         EVT_END_LOOP
     EVT_END_THREAD
     EVT_THREAD
-        EVT_WAIT(92)
+        EVT_WAIT(92 * DT)
         EVT_CALL(N(SetWorldColorParams), 106, 94, 110, 216, 195, 131, 8)
         EVT_CALL(N(SetWorldColorParams), 100, 105, 107, 159, 118, 50, 20)
         EVT_CALL(N(SetWorldColorParams), 122, 180, 110, 0, 0, 0, 15)
@@ -2295,8 +2375,8 @@ EvtScript N(EVS_Scene_IntroStory) = {
     EVT_CALL(SetNpcAnimation, NPC_Kalmar, ANIM_WorldKalmar_Panic)
     EVT_THREAD
         EVT_WAIT(5)
-        EVT_CALL(func_802D7B10, ArrayVar(18))
-        EVT_CALL(func_802D7B10, ArrayVar(19))
+        EVT_CALL(DismissEffect, ArrayVar(18))
+        EVT_CALL(DismissEffect, ArrayVar(19))
     EVT_END_THREAD
     EVT_PLAY_EFFECT(EFFECT_ENERGY_SHOCKWAVE, 0, 18, 256, -21, EVT_FLOAT(0.40625), 60)
     EVT_SET(LVar0, 120)
@@ -2337,20 +2417,20 @@ EvtScript N(EVS_Scene_IntroStory) = {
     EVT_END_THREAD
     EVT_THREAD
         EVT_WAIT(28)
-        EVT_CALL(func_802CFD30, NPC_Eldstar, FOLD_TYPE_5, 8, 1, 1, 0)
+        EVT_CALL(SetNpcImgFXParams, NPC_Eldstar, IMGFX_SET_ANIM, IMGFX_ANIM_SPIRIT_CAPTURE, 1, 1, 0)
     EVT_END_THREAD
     EVT_SET(LVar0, 255)
     EVT_LOOP(20)
-        EVT_CALL(func_802CFD30, NPC_Mamar,    FOLD_TYPE_7, LVar0, 0, 0, 0)
-        EVT_CALL(func_802CFD30, NPC_Skolar,   FOLD_TYPE_7, LVar0, 0, 0, 0)
-        EVT_CALL(func_802CFD30, NPC_Muskular, FOLD_TYPE_7, LVar0, 0, 0, 0)
-        EVT_CALL(func_802CFD30, NPC_Misstar,  FOLD_TYPE_7, LVar0, 0, 0, 0)
-        EVT_CALL(func_802CFD30, NPC_Klevar,   FOLD_TYPE_7, LVar0, 0, 0, 0)
-        EVT_CALL(func_802CFD30, NPC_Kalmar,   FOLD_TYPE_7, LVar0, 0, 0, 0)
+        EVT_CALL(SetNpcImgFXParams, NPC_Mamar,    IMGFX_SET_ALPHA, LVar0, 0, 0, 0)
+        EVT_CALL(SetNpcImgFXParams, NPC_Skolar,   IMGFX_SET_ALPHA, LVar0, 0, 0, 0)
+        EVT_CALL(SetNpcImgFXParams, NPC_Muskular, IMGFX_SET_ALPHA, LVar0, 0, 0, 0)
+        EVT_CALL(SetNpcImgFXParams, NPC_Misstar,  IMGFX_SET_ALPHA, LVar0, 0, 0, 0)
+        EVT_CALL(SetNpcImgFXParams, NPC_Klevar,   IMGFX_SET_ALPHA, LVar0, 0, 0, 0)
+        EVT_CALL(SetNpcImgFXParams, NPC_Kalmar,   IMGFX_SET_ALPHA, LVar0, 0, 0, 0)
         EVT_WAIT(1)
     EVT_END_LOOP
-    EVT_WAIT(15)
-    EVT_CALL(func_802CFD30, NPC_Eldstar, FOLD_TYPE_7, 255, 0, 0, 0)
+    EVT_WAIT(15 * DT)
+    EVT_CALL(SetNpcImgFXParams, NPC_Eldstar, IMGFX_SET_ALPHA, 255, 0, 0, 0)
     EVT_PLAY_EFFECT(EFFECT_SOMETHING_ROTATING, 2, -130, 220, 130, 1, 0)
     EVT_SET(ArrayVar(0), LVarF)
     EVT_SET(LVar0, -130)
@@ -2359,7 +2439,7 @@ EvtScript N(EVS_Scene_IntroStory) = {
     EVT_ADDF(LVar1, EVT_FLOAT(-30.0))
     EVT_CALL(SetNpcPos, NPC_Kammy, LVar0, LVar1, LVar2)
     EVT_EXEC(N(EVS_UpdateWorldFogParams))
-    EVT_CALL(func_802D7B10, ArrayVar(1))
+    EVT_CALL(DismissEffect, ArrayVar(1))
     EVT_CALL(GetNpcPos, NPC_Eldstar, LVar0, LVar1, LVar2)
     EVT_PLAY_EFFECT(EFFECT_RING_BLAST, 1, LVar0, LVar1, LVar2, 4, 20)
     EVT_THREAD
@@ -2382,11 +2462,11 @@ EvtScript N(EVS_Scene_IntroStory) = {
         EVT_END_IF
         EVT_CALL(N(SetCardCaptureState1))
         EVT_CALL(SetNpcAnimation, NPC_Eldstar, ANIM_WorldEldstar_Panic)
-        EVT_CALL(func_802CFD30, NPC_Eldstar, FOLD_TYPE_NONE, 0, 0, 0, 0)
+        EVT_CALL(SetNpcImgFXParams, NPC_Eldstar, IMGFX_CLEAR, 0, 0, 0, 0)
         EVT_CALL(SetNpcFlagBits, NPC_Eldstar, NPC_FLAG_INVISIBLE, TRUE)
-        EVT_CALL(func_802D7B10, ArrayVar(8))
+        EVT_CALL(DismissEffect, ArrayVar(8))
     EVT_END_THREAD
-    EVT_WAIT(15)
+    EVT_WAIT(15 * DT)
     EVT_CALL(N(AdjustCamVfov), 0, 50)
     EVT_CALL(SetPanTarget, CAM_DEFAULT, 40, 200, -40)
     EVT_CALL(LoadSettings, CAM_DEFAULT, EVT_PTR(N(IntroCamSettings13)))
@@ -2399,7 +2479,7 @@ EvtScript N(EVS_Scene_IntroStory) = {
     EVT_CALL(SetNpcAnimation, NPC_Kammy, ANIM_WorldKammy_Anim12)
     EVT_EXEC(N(EVS_CaptureSpirits))
     EVT_CALL(N(CamPanAcrossRoom))
-    EVT_WAIT(15)
+    EVT_WAIT(15 * DT)
     EVT_CALL(SetNpcAnimation, NPC_Kammy, ANIM_WorldKammy_Anim09)
     EVT_THREAD
         EVT_WAIT(10)
@@ -2417,7 +2497,7 @@ EvtScript N(EVS_Scene_IntroStory) = {
     EVT_THREAD
         EVT_CALL(N(CamPullBack_Final))
     EVT_END_THREAD
-    EVT_WAIT(20)
+    EVT_WAIT(20 * DT)
     EVT_THREAD
         EVT_CALL(func_80244550_A2E790)
     EVT_END_THREAD
@@ -2434,9 +2514,9 @@ EvtScript N(EVS_Scene_IntroStory) = {
         EVT_CALL(N(SetCardCaptureState3))
     EVT_END_THREAD
     EVT_CALL(SetNpcAnimation, NPC_Kammy, ANIM_WorldKammy_Anim0D)
-    EVT_WAIT(15)
+    EVT_WAIT(15 * DT)
     EVT_CALL(SetNpcAnimation, NPC_Kammy, ANIM_WorldKammy_Anim11)
-    EVT_WAIT(32)
+    EVT_WAIT(32 * DT)
     EVT_CALL(SetNpcJumpscale, NPC_Eldstar, EVT_FLOAT(0.0))
     EVT_CALL(SetNpcJumpscale, NPC_Mamar, EVT_FLOAT(0.0))
     EVT_CALL(SetNpcJumpscale, NPC_Skolar, EVT_FLOAT(0.0))
@@ -2448,9 +2528,9 @@ EvtScript N(EVS_Scene_IntroStory) = {
     EVT_THREAD
         EVT_CALL(N(AnimBowser_FlyOff))
     EVT_END_THREAD
-    EVT_WAIT(10)
+    EVT_WAIT(10 * DT)
     EVT_CALL(N(AnimKammy_FlyOff))
-    EVT_WAIT(20)
+    EVT_WAIT(20 * DT)
     EVT_CALL(N(ResumeIntro))
     EVT_RETURN
     EVT_END

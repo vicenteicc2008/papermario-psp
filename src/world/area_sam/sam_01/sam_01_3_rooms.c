@@ -81,7 +81,7 @@ EvtScript N(EVS_RoomListener_MayorOffice) = {
                     EVT_CALL(SetNpcFlagBits, NPC_Herringway, NPC_FLAG_IGNORE_PLAYER_COLLISION, TRUE)
                     EVT_CALL(SetNpcFlagBits, NPC_Herringway, NPC_FLAG_IGNORE_WORLD_COLLISION, TRUE)
                     EVT_CALL(SetNpcAnimation, NPC_Herringway, ANIM_Penguin_Walk)
-                    EVT_CALL(SetNpcSpeed, NPC_Herringway, EVT_FLOAT(1.5))
+                    EVT_CALL(SetNpcSpeed, NPC_Herringway, EVT_FLOAT(1.5 / DT))
                     EVT_CALL(NpcMoveTo, NPC_Herringway, -252, -55, 0)
                     EVT_CALL(SetNpcAnimation, NPC_Herringway, ANIM_Penguin_Idle)
                     EVT_CALL(SetNpcFlagBits, NPC_Herringway, NPC_FLAG_IGNORE_PLAYER_COLLISION, FALSE)
@@ -208,7 +208,7 @@ s32 N(InteriorNPCs_MayorAfter)[] = {
     NPC_MayorPenguinWife,
     NPC_PenguinPatrol,
     NPC_Herringway,
-    -1 
+    -1
 };
 
 s32 N(InteriorNPCs_MiddleHouse)[] = {

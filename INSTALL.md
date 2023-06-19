@@ -6,6 +6,7 @@ This repository supports:
 - [macOS](#unix)
 - [Windows Subsystem for Linux 2](#wsl-2)
 - [Docker](#docker) (any host OS)
+- [Nix](#nix)
 
 If you encounter any issues setting up the repo, please feel free to [reach out to us on Discord](https://discord.gg/urUm3VG).
 
@@ -25,7 +26,7 @@ Install build dependencies:
 ```
 
 > **NOTE:** On Mac, if you get an error that looks like
-> 
+>
 >```sh
 >Error: Cannot install md5sha1sum because conflicting formulae are installed.
 >  coreutils: because both install `md5sum` and `sha1sum` binaries
@@ -77,3 +78,14 @@ docker run --rm -ti -v $(pwd):/papermario pm
 ```
 
 Then continue with [the instructions for Linux](#unix), but you can skip the install.sh!
+
+## Nix
+
+Install [Nix](https://nixos.org/download.html) and run `nix-shell`. You will need to set the `NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM` environment variable to `1` (required for cross compiling).
+
+```sh
+export NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1
+nix-shell
+```
+
+Like the instructions for Docker, continue with [the instructions for Linux](#unix), but you can skip the install.sh!

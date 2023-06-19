@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [[ "$UID" -eq "0" ]]; then
     SUDO=""
@@ -33,6 +33,7 @@ if [[ "$uname" == "Darwin" ]]; then
     # Install packages
     brew install md5sha1sum ninja gcc nanaian/brew/mips-linux-gnu-binutils || exit 1
     python3 -m pip install -U -r requirements.txt || exit 1
+    cp tools/precommit_check_no_assets.sh "$(git rev-parse --git-path hooks)/pre-commit" || exit 1
 
     if [[ $1 == "--extra" ]]; then
         echo "Installing extra"
@@ -49,10 +50,61 @@ if cat /etc/os-release | grep -E 'ID=debian|ID_LIKE=(.*)debian' &> /dev/null; th
 
     ${SUDO} apt install -y curl git python3 python3-pip python3-setuptools build-essential binutils-mips-linux-gnu zlib1g-dev libyaml-dev ninja-build cpp-mips-linux-gnu || exit 1
     python3 -m pip install -U -r requirements.txt
+    cp tools/precommit_check_no_assets.sh "$(git rev-parse --git-path hooks)/pre-commit" || exit 1
 
     if [[ $1 == "--extra" ]]; then
         echo "Installing extra"
         ${SUDO} apt install -y clang-tidy astyle doxygen || exit 1
+        python3 -m pip install -U -r requirements_extra.txt || exit 1
+    fi
+fi
+
+# Fedora (dnf)
+if cat /etc/os-release | grep -E ID=fedora &> /dev/null; then
+    supported=true
+
+    echo "Installing packages for Fedora (dnf)"
+
+    ${SUDO} dnf install -y curl git python3 python3-pip python3-setuptools ninja-build gcc-mips64-linux-gnu libyaml-devel zlib-devel || exit 1
+    ${SUDO} dnf group info "C Development Tools and Libraries" "Development Tools" || exit 1
+    # Install binutils if required
+    if ! command -v mips-linux-gnu-ar &> /dev/null; then
+        PKG="mips-linux-gnu-binutils"
+
+        RETURNDIR="$(pwd)"
+        cd "$(mktemp -d)"
+
+        wget ftp://ftp.gnu.org/gnu/binutils/binutils-2.35.tar.bz2
+        tar -xf binutils-2.35.tar.bz2
+
+        cd binutils-2.35
+        sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" libiberty/configure
+        ./configure --target=mips-linux-gnu \
+                    --with-sysroot=/usr/mips-linux-gnu \
+                    --prefix=/usr \
+                    --disable-multilib \
+                    --with-gnu-as \
+                    --with-gnu-ld \
+                    --disable-nls \
+                    --enable-ld=default \
+                    --enable-plugins \
+                    --enable-deterministic-archives \
+                    --disable-werror
+        ${SUDO} make
+        ${SUDO} make install
+
+        cd ..
+        # delete temp directory we made
+        rm -rf "$(pwd)"
+        # go back to old dir
+        cd "${RETURNDIR}"
+    fi
+    python3 -m pip install -U -r requirements.txt
+    cp tools/precommit_check_no_assets.sh "$(git rev-parse --git-path hooks)/pre-commit" || exit 1
+
+    if [[ $1 == "--extra" ]]; then
+        echo "Installing extra"
+        ${SUDO} dnf install -y clang-tools-extra astyle doxygen || exit 1
         python3 -m pip install -U -r requirements_extra.txt || exit 1
     fi
 fi
@@ -69,6 +121,7 @@ if cat /etc/os-release | grep -E 'ID=arch|ID_LIKE=arch' &> /dev/null; then
     # Install dependencies
     ${SUDO} pacman -S --noconfirm --needed curl git python python-pip python-setuptools base-devel zlib libyaml ninja || exit 1
     python3 -m pip install -U -r requirements.txt
+    cp tools/precommit_check_no_assets.sh "$(git rev-parse --git-path hooks)/pre-commit" || exit 1
 
     # Install binutils if required
     if ! command -v mips-linux-gnu-ar &> /dev/null; then
@@ -123,6 +176,7 @@ if cat /etc/os-release | grep ID=opensuse &> /dev/null; then
     ${SUDO} ln -s /usr/bin/mips-suse-linux-strip /usr/bin/mips-linux-gnu-strip
 
     python3 -m pip install -U -r requirements.txt
+    cp tools/precommit_check_no_assets.sh "$(git rev-parse --git-path hooks)/pre-commit" || exit 1
 
     if [[ $1 == "--extra" ]]; then
         echo "Installing extra"
@@ -145,6 +199,7 @@ if cat /etc/os-release | grep ID=alpine &> /dev/null; then
     # Install dependencies
     ${SUDO} apk add --no-cache bash curl wget git python3 python3-dev py3-pip build-base zlib-dev yaml-dev ninja
     python3 -m pip install -U -r requirements.txt
+    cp tools/precommit_check_no_assets.sh "$(git rev-parse --git-path hooks)/pre-commit" || exit 1
 
     # Install binutils if required
     if ! command -v mips-linux-gnu-ar &> /dev/null; then
@@ -193,6 +248,7 @@ if [ "$supported" != true ]; then
     echo "- Arch Linux (pacman)"
     echo "- openSUSE (zypper)"
     echo "- Alpine Linux (apk)"
+    echo "- Fedora (dnf)"
     echo "Please consider contributing and adding an installation script for your distro."
     exit 1
 fi

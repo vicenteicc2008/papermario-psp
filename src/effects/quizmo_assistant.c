@@ -33,7 +33,7 @@ EffectInstance* quizmo_assistant_main(s32 arg0, f32 arg1, f32 arg2, f32 arg3, f3
     bp.update = quizmo_assistant_update;
     bp.renderWorld = quizmo_assistant_render;
     bp.unk_00 = 0;
-    bp.unk_14 = NULL;
+    bp.renderUI = NULL;
     bp.effectID = EFFECT_QUIZMO_ASSISTANT;
 
     effect = shim_create_effect_instance(&bp);
@@ -63,8 +63,8 @@ void quizmo_assistant_init(EffectInstance* effect) {
 void quizmo_assistant_update(EffectInstance* effect) {
     QuizmoAssistantFXData* data = effect->data.quizmoAssistant;
 
-    if (effect->flags & EFFECT_INSTANCE_FLAG_10) {
-        effect->flags &= ~EFFECT_INSTANCE_FLAG_10;
+    if (effect->flags & FX_INSTANCE_FLAG_DISMISS) {
+        effect->flags &= ~FX_INSTANCE_FLAG_DISMISS;
         data->vanishTimer = 16;
     }
 
@@ -105,8 +105,8 @@ void quizmo_assistant_appendGfx(void* effect) {
     Matrix4f sp18;
     Matrix4f sp58;
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
+    gDPPipeSync(gMainGfxPos++);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
 
     shim_guTranslateF(sp18, data->position.x, data->position.y, data->position.z);
     shim_guRotateF(sp58, -gCameras[gCurrentCameraID].currentYaw, 0.0f, 1.0f, 0.0f);
@@ -117,9 +117,9 @@ void quizmo_assistant_appendGfx(void* effect) {
     shim_guMtxCatF(sp58, sp18, sp18);
     shim_guMtxF2L(sp18, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, fadeInAmt, fadeInAmt, fadeInAmt, 255);
-    gSPDisplayList(gMasterGfxPos++, D_E011C514[0]);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, fadeInAmt, fadeInAmt, fadeInAmt, 255);
+    gSPDisplayList(gMainGfxPos++, D_E011C514[0]);
 
     switch (data->anim) {
         case 0:
@@ -134,7 +134,7 @@ void quizmo_assistant_appendGfx(void* effect) {
             break;
     }
 
-    gSPDisplayList(gMasterGfxPos++, D_E011C500[idx]);
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
-    gDPPipeSync(gMasterGfxPos++);
+    gSPDisplayList(gMainGfxPos++, D_E011C500[idx]);
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
+    gDPPipeSync(gMainGfxPos++);
 }

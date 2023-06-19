@@ -58,7 +58,7 @@ void interact_inspect_setup(void) {
 }
 
 void appendGfx_interact_prompt(void) {
-    FoldImageRecPart sp20;
+    ImgFXTexture ifxImg;
     Matrix4f sp38, sp78;
 
     if (gPlayerStatus.animFlags & PA_FLAG_INTERACT_PROMPT_AVAILABLE) {
@@ -69,23 +69,24 @@ void appendGfx_interact_prompt(void) {
         guMtxCatF(sp38, sp78, sp78);
         guMtxF2L(sp78, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-        gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++],
+        gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++],
                   G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-        gSPDisplayList(gMasterGfxPos++, &inspect_icon_gfx);
+        gSPDisplayList(gMainGfxPos++, &inspect_icon_gfx);
 
-        sp20.raster  = inspect_icon_img;
-        sp20.palette = inspect_icon_pal;
-        sp20.width   = inspect_icon_img_width;
-        sp20.height  = inspect_icon_img_height;
-        sp20.xOffset = -16;
-        sp20.yOffset = 26;
-        sp20.opacity = 255;
-        fold_update(0, FOLD_TYPE_NONE, 0, 0, 0, 0, 0x440);
-        fold_update(0, FOLD_TYPE_6,
-                    InspectIconPtr->brightness, InspectIconPtr->brightness, InspectIconPtr->brightness, 255, 0x448);
-        fold_appendGfx_component(0, &sp20, 0, sp78);
+        ifxImg.raster  = inspect_icon_img;
+        ifxImg.palette = inspect_icon_pal;
+        ifxImg.width   = inspect_icon_img_width;
+        ifxImg.height  = inspect_icon_img_height;
+        ifxImg.xOffset = -16;
+        ifxImg.yOffset = 26;
+        ifxImg.alpha = 255;
+        imgfx_update(0, IMGFX_CLEAR, 0, 0, 0, 0, IMGFX_FLAG_400 | IMGFX_FLAG_40);
+        imgfx_update(0, IMGFX_SET_COLOR,
+                    InspectIconPtr->brightness, InspectIconPtr->brightness, InspectIconPtr->brightness, 255,
+                    IMGFX_FLAG_400 | IMGFX_FLAG_40 | IMGFX_FLAG_8);
+        imgfx_appendGfx_component(0, &ifxImg, 0, sp78);
 
-        gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+        gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
     }
 }
 

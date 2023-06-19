@@ -109,7 +109,7 @@ s32 create_npc_impl(NpcBlueprint* blueprint, AnimID* animList, s32 isPeachNpc) {
         npc->flags |= NPC_FLAG_NO_ANIMS_LOADED;
     }
 
-    npc->collisionRadius = 32;
+    npc->collisionDiameter = 32;
     npc->collisionHeight = 64;
     npc->renderMode = 13;
     npc->blur.any = NULL;
@@ -121,7 +121,7 @@ s32 create_npc_impl(NpcBlueprint* blueprint, AnimID* animList, s32 isPeachNpc) {
     npc->colliderPos.x = 0.0f;
     npc->colliderPos.y = 0.0f;
     npc->colliderPos.z = 0.0f;
-    npc->rotationVerticalPivotOffset = 0.0f;
+    npc->rotationPivotOffsetY = 0.0f;
     npc->rotation.x = 0.0f;
     npc->rotation.y = 0.0f;
     npc->rotation.z = 0.0f;
@@ -140,14 +140,14 @@ s32 create_npc_impl(NpcBlueprint* blueprint, AnimID* animList, s32 isPeachNpc) {
     npc->currentAnim = blueprint->initialAnim;
     npc->animationSpeed = 1.0f;
     npc->renderYaw = 0.0f;
-    npc->foldType = 0;
-    npc->foldArg5 = 0;
+    npc->imgfxType = IMGFX_CLEAR;
+    npc->imgfxFlags = 0;
     npc->collisionChannel = COLLISION_CHANNEL_20000;
-    npc->isFacingAway = 0;
+    npc->isFacingAway = FALSE;
     npc->yawCamOffset = 0;
     npc->turnAroundYawAdjustment = 0;
-    npc->currentFloor = -1;
-    npc->currentWall = -1;
+    npc->currentFloor = NO_COLLIDER;
+    npc->currentWall = NO_COLLIDER;
     npc->palSwapType = 0;
     npc->palSwapPrevType = 0;
     npc->screenSpaceOffset2D[0] = 0.0f;
@@ -300,9 +300,9 @@ void npc_do_world_collision(Npc* npc) {
         testZ = npc->pos.z;
 
         if (!(npc->flags & NPC_FLAG_PARTNER)) {
-            hit = npc_test_move_simple_with_slipping(npc->collisionChannel, &testX, &testY, &testZ, 0, testAngle, npc->collisionHeight, npc->collisionRadius);
+            hit = npc_test_move_simple_with_slipping(npc->collisionChannel, &testX, &testY, &testZ, 0, testAngle, npc->collisionHeight, npc->collisionDiameter);
         } else {
-            hit = npc_test_move_complex_with_slipping(npc->collisionChannel, &testX, &testY, &testZ, 0, testAngle, npc->collisionHeight, npc->collisionRadius);
+            hit = npc_test_move_complex_with_slipping(npc->collisionChannel, &testX, &testY, &testZ, 0, testAngle, npc->collisionHeight, npc->collisionDiameter);
         }
 
         if (hit) {
@@ -320,9 +320,9 @@ void npc_do_world_collision(Npc* npc) {
         testZ = npc->pos.z;
 
         if (!(npc->flags & NPC_FLAG_PARTNER)) {
-            hit = npc_test_move_simple_with_slipping(npc->collisionChannel, &testX, &testY, &testZ, 0, testAngle, npc->collisionHeight, npc->collisionRadius);
+            hit = npc_test_move_simple_with_slipping(npc->collisionChannel, &testX, &testY, &testZ, 0, testAngle, npc->collisionHeight, npc->collisionDiameter);
         } else {
-            hit = npc_test_move_taller_with_slipping(npc->collisionChannel, &testX, &testY, &testZ, 0, testAngle, npc->collisionHeight, npc->collisionRadius);
+            hit = npc_test_move_taller_with_slipping(npc->collisionChannel, &testX, &testY, &testZ, 0, testAngle, npc->collisionHeight, npc->collisionDiameter);
         }
 
         if (hit) {
@@ -338,9 +338,9 @@ void npc_do_world_collision(Npc* npc) {
         testY = npc->pos.y;
         testZ = npc->pos.z;
         if (!(npc->flags & NPC_FLAG_PARTNER)) {
-            hit = npc_test_move_simple_with_slipping(npc->collisionChannel, &testX, &testY, &testZ, 0, testAngle, npc->collisionHeight, npc->collisionRadius);
+            hit = npc_test_move_simple_with_slipping(npc->collisionChannel, &testX, &testY, &testZ, 0, testAngle, npc->collisionHeight, npc->collisionDiameter);
         } else {
-            hit = npc_test_move_taller_with_slipping(npc->collisionChannel, &testX, &testY, &testZ, 0, testAngle, npc->collisionHeight, npc->collisionRadius);
+            hit = npc_test_move_taller_with_slipping(npc->collisionChannel, &testX, &testY, &testZ, 0, testAngle, npc->collisionHeight, npc->collisionDiameter);
         }
 
         if (hit != 0) {
@@ -357,7 +357,7 @@ void npc_do_world_collision(Npc* npc) {
             testY = npc->pos.y;
             testZ = npc->pos.z;
             if (npc_test_move_simple_with_slipping(npc->collisionChannel, &testX, &testY, &testZ, 0, testAngle, npc->collisionHeight,
-                              npc->collisionRadius) != 0) {
+                              npc->collisionDiameter) != 0) {
                 npc->flags |= NPC_FLAG_COLLDING_WITH_WORLD;
                 npc->pos.x = testX;
                 npc->pos.z = testZ;
@@ -370,7 +370,7 @@ void npc_do_world_collision(Npc* npc) {
             testY = npc->pos.y;
             testZ = npc->pos.z;
             if (npc_test_move_simple_with_slipping(npc->collisionChannel, &testX, &testY, &testZ, 0, testAngle, npc->collisionHeight,
-                              npc->collisionRadius) != 0) {
+                              npc->collisionDiameter) != 0) {
                 npc->flags |= NPC_FLAG_COLLDING_WITH_WORLD;
                 npc->pos.x = testX;
                 npc->pos.z = testZ;
@@ -395,7 +395,7 @@ void npc_do_other_npc_collision(Npc* npc) {
 
     if (!(npc->flags & NPC_FLAG_IGNORE_PLAYER_COLLISION)) {
         npc->flags &= ~NPC_FLAG_COLLIDING_WITH_NPC;
-        thisBuf = npc->collisionRadius * 0.5f;
+        thisBuf = npc->collisionDiameter * 0.5f;
         thisX = npc->pos.x;
         thisY = npc->pos.y;
         thisZ = npc->pos.z;
@@ -411,15 +411,15 @@ void npc_do_other_npc_collision(Npc* npc) {
                         xDiff = otherX - thisX;
                         otherZ = otherNpc->pos.z;
                         zDiff = otherZ - thisZ;
-                        otherBuf = otherNpc->collisionRadius * 0.5f;
+                        otherBuf = otherNpc->collisionDiameter * 0.5f;
                         dist = sqrtf(SQ(xDiff) + SQ(zDiff));
 
                         if (!(thisBuf + otherBuf <= dist)) {
                             collision = FALSE;
                             if (npc->flags & NPC_FLAG_PARTNER) {
-                                collision = gPartnerActionStatus.partnerActionState == PARTNER_ACTION_NONE;
+                                collision = gPartnerStatus.partnerActionState == PARTNER_ACTION_NONE;
                             } else if (!(otherNpc->flags & NPC_FLAG_PARTNER) ||
-                                        gPartnerActionStatus.partnerActionState == PARTNER_ACTION_NONE)
+                                        gPartnerStatus.partnerActionState == PARTNER_ACTION_NONE)
                             {
                                 collision = TRUE;
                             }
@@ -443,26 +443,20 @@ void npc_do_other_npc_collision(Npc* npc) {
     }
 }
 
-// float regalloc
-#ifdef NON_MATCHING
 s32 npc_do_player_collision(Npc* npc) {
     PlayerStatus* playerStatus = &gPlayerStatus;
-    f32 xDiff, zDiff;
-    f32 npcColliderX, npcColliderZ;
     f32 playerX, playerZ;
-    f32 tempX, tempZ;
-
-    f32 temp_f0;
-    f32 temp_f22_2;
-    f32 temp_f24;
-    f32 temp_f24_2;
-    f32 temp_f28;
+    f32 playerYaw, yaw;
+    f32 npcX, npcZ;
+    f32 dist, colDist, distToNpc;
+    f32 npcColRadius, playerColRadius;
+    f32 deltaX, deltaZ;
 
     if (npc->flags & NPC_FLAG_IGNORE_PLAYER_COLLISION) {
         return FALSE;
     }
 
-    if (npc->flags & PS_FLAG_CAMERA_DOESNT_FOLLOW) {
+    if (npc->flags & NPC_FLAG_PARTNER) {
         return FALSE;
     }
 
@@ -480,55 +474,63 @@ s32 npc_do_player_collision(Npc* npc) {
 
     playerX = playerStatus->position.x;
     playerZ = playerStatus->position.z;
-    tempX = npc->pos.x;
-    tempZ = npc->pos.z;
 
-    xDiff = playerX - tempX;
-    zDiff = playerZ - tempZ;
+    npcColRadius = npc->collisionDiameter / 2;
+    playerColRadius = playerStatus->colliderDiameter / 2;
 
-    temp_f22_2 = (npc->collisionRadius / 2) + (f32)(playerStatus->colliderDiameter / 2);
-    if (temp_f22_2 < sqrtf(SQ(xDiff) + SQ(zDiff))) {
+    npcX = npc->pos.x;
+    npcZ = npc->pos.z;
+
+    deltaX = playerX - npcX;
+    deltaZ = playerZ - npcZ;
+
+    distToNpc = sqrtf(SQ(deltaX) + SQ(deltaZ));
+    colDist = npcColRadius + playerColRadius;
+    if (colDist < distToNpc) {
         return FALSE;
     }
 
-    playerStatus->animFlags |= 0x8000;
-    //playerX = playerStatus->position.x;
-    npcColliderX = npc->colliderPos.x;
-    npcColliderZ = npc->colliderPos.z;
-    tempX = playerX - npcColliderX;
-    tempZ = playerZ - npcColliderZ;
+    playerStatus->animFlags |= PA_FLAG_NPC_COLLIDED;
 
-    //temp_f24 = sqrtf(SQ(tempX) + SQ(tempZ));
-    xDiff = tempZ;
-    temp_f24 = sqrtf((tempX * tempX) + (xDiff * xDiff));
+    npcX = npc->colliderPos.x;
+    npcZ = npc->colliderPos.z;
 
-    temp_f0 = atan2(playerX, playerZ, npcColliderX, npcColliderZ);
-    temp_f28 = playerStatus->targetYaw;
-    temp_f24_2 = temp_f22_2 - temp_f24;
-    temp_f24 = temp_f24_2 * sin_rad(DEG_TO_RAD(temp_f0));
-    playerZ = -temp_f24_2 * cos_rad(DEG_TO_RAD(temp_f0));
+    deltaX = playerX - npcX;
+    deltaZ = playerZ - npcZ;
+
+    dist = sqrtf(SQ(deltaX) + SQ(deltaZ));
+    yaw = atan2(playerX, playerZ, npcX, npcZ);
+
+    playerYaw = playerStatus->targetYaw;
+    dist = colDist - dist;
+    deltaX = dist * sin_rad(DEG_TO_RAD(yaw));
+    deltaZ = -dist * cos_rad(DEG_TO_RAD(yaw));
+
     if (playerStatus->animFlags & PA_FLAG_RIDING_PARTNER) {
-        if (fabsf(get_clamped_angle_diff(temp_f0, temp_f28)) < 45.0f) {
-            playerStatus->position.x -= temp_f24;
-            playerStatus->position.z -= playerZ;
-            wPartnerNpc->pos.x -= temp_f24;
-            wPartnerNpc->pos.z -= playerZ;
+        if (fabsf(get_clamped_angle_diff(yaw, playerYaw)) < 45.0f) {
+            playerStatus->position.x -= deltaX;
+            playerStatus->position.z -= deltaZ;
+            wPartnerNpc->pos.x -= deltaX;
+            wPartnerNpc->pos.z -= deltaZ;
         } else {
-            playerStatus->position.x -= temp_f24 * 0.5f;
-            playerStatus->position.z -= playerZ * 0.5f;
-            wPartnerNpc->pos.x -= temp_f24 * 0.5f;
-            wPartnerNpc->pos.z -= playerZ * 0.5f;
+            playerStatus->position.x -= deltaX * 0.5f;
+            playerStatus->position.z -= deltaZ * 0.5f;
+            wPartnerNpc->pos.x -= deltaX * 0.5f;
+            wPartnerNpc->pos.z -= deltaZ * 0.5f;
         }
     } else {
         if (playerStatus->flags & (PS_FLAG_JUMPING | PS_FLAG_FALLING)) {
-            playerStatus->position.x -= temp_f24 * 0.4f;
-            playerStatus->position.z -= playerZ * 0.4f;
-        } else if (fabsf(get_clamped_angle_diff(temp_f0, temp_f28)) < 45.0f) {
-            playerStatus->position.x -= temp_f24;
-            playerStatus->position.z -= playerZ;
+            playerStatus->position.x -= deltaX * 0.4f;
+            playerStatus->position.z -= deltaZ * 0.4f;
         } else {
-            playerStatus->position.x -= temp_f24 * 0.5f;
-            playerStatus->position.z -= playerZ * 0.5f;
+            dist = get_clamped_angle_diff(yaw, playerYaw); // required to match
+            if (fabsf(dist) < 45.0f) {
+                playerStatus->position.x -= deltaX;
+                playerStatus->position.z -= deltaZ;
+            } else {
+                playerStatus->position.x -= deltaX * 0.5f;
+                playerStatus->position.z -= deltaZ * 0.5f;
+            }
         }
     }
     npc->pos.x = npc->colliderPos.x;
@@ -536,9 +538,6 @@ s32 npc_do_player_collision(Npc* npc) {
     npc->pos.z = npc->colliderPos.z;
     return TRUE;
 }
-#else
-INCLUDE_ASM(s32, "npc", npc_do_player_collision, Npc* npc);
-#endif
 
 // update NPC position using gravitational acceleration = 1.0
 // if the NPC is within 16 units of the floor, they are snapped to it
@@ -546,7 +545,7 @@ void npc_try_apply_gravity(Npc* npc) {
     f32 x, y, z, testLength;
     f32 length;
     s32 hitID;
-    
+
     if (!(npc->flags & NPC_FLAG_GRAVITY)) {
         return;
     }
@@ -568,7 +567,7 @@ void npc_try_apply_gravity(Npc* npc) {
     if (!(npc->flags & NPC_FLAG_PARTNER)) {
         hitID = npc_raycast_down_sides(npc->collisionChannel, &x, &y, &z, &length);
     } else {
-        hitID = npc_raycast_down_around(npc->collisionChannel, &x, &y, &z, &length, npc->yaw, npc->collisionRadius);
+        hitID = npc_raycast_down_around(npc->collisionChannel, &x, &y, &z, &length, npc->yaw, npc->collisionDiameter);
     }
 
     if (hitID && length <= testLength) {
@@ -586,7 +585,7 @@ s32 npc_try_snap_to_ground(Npc* npc, f32 velocity) {
     f32 x, y, z, testLength;
     f32 length;
     s32 hitID;
-    
+
     if (npc->flags & (NPC_FLAG_GRAVITY | NPC_FLAG_8)) {
         return FALSE;
     }
@@ -604,7 +603,7 @@ s32 npc_try_snap_to_ground(Npc* npc, f32 velocity) {
     if (!(npc->flags & NPC_FLAG_PARTNER)) {
         hitID = npc_raycast_down_sides(npc->collisionChannel, &x, &y, &z, &length);
     } else {
-        hitID = npc_raycast_down_around(npc->collisionChannel, &x, &y, &z, &length, npc->yaw, npc->collisionRadius);
+        hitID = npc_raycast_down_around(npc->collisionChannel, &x, &y, &z, &length, npc->yaw, npc->collisionDiameter);
     }
 
     if (hitID != 0 && length <= testLength) {
@@ -644,8 +643,8 @@ void update_npcs(void) {
                         npc->collisionChannel &= ~COLLISION_IGNORE_ENTITIES;
                     }
 
-                    npc->currentFloor = -1;
-                    npc->currentWall = -1;
+                    npc->currentFloor = NO_COLLIDER;
+                    npc->currentWall = NO_COLLIDER;
                     npc->flags &= ~(NPC_FLAG_COLLDING_FORWARD_WITH_WORLD | NPC_FLAG_COLLDING_WITH_WORLD);
 
                     npc_do_world_collision(npc);
@@ -701,7 +700,7 @@ void update_npcs(void) {
                                 z = npc->pos.z;
                                 hitLength = 1000.0f;
                                 entity_raycast_down(&x, &y, &z, &hitYaw, &hitPitch, &hitLength);
-                                set_npc_shadow_scale(shadow, hitLength, npc->collisionRadius);
+                                set_npc_shadow_scale(shadow, hitLength, npc->collisionDiameter);
                                 shadow->position.x = x;
                                 shadow->position.y = y;
                                 shadow->position.z = z;
@@ -821,8 +820,8 @@ void appendGfx_npc(void* data) {
         guMtxCatF(mtx2, mtx1, mtx1);
     }
 
-    if (npc->rotationVerticalPivotOffset != 0.0f) {
-        guTranslateF(mtx2, 0.0f, npc->rotationVerticalPivotOffset, 0.0f);
+    if (npc->rotationPivotOffsetY != 0.0f) {
+        guTranslateF(mtx2, 0.0f, npc->rotationPivotOffsetY, 0.0f);
         guMtxCatF(mtx2, mtx1, mtx1);
     }
 
@@ -841,8 +840,8 @@ void appendGfx_npc(void* data) {
         guMtxCatF(mtx2, mtx1, mtx1);
     }
 
-    if (npc->rotationVerticalPivotOffset != 0.0f) {
-        guTranslateF(mtx2, 0.0f, -npc->rotationVerticalPivotOffset, 0.0f);
+    if (npc->rotationPivotOffsetY != 0.0f) {
+        guTranslateF(mtx2, 0.0f, -npc->rotationPivotOffsetY, 0.0f);
         guMtxCatF(mtx2, mtx1, mtx1);
     }
 
@@ -865,7 +864,7 @@ void appendGfx_npc(void* data) {
         }
     } else {
         npc_draw_with_palswap(npc, renderYaw, mtx1);
-        npc->animNotifyValue = func_802DDEC4(1);
+        npc->animNotifyValue = func_802DDEC4(PLAYER_SPRITE_AUX1);
     }
 
     if (npc->flags & NPC_FLAG_REFLECT_WALL) {
@@ -1148,7 +1147,7 @@ void appendGfx_npc_blur(void* data) {
             x = blur->x[index];
             y = blur->y[index];
             z = blur->z[index];
-            func_802DE894(npc->spriteInstanceID, FOLD_TYPE_7, 255, 255, 255, 120 - (var_s5 * 20), 0);
+            set_npc_imgfx_all(npc->spriteInstanceID, IMGFX_SET_ALPHA, 255, 255, 255, 120 - (var_s5 * 20), 0);
             yaw = npc->renderYaw;
             guTranslateF(sp20, x, y, z);
 
@@ -1188,7 +1187,7 @@ void appendGfx_npc_blur(void* data) {
             }
         }
     }
-    func_8003D3BC(npc);
+    npc_imgfx_update(npc);
 }
 
 void npc_enable_collisions(void) {
@@ -1231,7 +1230,7 @@ void npc_reload_all(void) {
                             for (j = 0; j < 2; j++) {
                                 npc_reset_current_decoration(npc, j);
                             }
-                            func_8003D3BC(npc);
+                            npc_imgfx_update(npc);
                         }
                     }
                 }
@@ -1500,7 +1499,7 @@ s32 npc_draw_palswap_mode_2(Npc* npc, s32 arg1, s32 arg2, Matrix4f mtx) {
                 npc->palSwapLerpAlpha = 0;
                 npc->palSwapState = 1;
             }
-            /* fallthrough */
+            // fallthrough
         case 1:
             npc->palSwapLerpAlpha += 25600 / npc->unk_30E;
             if (npc->palSwapLerpAlpha > 25500) {
@@ -1531,7 +1530,7 @@ s32 npc_draw_palswap_mode_2(Npc* npc, s32 arg1, s32 arg2, Matrix4f mtx) {
                 npc->palSwapLerpAlpha = 0;
                 npc->palSwapState = 3;
             }
-            /* fallthrough */
+            // fallthrough
         case 3:
             npc->palSwapLerpAlpha += 25600 / npc->unk_312;
             if (npc->palSwapLerpAlpha > 25500) {
@@ -1622,7 +1621,7 @@ s32 npc_draw_palswap_mode_4(Npc* npc, s32 arg1, Matrix4f mtx) {
                 npc->palSwapLerpAlpha = 0;
                 npc->palSwapState = 1;
             }
-            /* fallthrough */
+            // fallthrough
         case 1:
             npc->palSwapLerpAlpha += 25600 / npc->unk_30E;
             if (npc->palSwapLerpAlpha > 25500) {
@@ -1663,7 +1662,7 @@ s32 npc_draw_palswap_mode_4(Npc* npc, s32 arg1, Matrix4f mtx) {
                 npc->palSwapLerpAlpha = 0;
                 npc->palSwapState = 3;
             }
-            /* fallthrough */
+            // fallthrough
         case 3:
             npc->palSwapLerpAlpha += 25600 / npc->unk_312;
             if (npc->palSwapLerpAlpha > 25500) {
@@ -1818,7 +1817,7 @@ void npc_update_decoration_bowser_aura(Npc* npc, s32 idx) {
     data->posA.x = npc->pos.x;
     data->posA.y = npc->pos.y;
     data->posA.z = npc->pos.z;
-    data->scale.x = (npc->scale.x * npc->collisionRadius) * 0.01;
+    data->scale.x = (npc->scale.x * npc->collisionDiameter) * 0.01;
     data->scale.y = (npc->scale.y * npc->collisionHeight) * 0.01;
     data->renderYaw = npc->renderYaw;
 }
@@ -1928,7 +1927,7 @@ void npc_update_decoration_charged(Npc* npc, s32 idx) {
     s32 temp3;
 
     if (!npc->decorationInitialised[idx]) {
-        func_802DE894(npc->spriteInstanceID, FOLD_TYPE_11, 20, 0, 0, 255, 0);
+        set_npc_imgfx_all(npc->spriteInstanceID, IMGFX_ALLOC_COLOR_BUF, 20, 0, 0, 255, 0);
         npc->decorationInitialised[idx] = TRUE;
     }
     if (npc->decorationInitialised[idx] == TRUE) {
@@ -1944,7 +1943,7 @@ void npc_update_decoration_charged(Npc* npc, s32 idx) {
         }
 
         for (temp3 = 255, i = 0; i < 20; i++) {
-            func_802DE894(npc->spriteInstanceID, FOLD_TYPE_C, i, (sp50[i] << 24) | (sp38[i] << 16) | (sp20[i] << 8) | temp3, 0, 255, 0);
+            set_npc_imgfx_all(npc->spriteInstanceID, IMGFX_COLOR_BUF_SET_MODULATE, i, (sp50[i] << 24) | (sp38[i] << 16) | (sp20[i] << 8) | temp3, 0, 255, 0);
         }
     }
 }
@@ -2080,89 +2079,89 @@ s32 npc_get_collider_below(Npc* npc) {
     return 0;
 }
 
-void func_8003D3BC(Npc* npc) {
-    s32 foldType = npc->foldType;
-    s32 foldArg1 = npc->foldArg1;
-    s32 foldArg2 = npc->foldArg2;
-    s32 foldArg3 = npc->foldArg3;
-    s32 foldArg4 = npc->foldArg4;
-    s32 foldArg5 = npc->foldArg5;
+void npc_imgfx_update(Npc* npc) {
+    s32 imgfxType = npc->imgfxType;
+    s32 imgfxArg1 = npc->imgfxArg1;
+    s32 imgfxArg2 = npc->imgfxArg2;
+    s32 imgfxArg3 = npc->imgfxArg3;
+    s32 imgfxArg4 = npc->imgfxArg4;
+    s32 imgfxFlags = npc->imgfxFlags;
 
-    func_802DE894(npc->spriteInstanceID, FOLD_TYPE_NONE, 0, 0, 0, 0, 0);
+    set_npc_imgfx_all(npc->spriteInstanceID, IMGFX_CLEAR, 0, 0, 0, 0, 0);
 
-    switch (foldType) {
-        case FOLD_TYPE_NONE:
+    switch (imgfxType) {
+        case IMGFX_CLEAR:
             npc->renderMode = RENDER_MODE_ALPHATEST;
-            func_802DE894(npc->spriteInstanceID, FOLD_TYPE_NONE, 0, 0, 0, 0, foldArg5);
+            set_npc_imgfx_all(npc->spriteInstanceID, IMGFX_CLEAR, 0, 0, 0, 0, imgfxFlags);
             break;
-        case FOLD_TYPE_2:
-        case FOLD_TYPE_3:
+        case IMGFX_UNK_2:
+        case IMGFX_RESET:
             npc->renderMode = RENDER_MODE_ALPHATEST;
             // fallthrough
-        case FOLD_TYPE_1:
-            func_802DE894(npc->spriteInstanceID, foldType, 0, 0, 0, 0, foldArg5);
+        case IMGFX_UNK_1:
+            set_npc_imgfx_all(npc->spriteInstanceID, imgfxType, 0, 0, 0, 0, imgfxFlags);
             break;
-        case FOLD_TYPE_4:
+        case IMGFX_SET_WAVY:
             npc->renderMode = RENDER_MODE_ALPHATEST;
-            func_802DE894(npc->spriteInstanceID, FOLD_TYPE_4, foldArg1, foldArg2, foldArg3, 0, foldArg5);
+            set_npc_imgfx_all(npc->spriteInstanceID, IMGFX_SET_WAVY, imgfxArg1, imgfxArg2, imgfxArg3, 0, imgfxFlags);
             break;
-        case FOLD_TYPE_6:
+        case IMGFX_SET_COLOR:
             npc->renderMode = RENDER_MODE_ALPHATEST;
-            func_802DE894(npc->spriteInstanceID, FOLD_TYPE_6, foldArg1, foldArg2, foldArg3, 255, foldArg5);
+            set_npc_imgfx_all(npc->spriteInstanceID, IMGFX_SET_COLOR, imgfxArg1, imgfxArg2, imgfxArg3, 255, imgfxFlags);
             break;
-        case FOLD_TYPE_7:
+        case IMGFX_SET_ALPHA:
             npc->renderMode = RENDER_MODE_SURFACE_XLU_LAYER2;
-            func_802DE894(npc->spriteInstanceID, FOLD_TYPE_7, 255, 255, 255, foldArg1, foldArg5);
+            set_npc_imgfx_all(npc->spriteInstanceID, IMGFX_SET_ALPHA, 255, 255, 255, imgfxArg1, imgfxFlags);
             break;
-        case FOLD_TYPE_8:
+        case IMGFX_SET_TINT:
             npc->renderMode = RENDER_MODE_SURFACE_XLU_LAYER2;
-            func_802DE894(npc->spriteInstanceID, FOLD_TYPE_8, foldArg1, foldArg2, foldArg3, foldArg4, foldArg5);
+            set_npc_imgfx_all(npc->spriteInstanceID, IMGFX_SET_TINT, imgfxArg1, imgfxArg2, imgfxArg3, imgfxArg4, imgfxFlags);
             break;
-        case FOLD_TYPE_9:
+        case IMGFX_SET_WHITE_FADE:
             npc->renderMode = RENDER_MODE_ALPHATEST;
-            func_802DE894(npc->spriteInstanceID, FOLD_TYPE_9, foldArg1, foldArg2, foldArg3, 255, foldArg5);
+            set_npc_imgfx_all(npc->spriteInstanceID, IMGFX_SET_WHITE_FADE, imgfxArg1, imgfxArg2, imgfxArg3, 255, imgfxFlags);
             break;
-        case FOLD_TYPE_A:
+        case IMGFX_SET_CREDITS_FADE:
             npc->renderMode = RENDER_MODE_SURFACE_XLU_LAYER2;
-            func_802DE894(npc->spriteInstanceID, FOLD_TYPE_A, foldArg1, foldArg2, foldArg3, foldArg4, foldArg5);
+            set_npc_imgfx_all(npc->spriteInstanceID, IMGFX_SET_CREDITS_FADE, imgfxArg1, imgfxArg2, imgfxArg3, imgfxArg4, imgfxFlags);
             break;
-        case FOLD_TYPE_5:
+        case IMGFX_SET_ANIM:
             npc->renderMode = RENDER_MODE_ALPHATEST;
-            func_802DE894(npc->spriteInstanceID, FOLD_TYPE_5, foldArg1, foldArg2, foldArg3, 0, foldArg5);
+            set_npc_imgfx_all(npc->spriteInstanceID, IMGFX_SET_ANIM, imgfxArg1, imgfxArg2, imgfxArg3, 0, imgfxFlags);
             break;
-        case FOLD_TYPE_D:
+        case IMGFX_HOLOGRAM:
             npc->renderMode = RENDER_MODE_SURFACE_XLU_LAYER2;
-            func_802DE894(npc->spriteInstanceID, FOLD_TYPE_D, foldArg1, foldArg2, foldArg3, foldArg4, foldArg5);
+            set_npc_imgfx_all(npc->spriteInstanceID, IMGFX_HOLOGRAM, imgfxArg1, imgfxArg2, imgfxArg3, imgfxArg4, imgfxFlags);
             break;
-        case FOLD_TYPE_E:
+        case IMGFX_FILL_COLOR:
             npc->renderMode = RENDER_MODE_ALPHATEST;
-            func_802DE894(npc->spriteInstanceID, FOLD_TYPE_E, foldArg1, foldArg2, foldArg3, 255, foldArg5);
+            set_npc_imgfx_all(npc->spriteInstanceID, IMGFX_FILL_COLOR, imgfxArg1, imgfxArg2, imgfxArg3, 255, imgfxFlags);
             break;
-        case FOLD_TYPE_F:
+        case IMGFX_OVERLAY:
             npc->renderMode = RENDER_MODE_ALPHATEST;
-            func_802DE894(npc->spriteInstanceID, FOLD_TYPE_F, foldArg1, 255, 0, 255, foldArg5);
+            set_npc_imgfx_all(npc->spriteInstanceID, IMGFX_OVERLAY, imgfxArg1, 255, 0, 255, imgfxFlags);
             break;
-        case FOLD_TYPE_10:
+        case IMGFX_OVERLAY_XLU:
             npc->renderMode = RENDER_MODE_SURFACE_XLU_LAYER2;
-            func_802DE894(npc->spriteInstanceID, FOLD_TYPE_F, foldArg1, foldArg2, 0, foldArg2, foldArg5);
+            set_npc_imgfx_all(npc->spriteInstanceID, IMGFX_OVERLAY, imgfxArg1, imgfxArg2, 0, imgfxArg2, imgfxFlags);
             break;
     }
 }
 
-void func_8003D624(Npc* npc, s32 foldType, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6) {
-    npc->foldType = foldType;
-    npc->foldArg1 = arg2;
-    npc->foldArg2 = arg3;
-    npc->foldArg3 = arg4;
-    npc->foldArg4 = arg5;
-    npc->foldArg5 = arg6;
-    func_8003D3BC(npc);
+void npc_set_imgfx_params(Npc* npc, s32 imgfxType, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6) {
+    npc->imgfxType = imgfxType;
+    npc->imgfxArg1 = arg2;
+    npc->imgfxArg2 = arg3;
+    npc->imgfxArg3 = arg4;
+    npc->imgfxArg4 = arg5;
+    npc->imgfxFlags = arg6;
+    npc_imgfx_update(npc);
 }
 
 //TODO begin split for npc_surfaces
 
 void spawn_surface_effects(Npc* npc, SurfaceInteractMode mode) {
-    PartnerActionStatus* temp = &gPartnerActionStatus;
+    PartnerStatus* temp = &gPartnerStatus;
 
     if ((npc->flags & (NPC_FLAG_TOUCHES_GROUND | NPC_FLAG_INVISIBLE)) == NPC_FLAG_TOUCHES_GROUND) {
         if (npc->moveSpeed != 0.0f) {
@@ -2222,12 +2221,12 @@ void spawn_default_surface_effects(Npc* npc, SurfaceInteractMode mode) {
             D_80077C14 = 0;
             if (!mapIsStarWay) {
                 sin_cos_rad(DEG_TO_RAD(clamp_angle(-npc->yaw)), &sinTheta, &cosTheta);
-                fx_walking_dust(0, npc->pos.x + (npc->collisionRadius * sinTheta * 0.2f), npc->pos.y + 1.5f,
-                               npc->pos.z + (npc->collisionRadius * cosTheta * 0.2f), sinTheta, cosTheta);
+                fx_walking_dust(0, npc->pos.x + (npc->collisionDiameter * sinTheta * 0.2f), npc->pos.y + 1.5f,
+                               npc->pos.z + (npc->collisionDiameter * cosTheta * 0.2f), sinTheta, cosTheta);
             } else {
                 sin_cos_rad(DEG_TO_RAD(clamp_angle(npc->yaw)), &sinTheta, &cosTheta);
-                fx_misc_particles(3, npc->pos.x + (npc->collisionRadius * sinTheta), npc->pos.y + 1.5f,
-                              npc->pos.z + (npc->collisionRadius * cosTheta), 5.0f, 10.0f, 1.0f, 5, 30);
+                fx_misc_particles(3, npc->pos.x + (npc->collisionDiameter * sinTheta), npc->pos.y + 1.5f,
+                              npc->pos.z + (npc->collisionDiameter * cosTheta), 5.0f, 10.0f, 1.0f, 5, 30);
             }
         }
     }
@@ -2261,8 +2260,8 @@ void spawn_flower_surface_effects(Npc* npc, SurfaceInteractMode mode) {
         sinTheta = sin_rad(theta);
         cosTheta = cos_rad(theta);
 
-        x = npc->pos.x + (npc->collisionRadius * sinTheta * -0.4f);
-        z = npc->pos.z + (npc->collisionRadius * cosTheta * -0.4f);
+        x = npc->pos.x + (npc->collisionDiameter * sinTheta * -0.4f);
+        z = npc->pos.z + (npc->collisionDiameter * cosTheta * -0.4f);
         y = npc->pos.y + 15.5f;
 
         fx_flower_trail(1, x, y, z, -npc->yaw + rand_int(10) - 5.0f, D_80077C20);
@@ -2298,9 +2297,9 @@ void spawn_cloud_surface_effects(Npc* npc, SurfaceInteractMode mode) {
 
             fx_cloud_trail(
                 1,
-                npc->pos.x + (npc->collisionRadius * sinTheta * -0.3f) + xTemp,
+                npc->pos.x + (npc->collisionDiameter * sinTheta * -0.3f) + xTemp,
                 npc->pos.y + 15.5f + yTemp,
-                npc->pos.z + (npc->collisionRadius * cosTheta * -0.3f) + zTemp
+                npc->pos.z + (npc->collisionDiameter * cosTheta * -0.3f) + zTemp
             );
         }
     } else {
@@ -2315,9 +2314,9 @@ void spawn_cloud_surface_effects(Npc* npc, SurfaceInteractMode mode) {
         cosTheta = cos_rad(theta);
         fx_cloud_trail(
             1,
-            npc->pos.x + (npc->collisionRadius * sinTheta * -0.3f) + xTemp2,
+            npc->pos.x + (npc->collisionDiameter * sinTheta * -0.3f) + xTemp2,
             npc->pos.y + 15.5f + yTemp2,
-            npc->pos.z + (npc->collisionRadius * cosTheta * -0.3f) + zTemp2
+            npc->pos.z + (npc->collisionDiameter * cosTheta * -0.3f) + zTemp2
         );
     }
 }
@@ -2332,8 +2331,8 @@ void spawn_snow_surface_effects(Npc* npc, SurfaceInteractMode mode) {
         temp_f20 = DEG_TO_RAD(clamp_angle(-npc->yaw));
         x = sin_rad(temp_f20);
         z = cos_rad(temp_f20);
-        fx_footprint(npc->pos.x + (npc->collisionRadius * x * 0.2f), npc->pos.y + 1.5f,
-                  npc->pos.z + (npc->collisionRadius * z * 0.2f), -npc->yaw, D_80077C34);
+        fx_footprint(npc->pos.x + (npc->collisionDiameter * x * 0.2f), npc->pos.y + 1.5f,
+                  npc->pos.z + (npc->collisionDiameter * z * 0.2f), -npc->yaw, D_80077C34);
         D_80077C34 = !D_80077C34;
     }
 }
@@ -2348,8 +2347,8 @@ void spawn_hedge_surface_effects(Npc* npc, SurfaceInteractMode mode) {
         theta = DEG_TO_RAD(clamp_angle(-npc->yaw));
         sinTheta = sin_rad(theta);
         cosTheta = cos_rad(theta);
-        fx_falling_leaves(1, npc->pos.x + (npc->collisionRadius * sinTheta * 0.2f),
-                  40.0f, npc->pos.z + (npc->collisionRadius * cosTheta * 0.2f));
+        fx_falling_leaves(1, npc->pos.x + (npc->collisionDiameter * sinTheta * 0.2f),
+                  40.0f, npc->pos.z + (npc->collisionDiameter * cosTheta * 0.2f));
     }
 }
 
@@ -2363,8 +2362,8 @@ void spawn_water_surface_effects(Npc* npc, SurfaceInteractMode mode) {
         temp_f20 = DEG_TO_RAD(clamp_angle(-npc->yaw));
         x = sin_rad(temp_f20);
         z = cos_rad(temp_f20);
-        fx_rising_bubble(0, npc->pos.x + (npc->collisionRadius * x * 0.2f), npc->pos.y + 0.0f,
-                  npc->pos.z + (npc->collisionRadius * z * 0.2f), 0.0f);
+        fx_rising_bubble(0, npc->pos.x + (npc->collisionDiameter * x * 0.2f), npc->pos.y + 0.0f,
+                  npc->pos.z + (npc->collisionDiameter * z * 0.2f), 0.0f);
     }
 }
 

@@ -20,7 +20,7 @@ void cloud_trail_main(s32 arg0, f32 arg1, f32 arg2, f32 arg3) {
     bp.init = cloud_trail_init;
     bp.update = cloud_trail_update;
     bp.renderWorld = cloud_trail_render;
-    bp.unk_14 = 0;
+    bp.renderUI = NULL;
     bp.effectID = EFFECT_CLOUD_TRAIL;
 
     effect = shim_create_effect_instance(&bp);
@@ -46,12 +46,12 @@ void cloud_trail_main(s32 arg0, f32 arg1, f32 arg2, f32 arg3) {
         part->alpha = -1;
         part->unk_28 = (shim_rand_int(10) * 0.03) + 1.4;
         part->unk_2C = (shim_rand_int(10) * 0.03) + 1.5;
-        part->unk_30 = func_E0200000(60);
+        part->unk_30 = effect_rand_int(60);
         part->unk_04 = arg0;
         part->lifetime = 15;
         part->unk_38 = 2.0f;
         part->unk_3C = -0.5f;
-        part->unk_18 = func_E0200000(360);
+        part->unk_18 = effect_rand_int(360);
         part->alpha = -1;
     }
 }
@@ -120,9 +120,9 @@ void cloud_trail_appendGfx(void* effect) {
     Matrix4f sp60;
     s32 i;
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(effectTemp->graphics->data));
-    gSPDisplayList(gMasterGfxPos++, D_090000E0_32ED30);
+    gDPPipeSync(gMainGfxPos++);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(effectTemp->graphics->data));
+    gSPDisplayList(gMainGfxPos++, D_090000E0_32ED30);
 
     for (i = 0; i < effectTemp->numParts; i++, part++) {
         if (part->alive) {
@@ -134,12 +134,12 @@ void cloud_trail_appendGfx(void* effect) {
             shim_guMtxCatF(sp60, sp20, sp20);
             shim_guMtxF2L(sp20, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-            gDPSetPrimColor(gMasterGfxPos++, 0, 0, 112, 96, 24, part->alpha);
-            gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++],
+            gDPSetPrimColor(gMainGfxPos++, 0, 0, 112, 96, 24, part->alpha);
+            gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++],
                         G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-            gSPDisplayList(gMasterGfxPos++, D_090001B8_32EE08);
-            gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+            gSPDisplayList(gMainGfxPos++, D_090001B8_32EE08);
+            gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
         }
     }
-    gDPPipeSync(gMasterGfxPos++);
+    gDPPipeSync(gMainGfxPos++);
 }

@@ -35,10 +35,8 @@ API_CALLABLE(N(SetStarBeamMasterAlpha)) {
 }
 
 void N(setup_gfx_glowing_star)(void) {
-    gDPSetCombineLERP(gMasterGfxPos++,
-        TEXEL0, 0, SHADE, 0, TEXEL0, 0, PRIMITIVE, 0,
-        TEXEL0, 0, SHADE, 0, TEXEL0, 0, PRIMITIVE, 0);
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, 0, 0, 0, N(GlowingStarAlpha));
+    gDPSetCombineMode(gMainGfxPos++, PM_CC_05, PM_CC_05);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, 0, 0, 0, N(GlowingStarAlpha));
 }
 
 API_CALLABLE(N(SetGlowingStarAlpha)) {
@@ -49,10 +47,8 @@ API_CALLABLE(N(SetGlowingStarAlpha)) {
 }
 
 void N(setup_gfx_giving_power)(void) {
-    gDPSetCombineLERP(gMasterGfxPos++,
-        TEXEL0, 0, SHADE, 0, TEXEL0, 0, PRIMITIVE, 0,
-        TEXEL0, 0, SHADE, 0, TEXEL0, 0, PRIMITIVE, 0);
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, 0, 0, 0, N(GivingPowerAlpha));
+    gDPSetCombineMode(gMainGfxPos++, PM_CC_05, PM_CC_05);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, 0, 0, 0, N(GivingPowerAlpha));
 }
 
 API_CALLABLE(N(SetGivingPowerAlpha)) {

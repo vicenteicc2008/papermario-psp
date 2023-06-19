@@ -59,7 +59,9 @@ s8 N(MerleeCoinCosts)[] = {
     50, 20, 5, 0,
 };
 
+#if !VERSION_PAL
 s32 N(pad_XX111)[] = { 0 };
+#endif
 
 #include "world/area_dro/dro_02/card.png.inc.c"
 #include "world/area_dro/dro_02/card.pal.inc.c"
@@ -166,22 +168,22 @@ API_CALLABLE(N(UndarkenWorld)) {
 }
 
 API_CALLABLE(N(CreateRitualCards)) {
-    s32 ret;
+    s32 imgfxIdx;
 
     N(CreatorScript) = script;
 
-    ret = func_8013A704(1);
-    fold_update(ret, FOLD_TYPE_5, 0xF, 1, 1, 0, 0x800);
-    evt_set_variable(script, RITUAL_VAR_FOLDER_1, ret);
-    ret = func_8013A704(1);
-    fold_update(ret, FOLD_TYPE_5, 0x10, 1, 1, 0, 0x800);
-    evt_set_variable(script, RITUAL_VAR_FOLDER_2, ret);
-    ret = func_8013A704(1);
-    fold_update(ret, FOLD_TYPE_5, 0x11, 1, 1, 0, 0x800);
-    evt_set_variable(script, RITUAL_VAR_FOLDER_3, ret);
-    ret = func_8013A704(1);
-    fold_update(ret, FOLD_TYPE_5, 0x12, 1, 1, 0, 0x800);
-    evt_set_variable(script, RITUAL_VAR_FOLDER_4, ret);
+    imgfxIdx = imgfx_get_free_instances(1);
+    imgfx_update(imgfxIdx, IMGFX_SET_ANIM, IMGFX_ANIM_SHUFFLE_CARDS, 1, 1, 0, IMGFX_FLAG_800);
+    evt_set_variable(script, RITUAL_VAR_FOLDER_1, imgfxIdx);
+    imgfxIdx = imgfx_get_free_instances(1);
+    imgfx_update(imgfxIdx, IMGFX_SET_ANIM, IMGFX_ANIM_FLIP_CARD_1, 1, 1, 0, IMGFX_FLAG_800);
+    evt_set_variable(script, RITUAL_VAR_FOLDER_2, imgfxIdx);
+    imgfxIdx = imgfx_get_free_instances(1);
+    imgfx_update(imgfxIdx, IMGFX_SET_ANIM, IMGFX_ANIM_FLIP_CARD_2, 1, 1, 0, IMGFX_FLAG_800);
+    evt_set_variable(script, RITUAL_VAR_FOLDER_3, imgfxIdx);
+    imgfxIdx = imgfx_get_free_instances(1);
+    imgfx_update(imgfxIdx, IMGFX_SET_ANIM, IMGFX_ANIM_FLIP_CARD_3, 1, 1, 0, IMGFX_FLAG_800);
+    evt_set_variable(script, RITUAL_VAR_FOLDER_4, imgfxIdx);
 
     evt_set_variable(script, RITUAL_VAR_WORKER, create_worker_world(
         N(card_worker_update),
@@ -190,10 +192,10 @@ API_CALLABLE(N(CreateRitualCards)) {
 }
 
 API_CALLABLE(N(DestroyRitualCards)) {
-    func_8013A854(evt_get_variable(script, RITUAL_VAR_FOLDER_1));
-    func_8013A854(evt_get_variable(script, RITUAL_VAR_FOLDER_2));
-    func_8013A854(evt_get_variable(script, RITUAL_VAR_FOLDER_3));
-    func_8013A854(evt_get_variable(script, RITUAL_VAR_FOLDER_4));
+    imgfx_release_instance(evt_get_variable(script, RITUAL_VAR_FOLDER_1));
+    imgfx_release_instance(evt_get_variable(script, RITUAL_VAR_FOLDER_2));
+    imgfx_release_instance(evt_get_variable(script, RITUAL_VAR_FOLDER_3));
+    imgfx_release_instance(evt_get_variable(script, RITUAL_VAR_FOLDER_4));
     free_worker(evt_get_variable(script, RITUAL_VAR_WORKER));
     return ApiStatus_DONE2;
 }
@@ -201,7 +203,7 @@ API_CALLABLE(N(DestroyRitualCards)) {
 u32 N(appendGfx_ritual_card)(RitualCard* card, Matrix4f mtxParent) {
     Matrix4f mtxTransform;
     Matrix4f mtxTemp;
-    FoldImageRecPart foldImage;
+    ImgFXTexture ifxImg;
     SpriteRasterInfo rasterInfo;
     s32 ret;
 
@@ -209,7 +211,7 @@ u32 N(appendGfx_ritual_card)(RitualCard* card, Matrix4f mtxParent) {
         return 1;
     }
 
-    gSPDisplayList(gMasterGfxPos++, N(card_setup_gfx));
+    gSPDisplayList(gMainGfxPos++, N(card_setup_gfx));
 
     if (card->unk_00 == 1 || card->unk_00 == 4 || card->unk_00 == 5) {
         guTranslateF(mtxTemp, card->pos.x, card->pos.y, card->pos.z);
@@ -219,63 +221,63 @@ u32 N(appendGfx_ritual_card)(RitualCard* card, Matrix4f mtxParent) {
         guRotateF(mtxTemp, card->pitch, 1.0f, 0.0f, 0.0f);
         guMtxCatF(mtxTemp, mtxTransform, mtxTransform);
         guMtxF2L(mtxTransform, &gDisplayContext->matrixStack[gMatrixListPos]);
-        gSPMatrix(gMasterGfxPos++, VIRTUAL_TO_PHYSICAL(&gDisplayContext->matrixStack[gMatrixListPos++]), G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+        gSPMatrix(gMainGfxPos++, VIRTUAL_TO_PHYSICAL(&gDisplayContext->matrixStack[gMatrixListPos++]), G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
         if (card->unk_00 == 1 || card->unk_00 == 4) {
-            gSPDisplayList(gMasterGfxPos++, N(card_1_gfx));
+            gSPDisplayList(gMainGfxPos++, N(card_1_gfx));
         }
 
         if (card->unk_00 == 1 || card->unk_00 == 5) {
             spr_get_player_raster_info(&rasterInfo, card->spriteID, card->rasterIndex);
-            gDPSetTextureLUT(gMasterGfxPos++, G_TT_RGBA16);
-            gDPLoadTLUT_pal16(gMasterGfxPos++, 0, rasterInfo.defaultPal);
-            gDPLoadTextureTile_4b(gMasterGfxPos++, rasterInfo.raster, G_IM_FMT_CI, rasterInfo.width, rasterInfo.height,
+            gDPSetTextureLUT(gMainGfxPos++, G_TT_RGBA16);
+            gDPLoadTLUT_pal16(gMainGfxPos++, 0, rasterInfo.defaultPal);
+            gDPLoadTextureTile_4b(gMainGfxPos++, rasterInfo.raster, G_IM_FMT_CI, rasterInfo.width, rasterInfo.height,
                                     0, 0, rasterInfo.width - 1, rasterInfo.height - 1, 0,
                                     G_TX_CLAMP, G_TX_CLAMP, 8, 8, G_TX_NOLOD, G_TX_NOLOD);
             guTranslateF(mtxTransform, card->xoffset + 30 - rasterInfo.width / 2, 0.0f, 0.0f);
             guMtxF2L(mtxTransform, &gDisplayContext->matrixStack[gMatrixListPos]);
-            gSPMatrix(gMasterGfxPos++, VIRTUAL_TO_PHYSICAL(&gDisplayContext->matrixStack[gMatrixListPos++]), G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-            gSPDisplayList(gMasterGfxPos++, N(card_2_gfx));
-            gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+            gSPMatrix(gMainGfxPos++, VIRTUAL_TO_PHYSICAL(&gDisplayContext->matrixStack[gMatrixListPos++]), G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+            gSPDisplayList(gMainGfxPos++, N(card_2_gfx));
+            gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
         }
-        gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+        gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
         return 1;
     }
 
     if (card->unk_00 == 2) {
-        gDPSetTileSize(gMasterGfxPos++, G_TX_RENDERTILE, 256 * 4, 256 * 4, 287 * 4, 287 * 4);
+        gDPSetTileSize(gMainGfxPos++, G_TX_RENDERTILE, 256 * 4, 256 * 4, 287 * 4, 287 * 4);
         guTranslateF(mtxTemp, N(RitualCards)[0].pos.x, N(RitualCards)[0].pos.y, N(RitualCards)[0].pos.z);
         guMtxCatF(mtxTemp, mtxParent, mtxTransform);
         guMtxF2L(mtxTransform, &gDisplayContext->matrixStack[gMatrixListPos]);
-        gSPMatrix(gMasterGfxPos++, VIRTUAL_TO_PHYSICAL(&gDisplayContext->matrixStack[gMatrixListPos++]), G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-        ret = fold_appendGfx_component(evt_get_variable(N(CreatorScript), RITUAL_VAR_FOLDER_1), &foldImage, FOLD_STATE_FLAG_10 | FOLD_STATE_FLAG_20, mtxTransform);
-        gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+        gSPMatrix(gMainGfxPos++, VIRTUAL_TO_PHYSICAL(&gDisplayContext->matrixStack[gMatrixListPos++]), G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+        ret = imgfx_appendGfx_component(evt_get_variable(N(CreatorScript), RITUAL_VAR_FOLDER_1), &ifxImg, IMGFX_FLAG_SKIP_GFX_SETUP | IMGFX_FLAG_SKIP_TEX_SETUP, mtxTransform);
+        gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
         return ret;
     }
 
     if (card->unk_00 == 3) {
-        gDPSetTileSize(gMasterGfxPos++, G_TX_RENDERTILE, 256 * 4, 256 * 4, 287 * 4, 287 * 4);
+        gDPSetTileSize(gMainGfxPos++, G_TX_RENDERTILE, 256 * 4, 256 * 4, 287 * 4, 287 * 4);
         guTranslateF(mtxTemp, N(RitualCards)[0].pos.x, N(RitualCards)[0].pos.y, N(RitualCards)[0].pos.z);
         guMtxCatF(mtxTemp, mtxParent, mtxTransform);
         guMtxF2L(mtxTransform, &gDisplayContext->matrixStack[gMatrixListPos]);
-        gSPMatrix(gMasterGfxPos++, VIRTUAL_TO_PHYSICAL(&gDisplayContext->matrixStack[gMatrixListPos++]), G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-        fold_appendGfx_component(evt_get_variable(N(CreatorScript), RITUAL_VAR_FOLDER_2), &foldImage, FOLD_STATE_FLAG_10 | FOLD_STATE_FLAG_20, mtxTransform);
-        fold_appendGfx_component(evt_get_variable(N(CreatorScript), RITUAL_VAR_FOLDER_3), &foldImage, FOLD_STATE_FLAG_10 | FOLD_STATE_FLAG_20, mtxTransform);
-        gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+        gSPMatrix(gMainGfxPos++, VIRTUAL_TO_PHYSICAL(&gDisplayContext->matrixStack[gMatrixListPos++]), G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+        imgfx_appendGfx_component(evt_get_variable(N(CreatorScript), RITUAL_VAR_FOLDER_2), &ifxImg, IMGFX_FLAG_SKIP_GFX_SETUP | IMGFX_FLAG_SKIP_TEX_SETUP, mtxTransform);
+        imgfx_appendGfx_component(evt_get_variable(N(CreatorScript), RITUAL_VAR_FOLDER_3), &ifxImg, IMGFX_FLAG_SKIP_GFX_SETUP | IMGFX_FLAG_SKIP_TEX_SETUP, mtxTransform);
+        gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
         guTranslateF(mtxTemp, N(RitualCards)[0].pos.x, N(RitualCards)[0].pos.y, N(RitualCards)[0].pos.z);
         guMtxCatF(mtxTemp, mtxParent, mtxTransform);
         guMtxF2L(mtxTransform, &gDisplayContext->matrixStack[gMatrixListPos]);
-        gSPMatrix(gMasterGfxPos++, VIRTUAL_TO_PHYSICAL(&gDisplayContext->matrixStack[gMatrixListPos++]), G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+        gSPMatrix(gMainGfxPos++, VIRTUAL_TO_PHYSICAL(&gDisplayContext->matrixStack[gMatrixListPos++]), G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         spr_get_player_raster_info(&rasterInfo, card->spriteID, card->rasterIndex);
-        foldImage.raster = rasterInfo.raster;
-        foldImage.palette = rasterInfo.defaultPal;
-        foldImage.width = rasterInfo.width;
-        foldImage.height = rasterInfo.height;
-        foldImage.xOffset = -(rasterInfo.width / 2);
-        foldImage.yOffset = rasterInfo.height / 2;
-        foldImage.opacity = 255;
-        ret = fold_appendGfx_component(evt_get_variable(N(CreatorScript), RITUAL_VAR_FOLDER_4), &foldImage, FOLD_STATE_FLAG_10, mtxTransform);
-        gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+        ifxImg.raster = rasterInfo.raster;
+        ifxImg.palette = rasterInfo.defaultPal;
+        ifxImg.width = rasterInfo.width;
+        ifxImg.height = rasterInfo.height;
+        ifxImg.xOffset = -(rasterInfo.width / 2);
+        ifxImg.yOffset = rasterInfo.height / 2;
+        ifxImg.alpha = 255;
+        ret = imgfx_appendGfx_component(evt_get_variable(N(CreatorScript), RITUAL_VAR_FOLDER_4), &ifxImg, IMGFX_FLAG_SKIP_GFX_SETUP, mtxTransform);
+        gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
         return ret;
     }
 
@@ -551,7 +553,7 @@ void N(card_worker_update)(void) {
                 sfx_play_sound(SOUND_206);
 
                 for (j = 0; j < ARRAY_COUNT(N(D_8024EF90)); j++) {
-                    N(D_8024EF90)[j]->flags |= EFFECT_INSTANCE_FLAG_10;
+                    N(D_8024EF90)[j]->flags |= FX_INSTANCE_FLAG_DISMISS;
                 }
             }
             break;
@@ -644,7 +646,7 @@ EvtScript N(EVS_PerformRitual) = {
     EVT_SET(RITUAL_VAR_ORB_EFFECT, LVarF)
     EVT_THREAD
         EVT_WAIT(30)
-        EVT_CALL(func_802D7B10, RITUAL_VAR_ORB_EFFECT)
+        EVT_CALL(DismissEffect, RITUAL_VAR_ORB_EFFECT)
     EVT_END_THREAD
     EVT_CALL(N(DarkenWorld))
     EVT_CALL(DisablePlayerPhysics, TRUE)

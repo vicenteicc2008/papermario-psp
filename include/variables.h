@@ -11,7 +11,7 @@ extern PlayerStatus* gPlayerStatusPtr;
 extern CollisionStatus gCollisionStatus;
 extern GameStatus gGameStatus;
 extern GameStatus* gGameStatusPtr;
-extern s32 gRandSeed;
+extern u32 gRandSeed;
 extern ItemData gItemTable[365];
 extern UNK_FUN_PTR(gCurrentUpdateFunction);
 extern MoveData gMoveTable[185];
@@ -183,7 +183,7 @@ extern s32 Entity_WoodenCrate_RenderShatteredScript[];
 
 
 // Scripts
-extern EvtScript SCRIPT_NpcDefeat;
+extern EvtScript EVS_NpcDefeat;
 extern EvtScript ShakeCam1;
 extern EvtScript ShakeCamX;
 
@@ -196,7 +196,7 @@ extern OSDevMgr __osPiDevMgr;
 
 // gfx
 extern DisplayContext* gDisplayContext;
-extern Gfx* gMasterGfxPos;
+extern Gfx* gMainGfxPos;
 extern u16 gMatrixListPos;
 extern s32 gCurrentDisplayContextIndex;
 
@@ -257,10 +257,14 @@ extern s32 D_802EC390[];
 extern s32 D_802EC3B0[];
 extern s32 D_802EC3D0[];
 
-extern PartnerActionStatus gPartnerActionStatus; // something with partners
+extern PartnerStatus gPartnerStatus;
 extern UiStatus gUIStatus;
 extern PlayerStatus gPlayerStatus;
 extern PlayerSpinState gPlayerSpinState;
 extern PlayerData gPlayerData;
+
+#if VERSION_PAL
+extern s32 gCurrentLanguage;
+#endif
 
 #endif

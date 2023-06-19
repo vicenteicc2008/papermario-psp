@@ -4,7 +4,7 @@
 extern HudScript* TimesHudScript;
 extern HudScript* SPIncrementHudScripts[];
 extern HudScript* SPStarHudScripts[];
-extern s32 D_800F7FE8[];
+extern s32 StatusBarSPIncrementOffsets[];
 
 extern s16 D_8010CD10;
 extern s16 D_8010CD12;
@@ -25,7 +25,8 @@ extern HudScript HES_StatusStarEmpty;
 
 extern HudScript* SlashHudScript;
 
-void status_menu_start_blinking_coins(void);
+void status_bar_start_blinking_coins(void);
+void status_bar_stop_blinking_coins(void);
 
 void clear_player_data(void) {
     PlayerData* playerData = &gPlayerData;
@@ -44,7 +45,7 @@ void clear_player_data(void) {
     playerData->maxBP = 3;
     playerData->level = 1;
     playerData->bootsLevel = 0;
-    playerData->hasActionCommands = 0;
+    playerData->hasActionCommands = FALSE;
     playerData->coins = 0;
     playerData->fortressKeyCount = 0;
     playerData->starPieces = 0;
@@ -296,7 +297,7 @@ void enforce_hpfp_limits(void) {
     }
 }
 
-void initialize_status_menu(void) {
+void initialize_status_bar(void) {
     UiStatus* uiStatus = &gUIStatus;
     PlayerData* playerData = &gPlayerData;
     s32 iconIndex;
@@ -341,7 +342,7 @@ void initialize_status_menu(void) {
     uiStatus->unk_6C[1] = 0;
     uiStatus->iconIndex12 = -1;
 
-    close_status_menu();
+    close_status_bar();
 
     iconIndex = hud_element_create(&HES_StatusHP);
     uiStatus->hpIconIndices[0] = iconIndex;
@@ -412,7 +413,7 @@ void initialize_status_menu(void) {
     func_800F0D5C();
 }
 
-void status_menu_draw_number(s32 iconID, s32 x, s32 y, s32 value, s32 numDigits) {
+void status_bar_draw_number(s32 iconID, s32 x, s32 y, s32 value, s32 numDigits) {
     s8 digits[4];
     s32 i;
     s32 x2, y2;
@@ -450,7 +451,7 @@ void status_menu_draw_number(s32 iconID, s32 x, s32 y, s32 value, s32 numDigits)
     }
 }
 
-void status_menu_draw_stat(s32 id, s32 x, s32 y, s32 currentValue, s32 maxValue) {
+void status_bar_draw_stat(s32 id, s32 x, s32 y, s32 currentValue, s32 maxValue) {
     s8 digits[4];
     s32 cond;
     s32 digit;
@@ -506,64 +507,43 @@ void status_menu_draw_stat(s32 id, s32 x, s32 y, s32 currentValue, s32 maxValue)
     }
 }
 
-//regalloc issues
-#ifdef NON_MATCHING
-void update_status_menu(void) {
+void update_status_bar(void) {
     UiStatus* uiStatus = &gUIStatus;
     PlayerData* playerData = &gPlayerData;
     PlayerStatus* playerStatus = &gPlayerStatus;
-    s32 s0;
-    s32 s02;
-    s32 fp;
-    s32 new_var;
-    s32 s5;
-    s32 s6;
-    s32 id;
-    s32 s4;
-    s32 s44;
-    s32 s7;
-    s32 s1;
-    s32 s66;
-    s32 v0;
-    s32 temp;
-
     s32 sp50;
     s32 sp54;
-    s32 sp5C;
-    s32 sp60;
+    s32 i;
+    s32 x;
+    s32 y;
+    s32 showStat;
+    s32 id;
+    s32 limit;
+    s32 s7;
+    s32 s1;
+    s32 spBars;
+    s32 maxStarPower;
 
-    /*
-        regalloc:
-        target  |  current     |  do while
-        ------------------------------------------
-        s5      |  sp54        |   s7
-        s6      |  s5          |   s5
-        s7      |  s6          |   s6
-        s8      |  sp50        |   sp50
-        sp50    |  s8          |   sp54
-        sp54    |  s7          |   s8
-    */
-
-    if (gGameStatusPtr->creditsViewportMode >= 0 ||
-        gGameStatusPtr->demoState != 0 ||
-        (gGameStatusPtr->peachFlags & 1) ||
-        evt_get_variable(NULL, GB_StoryProgress) >= STORY_EPILOGUE)
-    {
+    if (gGameStatusPtr->creditsViewportMode >= 0
+        || gGameStatusPtr->demoState != DEMO_STATE_NONE
+        || (gGameStatusPtr->peachFlags & PEACH_STATUS_FLAG_IS_PEACH)
+        || evt_get_variable(NULL, GB_StoryProgress) >= STORY_EPILOGUE
+    ) {
         return;
     }
 
     if (gGameStatusPtr->isBattle == 0 && playerData->coins != uiStatus->displayCoins) {
-        status_menu_start_blinking_coins();
+        status_bar_start_blinking_coins();
     }
 
-    s02 = playerData->coins - uiStatus->displayCoins;
+    i = playerData->coins - uiStatus->displayCoins;
 
-    if (s02 < 0) {
-        s02 = (s02 - 4) / 5;
+    if (i < 0) {
+        i = (i - 4) / 5;
     } else {
-        s02 = (s02 + 4) / 5;
+        i = (i + 4) / 5;
     }
-    uiStatus->displayCoins += s02;
+    uiStatus->displayCoins += i;
 
     if (uiStatus->displayHP != playerData->curHP && !uiStatus->ignoreChanges) {
         if (uiStatus->hidden) {
@@ -597,7 +577,7 @@ void update_status_menu(void) {
 
     if (uiStatus->displayHP != playerData->curHP) {
         if (gGameStatusPtr->isBattle == 0 && playerData->curHP < uiStatus->displayHP) {
-            status_menu_start_blinking_hp();
+            status_bar_start_blinking_hp();
         }
         if (uiStatus->displayHP < playerData->curHP) {
             if (uiStatus->drawPosY >= 18) {
@@ -615,7 +595,7 @@ void update_status_menu(void) {
 
     if (uiStatus->displayFP != playerData->curFP) {
         if (gGameStatusPtr->isBattle == 0 && playerData->curFP < uiStatus->displayFP) {
-            status_menu_start_blinking_fp();
+            status_bar_start_blinking_fp();
         }
         if (uiStatus->displayFP < playerData->curFP) {
             if (uiStatus->drawPosY >= 18) {
@@ -649,7 +629,7 @@ void update_status_menu(void) {
         return;
     }
 
-    if (uiStatus->unk_45[1] && uiStatus->hidden && playerStatus->inputEnabledCounter == 0) {
+    if (uiStatus->unk_45[1] && uiStatus->hidden && playerStatus->inputDisabledCount == 0) {
         uiStatus->showTimer = 42;
         uiStatus->hidden = FALSE;
         uiStatus->unk_3B[0] = 0;
@@ -702,83 +682,95 @@ void update_status_menu(void) {
             break;
     }
 
-    gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, 12, 20, SCREEN_WIDTH - 12, SCREEN_HEIGHT - 20);
-    fp = uiStatus->drawPosX;
-    s5 = uiStatus->drawPosY;
-    draw_box(0, WINDOW_STYLE_5, fp,       s5, 0, 174, 35, 255, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NULL, NULL, NULL, SCREEN_WIDTH, SCREEN_HEIGHT, NULL);
-    draw_box(0, WINDOW_STYLE_6, fp + 174, s5, 0, 122, 25, 255, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NULL, NULL, NULL, SCREEN_WIDTH, SCREEN_HEIGHT, NULL);
+    gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, 12, 20, SCREEN_WIDTH - 12, SCREEN_HEIGHT - 20);
+    x = uiStatus->drawPosX;
+    y = uiStatus->drawPosY;
+    draw_box(0, WINDOW_STYLE_5, x,       y, 0, 174, 35, 255, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NULL, NULL, NULL, SCREEN_WIDTH, SCREEN_HEIGHT, NULL);
+    draw_box(0, WINDOW_STYLE_6, x + 174, y, 0, 122, 25, 255, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NULL, NULL, NULL, SCREEN_WIDTH, SCREEN_HEIGHT, NULL);
 
     if (uiStatus->hpBlinkTimer > 0) {
         uiStatus->hpBlinkTimer--;
         if (uiStatus->hpBlinkTimer == 0) {
-            status_menu_stop_blinking_hp();
+            status_bar_stop_blinking_hp();
         }
     }
 
-    s6 = 1;
+    showStat = TRUE;
     if (uiStatus->hpBlinking) {
         if (uiStatus->hpBlinkCounter > 8) {
-            s6 = 0;
+            showStat = FALSE;
             if (uiStatus->hpBlinkCounter > 12) {
                 uiStatus->hpBlinkCounter = 0;
-                s6 = 1;
+                showStat = TRUE;
             }
         }
         uiStatus->hpBlinkCounter++;
     }
 
-    if (s6) {
+    if (showStat) {
         id = uiStatus->hpIconIndices[0];
-        hud_element_set_render_pos(id, uiStatus->drawPosX + 22, uiStatus->drawPosY + 13);
+        x = uiStatus->drawPosX + 22;
+        y = uiStatus->drawPosY + 13;
+        hud_element_set_render_pos(id, x, y);
         hud_element_draw_next(id);
 
         id = uiStatus->hpIconIndices[1];
-        hud_element_set_render_pos(id, uiStatus->drawPosX + 37, uiStatus->drawPosY + 13);
+        x = uiStatus->drawPosX + 37;
+        y = uiStatus->drawPosY + 13;
+        hud_element_set_render_pos(id, x, y);
         hud_element_draw_next(id);
 
-        status_menu_draw_stat(uiStatus->iconIndex8, uiStatus->drawPosX + 48, uiStatus->drawPosY + 8, uiStatus->displayHP, playerData->curMaxHP);
+        x = uiStatus->drawPosX + 48;
+        y = uiStatus->drawPosY + 8;
+        status_bar_draw_stat(uiStatus->iconIndex8, x, y, uiStatus->displayHP, playerData->curMaxHP);
     }
 
     if (uiStatus->fpBlinkTimer > 0) {
         uiStatus->fpBlinkTimer--;
         if (uiStatus->fpBlinkTimer == 0) {
-            status_menu_stop_blinking_fp();
+            status_bar_stop_blinking_fp();
         }
     }
 
-    s6 = 1;
+    showStat = TRUE;
     if (uiStatus->fpBlinking) {
         if (uiStatus->fpBlinkCounter > 8) {
-            s6 = 0;
+            showStat = FALSE;
             if (uiStatus->fpBlinkCounter > 12) {
                 uiStatus->fpBlinkCounter = 0;
-                s6 = 1;
+                showStat = TRUE;
             }
         }
         uiStatus->fpBlinkCounter++;
     }
 
-    if (s6) {
+    if (showStat) {
         id = uiStatus->fpIconIndices[0];
-        hud_element_set_render_pos(id, uiStatus->drawPosX + 110, uiStatus->drawPosY + 13);
+        x = uiStatus->drawPosX + 110;
+        y = uiStatus->drawPosY + 13;
+        hud_element_set_render_pos(id, x, y);
         hud_element_draw_next(id);
 
         id = uiStatus->fpIconIndices[1];
-        hud_element_set_render_pos(id, uiStatus->drawPosX + 125, uiStatus->drawPosY + 13);
+        x = uiStatus->drawPosX + 125;
+        y = uiStatus->drawPosY + 13;
+        hud_element_set_render_pos(id, x, y);
         hud_element_draw_next(id);
 
-        status_menu_draw_stat(uiStatus->iconIndex9, uiStatus->drawPosX + 136, uiStatus->drawPosY + 8, uiStatus->displayFP, playerData->curMaxFP);
+        x = uiStatus->drawPosX + 136;
+        y = uiStatus->drawPosY + 8;
+        status_bar_draw_stat(uiStatus->iconIndex9, x, y, uiStatus->displayFP, playerData->curMaxFP);
     }
 
     if (playerData->level >= 27) {
         playerData->starPoints = 0;
     }
 
-    s6 = 1;
+    showStat = TRUE;
     if (uiStatus->starpointsBlinking) {
         if (uiStatus->starpointsBlinkCounter > 8) {
             if (uiStatus->starpointsBlinkCounter <= 12) {
-                s6 = 0;
+                showStat = FALSE;
             } else {
                 uiStatus->starpointsBlinkCounter = 0;
             }
@@ -786,82 +778,92 @@ void update_status_menu(void) {
         uiStatus->starpointsBlinkCounter++;
     }
 
-    if (s6) {
+    if (showStat) {
         id = uiStatus->starpointsIconIndex;
-        hud_element_set_render_pos(id, uiStatus->drawPosX + 195, uiStatus->drawPosY + 14);
+        x = uiStatus->drawPosX + 195;
+        y = uiStatus->drawPosY + 14;
+        hud_element_set_render_pos(id, x, y);
         hud_element_draw_next(id);
 
         id = uiStatus->starpointsShineIconIndex;
-        hud_element_set_render_pos(id, uiStatus->drawPosX + 195, uiStatus->drawPosY + 9);
+        x = uiStatus->drawPosX + 195;
+        y = uiStatus->drawPosY + 9;
+        hud_element_set_render_pos(id, x, y);
         hud_element_draw_next(id);
 
-        status_menu_draw_number(uiStatus->iconIndexA, uiStatus->drawPosX + 200, uiStatus->drawPosY + 8, playerData->starPoints, 2);
+        x = uiStatus->drawPosX + 200;
+        y = uiStatus->drawPosY + 8;
+        status_bar_draw_number(uiStatus->iconIndexA, x, y, playerData->starPoints, 2);
     }
 
     if (uiStatus->coinsBlinkTimer > 0) {
         uiStatus->coinsBlinkTimer--;
         if (uiStatus->coinsBlinkTimer == 0) {
-            status_menu_stop_blinking_coins();
+            status_bar_stop_blinking_coins();
         }
     }
 
-    s6 = 1;
+    showStat = TRUE;
     if (uiStatus->coinsBlinking) {
         if (uiStatus->coinsBlinkCounter > 8) {
-            s6 = 0;
+            showStat = FALSE;
             if (uiStatus->coinsBlinkCounter > 12) {
                 uiStatus->coinsBlinkCounter = 0;
-                s6 = 1;
+                showStat = TRUE;
             }
         }
         uiStatus->coinsBlinkCounter++;
     }
 
-    if (s6) {
+    if (showStat) {
         id = uiStatus->coinIconIndex;
-        hud_element_set_render_pos(id, uiStatus->drawPosX + 244, uiStatus->drawPosY + 14);
+        x = uiStatus->drawPosX + 244;
+        y = uiStatus->drawPosY + 14;
+        hud_element_set_render_pos(id, x, y);
         hud_element_draw_next(id);
 
         id = uiStatus->coinSparkleIconIndex;
-        hud_element_set_render_pos(id, uiStatus->drawPosX + 244, uiStatus->drawPosY + 14);
+        x = uiStatus->drawPosX + 244;
+        y = uiStatus->drawPosY + 14;
+        hud_element_set_render_pos(id, x, y);
         hud_element_draw_next(id);
 
-        status_menu_draw_number(uiStatus->iconIndexB, uiStatus->drawPosX + 247, uiStatus->drawPosY + 8, uiStatus->displayCoins, 3);
+        x = uiStatus->drawPosX + 247;
+        y = uiStatus->drawPosY + 8;
+        status_bar_draw_number(uiStatus->iconIndexB, x, y, uiStatus->displayCoins, 3);
     }
 
     id = uiStatus->starIconIndex;
-    s6 = 1;
-
+    showStat = TRUE;
     if (uiStatus->spBlinking) {
         if (uiStatus->spBlinkCounter > 5) {
             if (uiStatus->spBlinkCounter <= 8) {
-                s6 = 0;
+                showStat = FALSE;
             } else {
                 uiStatus->spBlinkCounter = 0;
-                s6 = 1;
+                showStat = TRUE;
             }
         }
         uiStatus->spBlinkCounter++;
     }
 
-    fp = uiStatus->drawPosX + 20;
-    s5 = uiStatus->drawPosY + 28;
+    x = uiStatus->drawPosX + 20;
+    y = uiStatus->drawPosY + 28;
 
-    temp = uiStatus->displaySP / 256;
-    s4 = uiStatus->displaySP % 256;
-    s4 /= 32;
-    s4 = s4 + temp * 8;
+    spBars = uiStatus->displaySP / 256;
+    limit = uiStatus->displaySP % 256;
+    limit /= 32;
+    limit += spBars * 8;
     if (uiStatus->unk_57 == 1) {
-        temp = playerData->specialBarsFilled / 256;
-        s4 = playerData->specialBarsFilled % 256;
-        s4 = s4 / 32;
-        s4 += temp * 8;
-        func_800F0CB0(0, fp + s4 * 25 / 10, s5, 1.0f);
+        spBars = playerData->specialBarsFilled / 256;
+        limit = playerData->specialBarsFilled % 256;
+        limit = limit / 32;
+        limit += spBars * 8;
+        func_800F0CB0(0, x + limit * 25 / 10, y, 1.0f);
         uiStatus->unk_57 = 2;
     }
 
-    sp54 = 0;
-    new_var = fp;
+    sp54 = FALSE;
     if (uiStatus->unk_57 != 0) {
         if (uiStatus->unk_58 != 0) {
             uiStatus->unk_58--;
@@ -869,214 +871,204 @@ void update_status_menu(void) {
             uiStatus->unk_57 = 0;
         }
         if ((uiStatus->unk_58 / 5) & 1) {
-            sp54 = 1;
+            sp54 = TRUE;
         }
+        maxStarPower = uiStatus->unk_59; // required to match
         s7 = uiStatus->unk_59 % 8;
         s7 += uiStatus->unk_59 / 8 * 8;
     } else {
-        s7 = s4;
+        s7 = limit;
     }
 
-    s02 = 0;
+    i = 0;
     sp50 = 0;
     s1 = 0;
 
     if (uiStatus->spBlinking) {
-        if (!s6) {
-            if (sp50 < uiStatus->spBarsToBlink * 8) {
+        if (!showStat) {
+            s32 limit = uiStatus->spBarsToBlink * 8;
+            do {} while (0);
+            if (sp50 < limit) {
                 while (TRUE) {
-                    s02++;
-                    s1++;
-                    if (s02 >= uiStatus->spBarsToBlink) { break; } s02++; s1++;
-                    if (s02 >= uiStatus->spBarsToBlink) { break; } s02++; s1++;
-                    if (s02 >= uiStatus->spBarsToBlink) { break; } s02++; s1++;
-                    if (s02 >= uiStatus->spBarsToBlink) { break; } s02++; s1++;
-                    if (s02 >= uiStatus->spBarsToBlink) { break; } s02++; s1++;
-                    if (s02 >= uiStatus->spBarsToBlink) { break; } s02++; s1++;
-                    if (s02 >= uiStatus->spBarsToBlink) { break; } s02++; s1 = 0;
+                    i++; s1++; if (i >= limit) { break; }
+                    i++; s1++; if (i >= limit) { break; }
+                    i++; s1++; if (i >= limit) { break; }
+                    i++; s1++; if (i >= limit) { break; }
+                    i++; s1++; if (i >= limit) { break; }
+                    i++; s1++; if (i >= limit) { break; }
+                    i++; s1++; if (i >= limit) { break; }
+                    i++;
+                    s1 = 0;
                     sp50++;
-                    if (s02 >= uiStatus->spBarsToBlink) { break; }
+                    if (i >= limit) {
+                        break;
+                    }
                 }
             }
         }
     }
 
     while (TRUE) {
-        if (s02 >= s4 || s02 >= s7 && sp54 == 0) {
+        if (i >= limit || i >= s7 && !sp54) {
             break;
         }
-        s02++;
+        i++;
 
         hud_element_set_script(id, SPIncrementHudScripts[sp50]);
-        hud_element_set_render_pos(id, new_var + sp50 * 20 + D_800F7FE8[0], s5 - 2);
+        hud_element_set_render_pos(id, x + sp50 * 20 + StatusBarSPIncrementOffsets[0], y - 2);
         hud_element_draw_next(id);
 
         s1++;
-        if (s02 >= s4 || s02 >= s7 && sp54 == 0) {
+        if (i >= limit || i >= s7 && !sp54) {
             break;
         }
-        s02++;
+        i++;
         hud_element_set_script(id, SPIncrementHudScripts[sp50]);
 
-        hud_element_set_render_pos(id, new_var + sp50 * 20 + D_800F7FE8[1], s5 - 2);
+        hud_element_set_render_pos(id, x + sp50 * 20 + StatusBarSPIncrementOffsets[1], y - 2);
         hud_element_draw_next(id);
         s1++;
-        if (s02 >= s4 || s02 >= s7 && sp54 == 0) {
+        if (i >= limit || i >= s7 && !sp54) {
             break;
         }
-        s02++;
+        i++;
         hud_element_set_script(id, SPIncrementHudScripts[sp50]);
-        hud_element_set_render_pos(id, new_var + sp50 * 20 + D_800F7FE8[2], s5 - 2);
+        hud_element_set_render_pos(id, x + sp50 * 20 + StatusBarSPIncrementOffsets[2], y - 2);
         hud_element_draw_next(id);
         s1++;
-        if (s02 >= s4 || s02 >= s7 && sp54 == 0) {
+        if (i >= limit || i >= s7 && !sp54) {
             break;
         }
-        s02++;
+        i++;
         hud_element_set_script(id, SPIncrementHudScripts[sp50]);
-        hud_element_set_render_pos(id, new_var + sp50 * 20 + D_800F7FE8[3], s5 - 2);
+        hud_element_set_render_pos(id, x + sp50 * 20 + StatusBarSPIncrementOffsets[3], y - 2);
         hud_element_draw_next(id);
         s1++;
-        if (s02 >= s4 || s02 >= s7 && sp54 == 0) {
+        if (i >= limit || i >= s7 && !sp54) {
             break;
         }
-        s02++;
+        i++;
         hud_element_set_script(id, SPIncrementHudScripts[sp50]);
-        hud_element_set_render_pos(id, new_var + sp50 * 20 + D_800F7FE8[4], s5 - 2);
-        hud_element_draw_next(id);
-        s1++;
-
-        if (s02 >= s4 || s02 >= s7 && sp54 == 0) {
-            break;
-        }
-        s02++;
-        hud_element_set_script(id, SPIncrementHudScripts[sp50]);
-        hud_element_set_render_pos(id, new_var + sp50 * 20 + D_800F7FE8[5], s5 - 2);
+        hud_element_set_render_pos(id, x + sp50 * 20 + StatusBarSPIncrementOffsets[4], y - 2);
         hud_element_draw_next(id);
         s1++;
 
-        if (s02 >= s4 || s02 >= s7 && sp54 == 0) {
+        if (i >= limit || i >= s7 && !sp54) {
             break;
         }
-        s02++;
+        i++;
         hud_element_set_script(id, SPIncrementHudScripts[sp50]);
-        hud_element_set_render_pos(id, new_var + sp50 * 20 + D_800F7FE8[6], s5 - 2);
+        hud_element_set_render_pos(id, x + sp50 * 20 + StatusBarSPIncrementOffsets[5], y - 2);
         hud_element_draw_next(id);
         s1++;
 
-        if (s02 >= s4 || s02 >= s7 && sp54 == 0) {
+        if (i >= limit || i >= s7 && !sp54) {
             break;
         }
-        s02++;
+        i++;
+        hud_element_set_script(id, SPIncrementHudScripts[sp50]);
+        hud_element_set_render_pos(id, x + sp50 * 20 + StatusBarSPIncrementOffsets[6], y - 2);
+        hud_element_draw_next(id);
+        s1++;
+
+        if (i >= limit || i >= s7 && !sp54) {
+            break;
+        }
+        i++;
         hud_element_set_script(id, SPStarHudScripts[sp50]);
-        hud_element_set_render_pos(id, new_var + 12 + sp50 * 20, s5);
+        hud_element_set_render_pos(id, x + 12 + sp50 * 20, y);
         hud_element_draw_next(id);
 
         s1 = 0;
         sp50++;
-        if (s02 >= s4 || s02 >= s7 && sp54 == 0) {
+        if (i >= limit || i >= s7 && !sp54) {
             break;
         }
     }
 
-    s4 = playerData->maxStarPower * 8;
+    maxStarPower = playerData->maxStarPower;
+    limit = maxStarPower * 8;
     while (TRUE) {
-        if (s02 >= s4) {
+        if (i >= limit) {
             break;
         }
         if (s1 == 0) {
-            do {
-            s02++;
+            i++;
             hud_element_set_script(id, &HES_StatusSPEmptyIncrement);
-            hud_element_set_render_pos(id, new_var + sp50 * 20 + D_800F7FE8[s1], s5 - 2);
+            hud_element_set_render_pos(id, x + sp50 * 20 + StatusBarSPIncrementOffsets[s1], y - 2);
             hud_element_draw_next(id);
-                } while (0);
-            if (s02 >= s4) {
+            if (i >= limit) {
                 break;
             }
             s1 = 1;
         }
         if (s1 == 1) {
-            do {
-            s02++;
+            i++;
             hud_element_set_script(id, &HES_StatusSPEmptyIncrement);
-            hud_element_set_render_pos(id, new_var + sp50 * 20 + D_800F7FE8[s1], s5 - 2);
+            hud_element_set_render_pos(id, x + sp50 * 20 + StatusBarSPIncrementOffsets[s1], y - 2);
             hud_element_draw_next(id);
-                } while (0);
-            if (s02 >= s4) {
+            if (i >= limit) {
                 break;
             }
             s1 = 2;
         }
         if (s1 == 2) {
-            do {
-            s02++;
+            i++;
             hud_element_set_script(id, &HES_StatusSPEmptyIncrement);
-            hud_element_set_render_pos(id, new_var + sp50 * 20 + D_800F7FE8[s1], s5 - 2);
+            hud_element_set_render_pos(id, x + sp50 * 20 + StatusBarSPIncrementOffsets[s1], y - 2);
             hud_element_draw_next(id);
-                } while (0);
-            if (s02 >= s4) {
+            if (i >= limit) {
                 break;
             }
             s1 = 3;
         }
         if (s1 == 3) {
-            do {
-            s02++;
+            i++;
             hud_element_set_script(id, &HES_StatusSPEmptyIncrement);
-            hud_element_set_render_pos(id, new_var + sp50 * 20 + D_800F7FE8[s1], s5 - 2);
+            hud_element_set_render_pos(id, x + sp50 * 20 + StatusBarSPIncrementOffsets[s1], y - 2);
             hud_element_draw_next(id);
-                } while (0);
-            if (s02 >= s4) {
+            if (i >= limit) {
                 break;
             }
             s1 = 4;
         }
         if (s1 == 4) {
-            do {
-            s02++;
+            i++;
             hud_element_set_script(id, &HES_StatusSPEmptyIncrement);
-            hud_element_set_render_pos(id, new_var + sp50 * 20 + D_800F7FE8[s1], s5 - 2);
+            hud_element_set_render_pos(id, x + sp50 * 20 + StatusBarSPIncrementOffsets[s1], y - 2);
             hud_element_draw_next(id);
-                } while (0);
-            if (s02 >= s4) {
+            if (i >= limit) {
                 break;
             }
             s1 = 5;
         }
         if (s1 == 5) {
-            do {
-            s02++;
+            i++;
             hud_element_set_script(id, &HES_StatusSPEmptyIncrement);
-            hud_element_set_render_pos(id, new_var + sp50 * 20 + D_800F7FE8[s1], s5 - 2);
+            hud_element_set_render_pos(id, x + sp50 * 20 + StatusBarSPIncrementOffsets[s1], y - 2);
             hud_element_draw_next(id);
-                } while (0);
-            if (s02 >= s4) {
+            if (i >= limit) {
                 break;
             }
             s1 = 6;
         }
         if (s1 == 6) {
-            do {
-            s02++;
+            i++;
             hud_element_set_script(id, &HES_StatusSPEmptyIncrement);
-            hud_element_set_render_pos(id, new_var + sp50 * 20 + D_800F7FE8[s1], s5 - 2);
+            hud_element_set_render_pos(id, x + sp50 * 20 + StatusBarSPIncrementOffsets[s1], y - 2);
             hud_element_draw_next(id);
-                } while (0);
-            if (s02 >= s4) {
+            if (i >= limit) {
                 break;
             }
             s1 = 7;
         }
 
         if (s1 == 7) {
-            do {
-            s02++;
+            i++;
             hud_element_set_script(id, &HES_StatusStarEmpty);
-            hud_element_set_render_pos(id, new_var + 12 + sp50 * 20, s5);
+            hud_element_set_render_pos(id, x + 12 + sp50 * 20, y);
             hud_element_draw_next(id);
-            } while (0);
-            if (s02 >= s4) {
+            if (i >= limit) {
                 break;
             }
         }
@@ -1087,10 +1079,6 @@ void update_status_menu(void) {
     func_800F0D80();
     func_800F102C();
 }
-#else
-void update_status_menu(void);
-INCLUDE_ASM(s32, "80850_len_3060", update_status_menu);
-#endif
 
 void coin_counter_draw_content(UNK_TYPE arg0, s32 posX, s32 posY) {
     UiStatus* uiStatus = &gUIStatus;
@@ -1217,11 +1205,11 @@ ApiStatus ShowCoinCounter(Evt* script, s32 isInitialCall) {
 }
 
 void draw_status_ui(void) {
-    update_status_menu();
+    update_status_bar();
     update_coin_counter();
 }
 
-void open_status_menu_long(void) {
+void open_status_bar_long(void) {
     UiStatus* uiStatus = &gUIStatus;
 
     if (uiStatus->hidden) {
@@ -1231,7 +1219,7 @@ void open_status_menu_long(void) {
     }
 }
 
-void open_status_menu_short(void) {
+void open_status_bar_short(void) {
     UiStatus* uiStatus = &gUIStatus;
 
     if (uiStatus->hidden) {
@@ -1241,7 +1229,7 @@ void open_status_menu_short(void) {
     }
 }
 
-void close_status_menu(void) {
+void close_status_bar(void) {
     UiStatus* uiStatus = &gUIStatus;
 
     if (uiStatus->hidden != TRUE) {
@@ -1295,7 +1283,7 @@ s32 func_800E9860(void) {
     return ret;
 }
 
-void status_menu_ignore_changes(void) {
+void status_bar_ignore_changes(void) {
     gUIStatus.ignoreChanges = TRUE;
 }
 
@@ -1306,7 +1294,7 @@ void func_800E98A8(void) {
     uiStatus->drawPosY = 18;
 }
 
-void status_menu_respond_to_changes(void) {
+void status_bar_respond_to_changes(void) {
     gUIStatus.ignoreChanges = FALSE;
 }
 
@@ -1324,11 +1312,11 @@ void func_800E9900(void) {
     gUIStatus.unk_45[1] = 0;
 }
 
-s32 is_status_menu_visible(void) {
+s32 is_status_bar_visible(void) {
     return !gUIStatus.hidden;
 }
 
-void status_menu_start_blinking_hp(void) {
+void status_bar_start_blinking_hp(void) {
     UiStatus* uiStatus = &gUIStatus;
 
     if (gGameStatusPtr->isBattle == 0) {
@@ -1341,7 +1329,7 @@ void status_menu_start_blinking_hp(void) {
     }
 }
 
-void status_menu_stop_blinking_hp(void) {
+void status_bar_stop_blinking_hp(void) {
     UiStatus* uiStatus = &gUIStatus;
 
     if (uiStatus->hpBlinking != 0) {
@@ -1351,7 +1339,7 @@ void status_menu_stop_blinking_hp(void) {
     }
 }
 
-void status_menu_start_blinking_fp(void) {
+void status_bar_start_blinking_fp(void) {
     UiStatus* uiStatus = &gUIStatus;
 
     if (gGameStatusPtr->isBattle == 0) {
@@ -1364,7 +1352,7 @@ void status_menu_start_blinking_fp(void) {
     }
 }
 
-void status_menu_stop_blinking_fp(void) {
+void status_bar_stop_blinking_fp(void) {
     UiStatus* uiStatus = &gUIStatus;
 
     if (uiStatus->fpBlinking != 0) {
@@ -1373,7 +1361,7 @@ void status_menu_stop_blinking_fp(void) {
     }
 }
 
-void status_menu_start_blinking_coins(void) {
+void status_bar_start_blinking_coins(void) {
     UiStatus* uiStatus = &gUIStatus;
 
     if (gGameStatusPtr->isBattle == 0) {
@@ -1386,7 +1374,7 @@ void status_menu_start_blinking_coins(void) {
     }
 }
 
-void status_menu_stop_blinking_coins(void) {
+void status_bar_stop_blinking_coins(void) {
     UiStatus* uiStatus = &gUIStatus;
 
     if (uiStatus->coinsBlinking != 0) {
@@ -1396,7 +1384,7 @@ void status_menu_stop_blinking_coins(void) {
     }
 }
 
-void status_menu_start_blinking_sp(void) {
+void status_bar_start_blinking_sp(void) {
     PlayerData* playerData = &gPlayerData;
     UiStatus* uiStatus = &gUIStatus;
 
@@ -1407,7 +1395,7 @@ void status_menu_start_blinking_sp(void) {
     }
 }
 
-void status_menu_stop_blinking_sp(void) {
+void status_bar_stop_blinking_sp(void) {
     UiStatus* uiStatus = &gUIStatus;
 
     if (uiStatus->spBlinking != 0) {
@@ -1416,7 +1404,7 @@ void status_menu_stop_blinking_sp(void) {
     }
 }
 
-void status_menu_start_blinking_sp_bars(s8 numBarsToBlink) {
+void status_bar_start_blinking_sp_bars(s32 numBarsToBlink) {
     UiStatus* uiStatus = &gUIStatus;
 
     uiStatus->spBarsToBlink = numBarsToBlink;
@@ -1426,7 +1414,7 @@ void status_menu_start_blinking_sp_bars(s8 numBarsToBlink) {
     }
 }
 
-void status_menu_start_blinking_starpoints(void) {
+void status_bar_start_blinking_starpoints(void) {
     UiStatus* uiStatus = &gUIStatus;
 
     if (uiStatus->starpointsBlinking != 1) {
@@ -1435,7 +1423,7 @@ void status_menu_start_blinking_starpoints(void) {
     }
 }
 
-void status_menu_stop_blinking_starpoints(void) {
+void status_bar_stop_blinking_starpoints(void) {
     UiStatus* uiStatus = &gUIStatus;
 
     if (uiStatus->starpointsBlinking != 0) {
@@ -1444,7 +1432,7 @@ void status_menu_stop_blinking_starpoints(void) {
     }
 }
 
-void decrement_status_menu_disabled(void) {
+void decrement_status_bar_disabled(void) {
     UiStatus* uiStatus = &gUIStatus;
 
     if (uiStatus->disabled > 0) {
@@ -1452,13 +1440,13 @@ void decrement_status_menu_disabled(void) {
     }
 }
 
-void increment_status_menu_disabled(void) {
+void increment_status_bar_disabled(void) {
     UiStatus* uiStatus = &gUIStatus;
 
     uiStatus->disabled++;
 }
 
-void sync_status_menu(void) {
+void sync_status_bar(void) {
     PlayerData* playerData = &gPlayerData;
     UiStatus* uiStatus = &gUIStatus;
 
@@ -1469,7 +1457,7 @@ void sync_status_menu(void) {
     uiStatus->displayStarpoints = playerData->starPoints;
 }
 
-void reset_status_menu(void) {
+void reset_status_bar(void) {
     PlayerData* playerData = &gPlayerData;
     UiStatus* uiStatus = &gUIStatus;
     s32 i;

@@ -65,6 +65,23 @@ UnkStruct D_E010E838[] = {
     {              NULL,   0,  0,   0,  0 }
 };
 
+#if VERSION_PAL
+UnkStruct D_E010E838_b[] = {
+    { D_0900C080_3F7EE0, 0,  0, 128, 10 },
+    { D_0900C168_3F7FC8, 0, 10, 128, 10 },
+    { D_0900C1B0_3F8010, 0, 20, 128, 10 },
+    { D_0900C1F8_3F8058, 0, 30, 128, 10 },
+    {              NULL, 0,  0,   0,  0 }
+};
+
+UnkStruct D_E010E838_c[] = {
+        { D_0900C240_3F80A0, 128,  0, 104, 20 },
+        { D_0900C328_3F8188, 128, 20, 104, 20 },
+        { D_0900C370_3F81D0, 232,  0,  16, 40 },
+        {              NULL,   0,  0,   0,  0 }
+};
+#endif
+
 UnkStruct D_E010E868[] = {
     { D_0900BE40_3F7CA0, 128, -33, 64, 64 },
     {              NULL,   0,   0,  0,  0 },
@@ -83,6 +100,34 @@ UnkStruct D_E010E868[] = {
     { D_0900C038_3F7E98, 128, -33, 64, 64 },
     {              NULL,   0,   0,  0,  0 }
 };
+
+#if VERSION_PAL
+u32 pal_data[] = {
+        0x00000000,
+        0x00000000,
+        0x00000000,
+        0xE010E61C,
+        0xE010E5E4,
+        0xE010E5E4,
+        0xE010E5E4,
+        0xE010E5E4,
+        0xE010E5E4,
+        0xE010E5E4,
+        0xE010E5E4,
+        0xE010E5E4,
+        0xE010E60C,
+        0xE010E61C,
+        0xE010E61C,
+        0xE010E61C,
+        0xE010E61C,
+        0xE010E61C,
+        0xE010E61C,
+        0xE010E61C,
+        0xE010E61C,
+        0xE010E61C,
+        0x00000000,
+};
+#endif
 
 void chapter_change_init(EffectInstance* effect);
 void chapter_change_update(EffectInstance* effect);
@@ -108,11 +153,11 @@ void func_E010E000(ChapterChangeFXData* data, s32 arg1, UnkStruct* arg2) {
 
     if (arg2 != NULL) {
         for (it = arg2; it->displayList != NULL; it++) {
-            gSPDisplayList(gMasterGfxPos++, it->displayList);
+            gSPDisplayList(gMainGfxPos++, it->displayList);
 
             temp = it->x - 384;
-            gDPSetTileSize(gMasterGfxPos++, 1, (unk_1C * 4 - temp) * 4, 0, (unk_1C * 4 - it->x + 511) * 4, 0);
-            gSPScisTextureRectangle(gMasterGfxPos++,
+            gDPSetTileSize(gMainGfxPos++, 1, (unk_1C * 4 - temp) * 4, 0, (unk_1C * 4 - it->x + 511) * 4, 0);
+            gSPScisTextureRectangle(gMainGfxPos++,
                 (posX + it->x) * 4,
                 (posY + it->y) * 4,
                 (posX + it->x + it->width) * 4,
@@ -120,7 +165,7 @@ void func_E010E000(ChapterChangeFXData* data, s32 arg1, UnkStruct* arg2) {
                 G_TX_RENDERTILE, 0, 0, 1024, 1024);
         }
 
-        gDPPipeSync(gMasterGfxPos++);
+        gDPPipeSync(gMainGfxPos++);
     }
 }
 
@@ -134,7 +179,7 @@ EffectInstance* chapter_change_main(s32 arg0, f32 posX, f32 posY, f32 arg3, f32 
     bp.update = chapter_change_update;
     bp.renderWorld = chapter_change_render;
     bp.unk_00 = 0;
-    bp.unk_14 = NULL;
+    bp.renderUI = NULL;
     bp.effectID = EFFECT_CHAPTER_CHANGE;
 
     effect = shim_create_effect_instance(&bp);
@@ -182,8 +227,8 @@ void chapter_change_init(EffectInstance* effect) {
 void chapter_change_update(EffectInstance* effect) {
     ChapterChangeFXData* data = effect->data.chapterChange;
 
-    if (effect->flags & EFFECT_INSTANCE_FLAG_10) {
-        effect->flags &= ~EFFECT_INSTANCE_FLAG_10;
+    if (effect->flags & FX_INSTANCE_FLAG_DISMISS) {
+        effect->flags &= ~FX_INSTANCE_FLAG_DISMISS;
         data->timeLeft = 16;
     }
 
@@ -211,6 +256,9 @@ void chapter_change_render(EffectInstance* effect) {
     retTask->renderMode |= RENDER_TASK_FLAG_REFLECT_FLOOR;
 }
 
+#if VERSION_PAL
+INCLUDE_ASM(void, "effects/chapter_change", chapter_change_appendGfx);
+#else
 void chapter_change_appendGfx(void* effect) {
     ChapterChangeFXData* data = ((EffectInstance*)effect)->data.chapterChange;
     s32 unk_2C = data->unk_2C;
@@ -218,8 +266,8 @@ void chapter_change_appendGfx(void* effect) {
     UnkStruct* ptr0;
     UnkStruct* ptr1;
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
+    gDPPipeSync(gMainGfxPos++);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
 
     switch (unk_00) {
         case 1:
@@ -256,8 +304,8 @@ void chapter_change_appendGfx(void* effect) {
             break;
     }
 
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, data->unk_20, data->unk_24, data->unk_28, unk_2C);
-    gDPSetEnvColor(gMasterGfxPos++, data->unk_30, data->unk_34, data->unk_38, data->unk_3C);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, data->unk_20, data->unk_24, data->unk_28, unk_2C);
+    gDPSetEnvColor(gMainGfxPos++, data->unk_30, data->unk_34, data->unk_38, data->unk_3C);
 
     func_E010E000(data, 0, ptr0);
     func_E010E000(data, 1, ptr1);
@@ -266,5 +314,6 @@ void chapter_change_appendGfx(void* effect) {
         shim_draw_msg(data->unk_54, data->unk_40 - data->unk_48, data->unk_44, 255, 21, 0);
     }
 
-    gDPPipeSync(gMasterGfxPos++);
+    gDPPipeSync(gMainGfxPos++);
 }
+#endif

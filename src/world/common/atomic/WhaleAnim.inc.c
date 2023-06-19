@@ -52,7 +52,7 @@ void N(unkVtxFunc001)(Vtx* firstVertex, Vtx* copiedVertices, s32 numVertices, s3
     f32 newX, newY;
     f32 angle;
     s32 offset;
-    
+
     wagPhase = *wagPhasePtr;
     switch (get_npc_safe(NPC_Whale)->currentAnim) {
         case ANIM_Kolorado_Still:
@@ -79,7 +79,7 @@ void N(unkVtxFunc001)(Vtx* firstVertex, Vtx* copiedVertices, s32 numVertices, s3
     for (i = 0; i < numVertices; i++) {
         vtxPos = firstVertex[i].v.ob;
         offset = 30;
-        
+
         if (vtxPos[0] > 30) {
             newX = 0.0f;
             newY = 0.0f;
@@ -96,7 +96,7 @@ void N(unkVtxFunc001)(Vtx* firstVertex, Vtx* copiedVertices, s32 numVertices, s3
             angle = (j / 15.0f) + ((j / 40.0f) * sin_deg(wagPhase));
             newX += bendFrac * cos_rad(angle);
             newY += bendFrac * sin_rad(angle);
-            
+
             copiedVertices[i].v.ob[0] = newX;
             copiedVertices[i].v.ob[1] = vtxPos[1] + newY;
         }
@@ -111,7 +111,7 @@ void N(unkAngleFunc002)(void) {
     mdl_get_copied_vertices(VTX_COPY_1, &firstVertex, &copiedVertices, &numVertices);
     N(unkVtxFunc001)(firstVertex, copiedVertices, numVertices, &N(unkAngle2));
 
-    gSPDisplayList(gMasterGfxPos++, mdl_get_copied_gfx(VTX_COPY_1));
+    gSPDisplayList(gMainGfxPos++, mdl_get_copied_gfx(VTX_COPY_1));
     if (N(unkAngle2) >= 0) {
         N(unkAngle2) += 4;
     }
@@ -128,7 +128,7 @@ void N(unkAngleFunc003)(void) {
     mdl_get_copied_vertices(VTX_COPY_2, &firstVertex, &copiedVertices, &numVertices);
     N(unkVtxFunc001)(firstVertex, copiedVertices, numVertices, &N(unkAngle3));
 
-    gSPDisplayList(gMasterGfxPos++, mdl_get_copied_gfx(VTX_COPY_2));
+    gSPDisplayList(gMainGfxPos++, mdl_get_copied_gfx(VTX_COPY_2));
     if (N(unkAngle3) >= 0) {
         N(unkAngle3) += 4;
     }

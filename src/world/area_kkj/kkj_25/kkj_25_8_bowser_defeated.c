@@ -38,8 +38,8 @@ API_CALLABLE(N(FadeScreenToRedAndWhite)) {
 
     switch (script->FT_state) {
         case TEMP_FADE_TO_RED:
-            set_screen_overlay_color(0, 208, 0, 0);
-            set_screen_overlay_params_front(1, script->FT_alpha);
+            set_screen_overlay_color(SCREEN_LAYER_FRONT, 208, 0, 0);
+            set_screen_overlay_params_front(OVERLAY_VIEWPORT_COLOR, script->FT_alpha);
             if (script->FT_alpha == 255) {
                 script->FT_alpha = 0;
                 script->FT_state = TEMP_FADE_TO_WHITE;
@@ -57,7 +57,7 @@ API_CALLABLE(N(FadeScreenToRedAndWhite)) {
                 (script->FT_alpha * 208) / 255,
                 (script->FT_alpha * 208) / 255
             );
-            set_screen_overlay_params_front(1, 255.0f);
+            set_screen_overlay_params_front(OVERLAY_VIEWPORT_COLOR, 255.0f);
             if (script->FT_alpha == 255) {
                 script->FT_state = TEMP_FADE_COMPLETE;
             }
@@ -82,7 +82,7 @@ API_CALLABLE(N(FadeScreenFromWhite)) {
         script->functionTemp[1] = 255;
     }
 
-    set_screen_overlay_params_front(1, script->functionTemp[1]);
+    set_screen_overlay_params_front(OVERLAY_VIEWPORT_COLOR, script->functionTemp[1]);
 
     if (script->functionTemp[1] == 0) {
         return ApiStatus_DONE2;
@@ -181,16 +181,16 @@ EvtScript N(EVS_ManageShaking) = {
 // x, y, z, delay
 s32 N(ChainExplosionLocations)[][4] = {
     { 400,  -10, 400, 20 },
-    { 350,  -50, 370, 25 }, 
+    { 350,  -50, 370, 25 },
     { 300,  -30, 340, 25 },
-    { 350,  -40, 310, 20 }, 
+    { 350,  -40, 310, 20 },
     { 300,  -80, 280, 20 },
-    { 280,  -60, 250, 20 }, 
+    { 280,  -60, 250, 20 },
     { 300,  -50, 220, 20 },
-    { 250, -100, 190, 20 }, 
+    { 250, -100, 190, 20 },
     { 280,  -70, 160, 20 },
-    { 250,  -50, 130, 20 }, 
-    { 230, -100, 100, 20 }, 
+    { 250,  -50, 130, 20 },
+    { 230, -100, 100, 20 },
 };
 
 EvtScript N(EVS_BowserAndKammyBlownAway) = {
@@ -301,15 +301,15 @@ EvtScript N(EVS_Scene_BowserDefeated) = {
     EVT_CALL(ClearAmbientSounds, 150)
     EVT_WAIT(10)
     EVT_CALL(SetMusicTrack, 0, SONG_RECOVERED_STAR_ROD, 0, 8)
-    EVT_CALL(NpcJump0, NPC_StarRod, 230, 18, 0, 25)
-    EVT_CALL(NpcJump0, NPC_StarRod, 190, 18, 0, 20)
+    EVT_CALL(NpcJump0, NPC_StarRod, 230, 18, 0, 25 * DT)
+    EVT_CALL(NpcJump0, NPC_StarRod, 190, 18, 0, 20 * DT)
     EVT_THREAD
-        EVT_WAIT(10)
+        EVT_WAIT(10 * DT)
         EVT_CALL(SetPlayerAnimation, ANIM_MarioW1_Lift)
     EVT_END_THREAD
-    EVT_CALL(NpcJump0, NPC_StarRod, 150, 60, 0, 15)
+    EVT_CALL(NpcJump0, NPC_StarRod, 150, 60, 0, 15 * DT)
     EVT_PLAY_EFFECT(EFFECT_RADIAL_SHIMMER, 14, 150, 60, 0, 1, 330)
-    EVT_WAIT(310)
+    EVT_WAIT(310 * DT)
     EVT_CALL(ShowMessageAtScreenPos, MSG_CH8_00AA, 160, 40)
     EVT_CALL(PlaySound, SOUND_22D)
     EVT_CALL(RemoveNpc, NPC_StarRod)

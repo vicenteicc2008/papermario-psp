@@ -28,7 +28,7 @@ BSS u16 D_802BCE34;
 void entity_SpinningFlower_setupGfx(s32 entityIndex) {
     Entity* entity = get_entity_by_index(entityIndex);
     SpinningFlowerData* data = entity->dataBuf.spinningFlower;
-    Gfx* gfxPos = gMasterGfxPos;
+    Gfx* gfxPos = gMainGfxPos;
     Matrix4f sp18;
     Matrix4f sp58;
     Matrix4f sp98;
@@ -47,7 +47,7 @@ void entity_SpinningFlower_setupGfx(s32 entityIndex) {
     gfx = ENTITY_ADDR(entity, Gfx*, D_0A000D18_E9D618);
     gSPDisplayList(gfxPos++, gfx);
     gSPPopMatrix(gfxPos++, G_MTX_MODELVIEW);
-    gMasterGfxPos = gfxPos;
+    gMainGfxPos = gfxPos;
 }
 
 void func_802BB000_E2D930(Entity* entity) {
@@ -149,7 +149,7 @@ void func_802BB34C_E2DC7C(void) {
 void entity_PinkFlowerLight_setupGfx(s32 entityIndex) {
     Entity* entity = get_entity_by_index(entityIndex);
     PinkFlowerData* data = entity->dataBuf.pinkFlower;
-    Gfx* gfxPos = gMasterGfxPos;
+    Gfx* gfxPos = gMainGfxPos;
     Matrix4f sp18;
     Matrix4f sp58;
     f32 sinAngle, cosAngle;
@@ -168,13 +168,13 @@ void entity_PinkFlowerLight_setupGfx(s32 entityIndex) {
     guMtxCatF(sp18, sp58, sp18);
     guTranslateF(sp58, entity->position.x + 16.0f * sinAngle, entity->position.y , entity->position.z - 16.0f * cosAngle);
     guMtxCatF(sp18, sp58, sp18);
-    gDPSetCombineLERP(gfxPos++, 0, 0, 0, TEXEL0, PRIMITIVE, 0, TEXEL0, 0, 0, 0, 0, TEXEL0, TEXEL0, 0, PRIMITIVE, 0);
+    gDPSetCombineMode(gfxPos++, PM_CC_01, PM_CC_02);
     gDPSetPrimColor(gfxPos++, 0, 0, 0, 0, 0, entity->alpha);
     guMtxF2L(sp18, &gDisplayContext->matrixStack[gMatrixListPos]);
     gSPMatrix(gfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     gSPDisplayList(gfxPos++, D_0A0013B8_E9C8B8);
     gSPPopMatrix(gfxPos++, G_MTX_MODELVIEW);
-    gMasterGfxPos = gfxPos;
+    gMainGfxPos = gfxPos;
 }
 
 void entity_PinkFlower_idle(Entity* entity) {
@@ -267,7 +267,7 @@ void func_802BB98C_E2E2BC(Entity* entity) {
 
 void entity_CymbalPlant_idle(Entity* entity) {
     CymbalPlantData* data = entity->dataBuf.cymbalPlant;
-    PartnerActionStatus* partnerActionStatus = &gPartnerActionStatus;
+    PartnerStatus* partnerStatus = &gPartnerStatus;
     PlayerStatus* playerStatus = &gPlayerStatus;
     f32 yaw;
     f32 targetYaw;
@@ -275,7 +275,7 @@ void entity_CymbalPlant_idle(Entity* entity) {
     switch (data->state) {
         case 0:
             if (entity->collisionFlags & ENTITY_COLLISION_PLAYER_TOUCH_FLOOR) {
-                if (partnerActionStatus->actingPartner != 0) {
+                if (partnerStatus->actingPartner != 0) {
                     playerStatus->animFlags |= PA_FLAG_INTERRUPT_USE_PARTNER;
                 }
                 func_800EF300();
@@ -308,8 +308,8 @@ void entity_CymbalPlant_idle(Entity* entity) {
         case 2:
             if (--data->timer == 0) {
                 data->state++;
-                func_802DDEE4(PLAYER_SPRITE_MAIN, -1, 0, 0, 0, 0, 0, 0);
-                func_802DDFF8(ANIM_Mario1_Idle, 5, 19, 1, 1, 0, 0);
+                set_player_imgfx_comp(PLAYER_SPRITE_MAIN, -1, IMGFX_CLEAR, 0, 0, 0, 0, 0);
+                set_player_imgfx_all(ANIM_Mario1_Idle, IMGFX_SET_ANIM, IMGFX_ANIM_CYMBAL_CRUSH, 1, 1, 0, 0);
             }
             break;
         case 3:
@@ -328,13 +328,13 @@ void entity_CymbalPlant_idle(Entity* entity) {
         case 5:
             if (--data->timer == 0) {
                 data->state++;
-                func_802DDEE4(PLAYER_SPRITE_MAIN, -1, 0, 0, 0, 0, 0, 0);
+                set_player_imgfx_comp(PLAYER_SPRITE_MAIN, -1, IMGFX_CLEAR, 0, 0, 0, 0, 0);
                 enable_player_input();
                 playerStatus->flags &= ~PS_FLAG_ROTATION_LOCKED;
             }
             break;
         case 6:
-            if (!(entity->collisionFlags & ENTITY_COLLISION_PLAYER_TOUCH_FLOOR) && partnerActionStatus->partnerActionState == PARTNER_ACTION_NONE) {
+            if (!(entity->collisionFlags & ENTITY_COLLISION_PLAYER_TOUCH_FLOOR) && partnerStatus->partnerActionState == PARTNER_ACTION_NONE) {
                 data->state = 0;
                 enable_partner_ai();
                 phys_adjust_cam_on_landing();

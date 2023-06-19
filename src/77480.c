@@ -2,6 +2,7 @@
 #include "ld_addrs.h"
 #include "world/actions.h"
 #include "sprite.h"
+#include "world/partner/watt.h"
 
 #ifdef SHIFT
 #define inspect_icon_VRAM_DEF inspect_icon_VRAM
@@ -18,7 +19,7 @@
 extern f32 D_800F7B48;
 extern s32 D_800F7B4C;
 extern s8 D_8015A57A;
-extern s32 GoombarioTattleInteractionID;
+extern s32 WorldTattleInteractionID;
 
 s32 player_raycast_down(f32*, f32*, f32*, f32*);
 s32 player_raycast_up_corner(f32* x, f32* y, f32* z, f32* length);
@@ -664,7 +665,7 @@ void update_player(void) {
 
     check_input_open_menus();
     if (!(playerStatus->animFlags & PA_FLAG_USING_PEACH_PHYSICS)) {
-        check_input_status_menu();
+        check_input_status_bar();
     }
 
     update_player_shadow();
@@ -693,7 +694,7 @@ void check_input_use_partner(void) {
         && actionState <= ACTION_STATE_RUN
     ) {
         if (playerData->currentPartner == PARTNER_GOOMBARIO) {
-            GoombarioTattleInteractionID = playerStatus->interactingWithID;
+            WorldTattleInteractionID = playerStatus->interactingWithID;
         }
         partner_use_ability();
     }
@@ -780,13 +781,13 @@ void player_reset_data(void) {
     func_800E5520();
 }
 
-s32 func_800DFCF4(void) {
-    if (gPartnerActionStatus.partnerActionState == PARTNER_ACTION_USE &&
-        (gPartnerActionStatus.actingPartner == PARTNER_WATT
-        || gPartnerActionStatus.actingPartner == PARTNER_BOW
-        || gPartnerActionStatus.actingPartner == PARTNER_SUSHIE
-        || gPartnerActionStatus.actingPartner == PARTNER_PARAKARRY
-        || gPartnerActionStatus.actingPartner == PARTNER_LAKILESTER)) {
+b32 is_player_dismounted(void) {
+    if (gPartnerStatus.partnerActionState == PARTNER_ACTION_USE &&
+        (gPartnerStatus.actingPartner == PARTNER_WATT
+        || gPartnerStatus.actingPartner == PARTNER_BOW
+        || gPartnerStatus.actingPartner == PARTNER_SUSHIE
+        || gPartnerStatus.actingPartner == PARTNER_PARAKARRY
+        || gPartnerStatus.actingPartner == PARTNER_LAKILESTER)) {
         return FALSE;
     }
     return TRUE;
@@ -794,7 +795,7 @@ s32 func_800DFCF4(void) {
 
 s32 get_overriding_player_anim(s32 anim) {
     PlayerStatus* playerStatus = &gPlayerStatus;
-    PartnerActionStatus* partnerActionStatus = &gPartnerActionStatus;
+    PartnerStatus* partnerStatus = &gPartnerStatus;
 
     if (playerStatus->actionState == ACTION_STATE_USE_SPINNING_FLOWER
         && anim != ANIM_Mario1_Flail
@@ -803,13 +804,13 @@ s32 get_overriding_player_anim(s32 anim) {
         return -1;
     }
 
-    if (partnerActionStatus->partnerActionState != PARTNER_ACTION_NONE) {
-        if (partnerActionStatus->actingPartner == PARTNER_LAKILESTER && anim == ANIM_Mario1_Idle) {
+    if (partnerStatus->partnerActionState != PARTNER_ACTION_NONE) {
+        if (partnerStatus->actingPartner == PARTNER_LAKILESTER && anim == ANIM_Mario1_Idle) {
             anim = ANIM_MarioW2_RideLaki;
         }
 
-        if (partnerActionStatus->partnerActionState != PARTNER_ACTION_NONE
-            && partnerActionStatus->actingPartner == PARTNER_BOW
+        if (partnerStatus->partnerActionState != PARTNER_ACTION_NONE
+            && partnerStatus->actingPartner == PARTNER_BOW
             && anim != ANIM_Mario1_Crouch
             && anim != ANIM_Mario1_Idle
         ) {
@@ -817,13 +818,13 @@ s32 get_overriding_player_anim(s32 anim) {
         }
     }
 
-    if (anim == ANIM_Mario1_ThumbsUp && partnerActionStatus->partnerActionState == PARTNER_ACTION_USE) {
+    if (anim == ANIM_Mario1_ThumbsUp && partnerStatus->partnerActionState == PARTNER_ACTION_USE) {
         return -1;
     }
 
     if (anim == ANIM_MarioW1_Lift || anim == ANIM_Peach2_SpreadArms || anim == ANIM_Mario1_Idle) {
         if (!(playerStatus->animFlags & PA_FLAG_USING_PEACH_PHYSICS)) {
-            if (!func_800DFCF4()) {
+            if (!is_player_dismounted()) {
                 return -1;
             }
         } else if (!(playerStatus->animFlags & PA_FLAG_INVISIBLE)) {
@@ -882,8 +883,8 @@ void update_player_blink(void) {
     u8 phi_v1;
     u8* alpha;
 
-    if (gPartnerActionStatus.actingPartner == PARTNER_BOW) {
-        outtaSight = gPartnerActionStatus.partnerActionState != PARTNER_ACTION_NONE;
+    if (gPartnerStatus.actingPartner == PARTNER_BOW) {
+        outtaSight = gPartnerStatus.partnerActionState != PARTNER_ACTION_NONE;
     }
 
     if (playerStatus->blinkTimer > 0) {
@@ -977,7 +978,7 @@ s32 game_scripts_disabled(void) {
     s32 ret = FALSE;
 
     if (gGameStatusPtr->disableScripts && (gGameStatusPtr->currentButtons[0] & BUTTON_R)) {
-        if (gPartnerActionStatus.partnerActionState == PARTNER_ACTION_NONE) {
+        if (gPartnerStatus.partnerActionState == PARTNER_ACTION_NONE) {
             set_action_state(ACTION_STATE_IDLE);
         }
         ret = TRUE;
@@ -1042,7 +1043,7 @@ void check_for_pulse_stone(void) {
             return;
         }
 
-        if (gPlayerStatus.flags & PS_FLAG_PAUSED || gPlayerStatus.inputDisabledCount) {
+        if (gPlayerStatus.flags & PS_FLAG_PAUSED || gPlayerStatus.inputDisabledCount != 0) {
             return;
         }
 
@@ -1127,7 +1128,7 @@ s32 func_800E06D8(void) {
     s32 interactingID = playerStatus->interactingWithID;
     s32 currentWall;
 
-    if (playerStatus->timeInAir != 0 || playerStatus->inputDisabledCount) {
+    if (playerStatus->timeInAir != 0 || playerStatus->inputDisabledCount != 0) {
         return FALSE;
     }
     if (gCollisionStatus.currentWall == NO_COLLIDER) {
@@ -1479,11 +1480,11 @@ void render_player_model(void) {
                     }
 
                     playerStatus->renderMode = renderModeTemp;
-                    func_802DDEE4(PLAYER_SPRITE_MAIN, -1, 7, 0, 0, 0, playerStatus->alpha1, 0);
+                    set_player_imgfx_comp(PLAYER_SPRITE_MAIN, -1, IMGFX_SET_ALPHA, 0, 0, 0, playerStatus->alpha1, 0);
 
                 } else {
                     playerStatus->renderMode = RENDER_MODE_ALPHATEST;
-                    func_802DDEE4(PLAYER_SPRITE_MAIN, -1, 0, 0, 0, 0, 0, 0);
+                    set_player_imgfx_comp(PLAYER_SPRITE_MAIN, -1, IMGFX_CLEAR, 0, 0, 0, 0, 0);
                 }
             }
 
@@ -1541,7 +1542,7 @@ void appendGfx_player(void* data) {
         guMtxCatF(sp20, spA0, sp20);
         guTranslateF(sp60, 0.0f, playerStatus->colliderHeight * 0.5f, 0.0f);
         guMtxCatF(sp20, sp60, sp20);
-        guScaleF(spE0, SPRITE_WORLD_SCALE_F, SPRITE_WORLD_SCALE_D, SPRITE_WORLD_SCALE_D);
+        guScaleF(spE0, SPRITE_WORLD_SCALE_D, SPRITE_WORLD_SCALE_D, SPRITE_WORLD_SCALE_D);
         guMtxCatF(sp20, spE0, sp20);
         guTranslateF(sp60, playerStatus->position.x, playerStatus->position.y, playerStatus->position.z);
         guMtxCatF(sp20, sp60, sp20);
@@ -1549,14 +1550,14 @@ void appendGfx_player(void* data) {
         if (playerStatus->animFlags & PA_FLAG_SHIVERING) {
             playerStatus->animFlags = playerStatus->animFlags & ~PA_FLAG_SHIVERING;
             playerStatus->shiverTime = 22;
-            func_802DDEE4(PLAYER_SPRITE_MAIN, -1, 0, 0, 0, 0, 0, 0);
-            func_802DDFF8(playerStatus->anim, 5, 1, 1, 1, 0, 0);
+            set_player_imgfx_comp(PLAYER_SPRITE_MAIN, -1, IMGFX_CLEAR, 0, 0, 0, 0, 0);
+            set_player_imgfx_all(playerStatus->anim, IMGFX_SET_ANIM, IMGFX_ANIM_SHIVER, 1, 1, 0, 0);
         }
 
         if (playerStatus->shiverTime != 0) {
             playerStatus->shiverTime--;
             if (playerStatus->shiverTime == 0) {
-                func_802DDEE4(PLAYER_SPRITE_MAIN, -1, 0, 0, 0, 0, 0, 0);
+                set_player_imgfx_comp(PLAYER_SPRITE_MAIN, -1, IMGFX_CLEAR, 0, 0, 0, 0, 0);
             }
         }
 
@@ -1613,7 +1614,7 @@ void appendGfx_player_spin(void* data) {
                 tint = 100;
             }
 
-            func_802DDFF8(0, FOLD_TYPE_6, tint, tint, tint, 255, 0);
+            set_player_imgfx_all(PLAYER_SPRITE_MAIN, IMGFX_SET_COLOR, tint, tint, tint, 255, 0);
 
             guRotateF(rotation, yaw, 0.0f, -1.0f, 0.0f);
             guRotateF(mtx, clamp_angle(playerStatus->pitch), 0.0f, 0.0f, 1.0f);
@@ -1632,7 +1633,7 @@ void appendGfx_player_spin(void* data) {
 
             px = playerStatus->position.x;
             pz = playerStatus->position.z;
-            func_802DDEE4(PLAYER_SPRITE_MAIN, -1, 7, 0, 0, 0, 64, 0);
+            set_player_imgfx_comp(PLAYER_SPRITE_MAIN, -1, IMGFX_SET_ALPHA, 0, 0, 0, 64, 0);
             guRotateF(mtx, yaw, 0.0f, -1.0f, 0.0f);
             guRotateF(rotation, yaw, 0.0f, -1.0f, 0.0f);
             guRotateF(mtx, blurAngle, 0.0f, 1.0f, 0.0f);

@@ -35,10 +35,35 @@ static f32 gPausePartnersRotAngle;
 static s32 gPausePartnersLevel;
 static s32 gPausePartnersNumPartners;
 
+#if VERSION_PAL
+extern HudScript HES_FPCost_de;
+extern HudScript HES_FPCost_fr;
+extern HudScript HES_FPCost_es;
+
+HudScript* gPausePartnersIconScripts[][8] = {
+    [LANGUAGE_EN] = {
+        &HES_FPCost, &HES_StatFp_1, &HES_PartnerRank, &HES_PartnerRank,
+        &HES_MoveDiamond, &HES_MoveBlueOrb, &HES_MoveGreenOrb, &HES_MoveRedOrb
+    },
+    [LANGUAGE_DE] = {
+        &HES_FPCost_de, &HES_StatFp_1, &HES_PartnerRank, &HES_PartnerRank,
+        &HES_MoveDiamond, &HES_MoveBlueOrb, &HES_MoveGreenOrb, &HES_MoveRedOrb
+    },
+    [LANGUAGE_FR] = {
+        &HES_FPCost_fr, &HES_StatFp_1, &HES_PartnerRank, &HES_PartnerRank,
+        &HES_MoveDiamond, &HES_MoveBlueOrb, &HES_MoveGreenOrb, &HES_MoveRedOrb
+    },
+    [LANGUAGE_ES] = {
+        &HES_FPCost_es, &HES_StatFp_1, &HES_PartnerRank, &HES_PartnerRank,
+        &HES_MoveDiamond, &HES_MoveBlueOrb, &HES_MoveGreenOrb, &HES_MoveRedOrb
+    },
+};
+#else
 HudScript* gPausePartnersIconScripts[] = {
     &HES_FPCost, &HES_StatFp_1, &HES_PartnerRank, &HES_PartnerRank,
     &HES_MoveDiamond, &HES_MoveBlueOrb, &HES_MoveGreenOrb, &HES_MoveRedOrb
 };
+#endif
 
 Vp gPausePartnersViewport = {
     .vp = {
@@ -162,7 +187,7 @@ Gfx gPausePartnersDL[] = {
     gsDPSetTextureFilter(G_TF_POINT),
     gsDPSetTextureConvert(G_TC_FILT),
     gsDPSetRenderMode(G_RM_OPA_SURF, G_RM_OPA_SURF2),
-    gsDPSetCombineLERP(0, 0, 0, TEXEL0, 0, 0, 0, 1, 0, 0, 0, TEXEL0, 0, 0, 0, 1),
+    gsDPSetCombineMode(PM_CC_0F, PM_CC_0F),
     gsSPClearGeometryMode(G_LIGHTING),
     gsSPSetGeometryMode(G_SHADE | G_CULL_BACK | G_SHADING_SMOOTH),
     gsSPEndDisplayList()
@@ -294,13 +319,13 @@ void pause_partners_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 wid
     s32 portraitOffsetX;
     s32 portraitIndex;
 
-    gSPViewport(gMasterGfxPos++, &gPausePartnersViewport);
+    gSPViewport(gMainGfxPos++, &gPausePartnersViewport);
     guOrthoF(matrix, 0.0f, 320.0f, 240.0f, 0.0f, -100.0f, 100.0f, 1.0f);
     guMtxF2L(matrix, &gDisplayContext->matrixStack[gMatrixListPos]);
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
     guTranslateF(matrix, 0.0f, 0.0f, 0.0f);
     guMtxF2L(matrix, &gDisplayContext->matrixStack[gMatrixListPos]);
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
     for (i = 0; i < gPausePartnersNumPartners; i++) {
         currentPos = cos_deg(i * 360 / gPausePartnersNumPartners - gPausePartnersRotAngle) * 20.0f + 0.0f;
@@ -341,11 +366,11 @@ void pause_partners_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 wid
         } else {
             color = 255.0f - offsetZ * 95.0f * 0.125f;
         }
-        func_802DE894(gPausePartnersSpriteIDs[gPausePartnersPartnerIdx[index]], FOLD_TYPE_6, color, color, color, 255, 0x40);
+        set_npc_imgfx_all(gPausePartnersSpriteIDs[gPausePartnersPartnerIdx[index]], IMGFX_SET_COLOR, color, color, color, 255, 64);
         spr_draw_npc_sprite(gPausePartnersSpriteIDs[gPausePartnersPartnerIdx[index]], 0, 0, NULL, matrix);
     }
 
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
 
     currentTab = gPauseMenuCurrentTab;
     if (currentTab == 4) {
@@ -354,7 +379,7 @@ void pause_partners_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 wid
         }
 
         if (gPauseMenuCurrentTab == currentTab && gPausePartnersLevel == 0) {
-            pause_draw_menu_label(8, 18, 158);
+            pause_draw_menu_label(PAUSE_LBL_ABILITIES, 18, 158);
         }
     }
 
@@ -383,14 +408,14 @@ void pause_partners_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 wid
 
     portraitScrollPos = (gPausePartnersRotAngle + 360.0f) * 15000.0f * gPausePartnersNumPartners / 360.0f;
     portraitScrollIndex = portraitScrollPos / 15000;
-    gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, x1, y1, x2, y2);
+    gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, x1, y1, x2, y2);
     portraitOffsetX = (portraitScrollIndex * 15000 - portraitScrollPos);
     portraitOffsetX *= 0.01;
     portraitIndex = portraitScrollIndex;
     pause_partners_load_portrait(portraitIndex % gPausePartnersNumPartners);
     for (i = 0; i < 2; portraitOffsetX += 150, i++) {
-        gSPDisplayList(gMasterGfxPos++, &gPausePartnersDL);
-        gDPLoadTLUT_pal256(gMasterGfxPos++, gPausePartnersPaletteBuffers[i]);
+        gSPDisplayList(gMainGfxPos++, &gPausePartnersDL);
+        gDPLoadTLUT_pal256(gMainGfxPos++, gPausePartnersPaletteBuffers[i]);
 
         for (index = 0; index < 20; index++) {
             if (12 * index + 12 <= 105) {
@@ -399,12 +424,12 @@ void pause_partners_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 wid
                 tileHeight = 106 - 12 * index;
             }
 
-            gDPLoadTextureTile(gMasterGfxPos++, gPausePartnersImageBuffers[i], G_IM_FMT_CI, G_IM_SIZ_8b, 150, 0,
+            gDPLoadTextureTile(gMainGfxPos++, gPausePartnersImageBuffers[i], G_IM_FMT_CI, G_IM_SIZ_8b, 150, 0,
                                 0, 12 * index, 149, 12 * index + tileHeight - 1, 0,
                                 G_TX_CLAMP, G_TX_CLAMP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
             pause_draw_rect((baseX + 130 + portraitOffsetX) * 4, (baseY + 24 + 12 * index) * 4, (baseX + 280 + portraitOffsetX) * 4, (baseY + 24 + 12 * index + tileHeight) * 4, 0, 0,
                             12 * index * 32, 0x400, 0x400);
-            gDPPipeSync(gMasterGfxPos++);
+            gDPPipeSync(gMainGfxPos++);
             if (12 * index + 12 >= 105) {
                 break;
             }
@@ -435,7 +460,7 @@ void pause_partners_draw_contents(MenuPanel* menu, s32 baseX, s32 baseY, s32 wid
             y2 = SCREEN_HEIGHT - 1;
         }
 
-        gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, x1, y1, x2, y2);
+        gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, x1, y1, x2, y2);
     }
     draw_box(0, &gPauseWS_21, baseX + 122, baseY + 16, 0, 166, 121, opacity, darkening, 1.0f, 1.0f, 0, 0, 0, 0, 0, 0, width, height, 0);
 }
@@ -470,6 +495,9 @@ void pause_partners_draw_title(MenuPanel* menu, s32 baseX, s32 baseY, s32 width,
     }
 }
 
+#if VERSION_PAL
+INCLUDE_ASM(void, "pause/pause_partners", pause_partners_draw_movelist);
+#else
 void pause_partners_draw_movelist(MenuPanel* menu, s32 baseX, s32 baseY, s32 width, s32 height, s32 opacity, s32 darkening) {
     s32 i;
     s32 moveNameID;
@@ -527,16 +555,24 @@ void pause_partners_draw_movelist(MenuPanel* menu, s32 baseX, s32 baseY, s32 wid
         pause_set_cursor_pos(WINDOW_ID_PAUSE_PARTNERS_MOVELIST, baseX - 2, baseY + 28 + gPausePartnersSelectedMove * 13);
     }
 }
+#endif
 
+#if VERSION_PAL
+INCLUDE_ASM(void, "pause/pause_partners", pause_partners_draw_movelist_title);
+#else
 void pause_partners_draw_movelist_title(MenuPanel* menu, s32 baseX, s32 baseY, s32 width, s32 height, s32 opacity, s32 darkening) {
-    draw_msg(pause_get_menu_msg(0x55), baseX + 12, baseY + 1, 255, -1, DRAW_MSG_STYLE_MENU);
+    draw_msg(pause_get_menu_msg(PAUSE_MSG_PARTNER_ABILITIES), baseX + 12, baseY + 1, 255, -1, DRAW_MSG_STYLE_MENU);
 }
+#endif
 
 void pause_partners_draw_movelist_flower(MenuPanel* menu, s32 baseX, s32 baseY, s32 width, s32 height, s32 opacity, s32 darkening) {
     hud_element_set_render_pos(gPausePartnersIconIDs[1], baseX + 17, baseY + 16);
     hud_element_draw_without_clipping(gPausePartnersIconIDs[1]);
 }
 
+#if VERSION_PAL
+INCLUDE_ASM(void, "pause/pause_partners", pause_partners_init);
+#else
 void pause_partners_init(MenuPanel* panel) {
     s32 i;
     PlayerData* playerData = get_player_data();
@@ -583,6 +619,7 @@ void pause_partners_init(MenuPanel* panel) {
     pause_partners_load_portrait(0);
     panel->initialized = TRUE;
 }
+#endif
 
 void pause_partners_handle_input(MenuPanel* panel) {
     s32 delta;

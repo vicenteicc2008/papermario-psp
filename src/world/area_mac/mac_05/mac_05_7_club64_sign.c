@@ -8,7 +8,7 @@ void N(hsl_to_rgb)(f32 hue, f32 saturation, f32 lightness, f32* outR, f32* outG,
     f32 hueSector;
     f32 p, q, m;
     f32 s, t;
-    
+
     if (lightness <= 0.5f) {
         q = lightness * (1.0 + saturation);
     } else {
@@ -21,14 +21,14 @@ void N(hsl_to_rgb)(f32 hue, f32 saturation, f32 lightness, f32* outR, f32* outG,
         *outR = 0.0f;
         return;
     }
-    
+
     hue *= 6.0f;
     hueSector = (s32) hue;
     p = (2 * lightness) - q;
     m = q * ((q - p) / q) * (hue - hueSector);
     s = p + m;
     t = q - m;
-    
+
     switch ((s32) hueSector) {
         case 0:
             *outR = q;
@@ -85,7 +85,7 @@ void N(gfx_build_club_64)(s32 index) {
         colors[2] = colB * 255.0f;
     }
 
-    gSPDisplayList(gMasterGfxPos++, mdl_get_copied_gfx(VTX_COPY_3));
+    gSPDisplayList(gMainGfxPos++, mdl_get_copied_gfx(VTX_COPY_3));
     N(Club64SignAlphaModulus) += 0.01;
     if (N(Club64SignAlphaModulus) > 1.0) {
         N(Club64SignAlphaModulus) -= 1.0f;

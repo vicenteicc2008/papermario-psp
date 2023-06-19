@@ -70,12 +70,12 @@ EvtScript D_800939B4 = {
         EVT_LOOP(30)
             EVT_CALL(SetNpcRotation, NPC_SELF, 0, LVar0, 0)
             EVT_CALL(func_8005DD54)
-            EVT_CALL(func_802CFD30, NPC_SELF, FOLD_TYPE_6, LVar2, LVar2, LVar2, 0)
+            EVT_CALL(SetNpcImgFXParams, NPC_SELF, IMGFX_SET_COLOR, LVar2, LVar2, LVar2, 0)
             EVT_ADD(LVar0, 30)
             EVT_WAIT(1)
         EVT_END_LOOP
         EVT_CALL(SetNpcRotation, NPC_SELF, 0, 0, 0)
-        EVT_CALL(func_802CFD30, NPC_SELF, FOLD_TYPE_6, 255, 255, 255, 0)
+        EVT_CALL(SetNpcImgFXParams, NPC_SELF, IMGFX_SET_COLOR, 255, 255, 255, 0)
         EVT_CALL(SetNpcFlagBits, NPC_SELF, NPC_FLAG_IGNORE_CAMERA_FOR_YAW, FALSE)
         EVT_CALL(SetSelfVar, 0, 0)
         EVT_CALL(func_8005DDF0)
@@ -89,11 +89,11 @@ ApiStatus func_8005DB00(Evt* script, s32 isInitialCall) {
     Npc* npc;
     f32 targetDir, npcYaw;
     PlayerStatus* playerStatus;
-    PartnerActionStatus* partnerStatus;
+    PartnerStatus* partnerStatus;
 
     npc = get_npc_unsafe(script->owner1.enemy->npcID);
     playerStatus = &gPlayerStatus;
-    partnerStatus = &gPartnerActionStatus;
+    partnerStatus = &gPartnerStatus;
 
     if (isInitialCall) {
         script->functionTemp[0] = 0;

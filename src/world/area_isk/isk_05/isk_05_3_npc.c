@@ -4,7 +4,7 @@
 #include "world/common/enemy/StoneChomp.inc.c"
 
 typedef struct StoneChompAmbushIsk05 {
-    /* 0x00 */ s32 foldID;
+    /* 0x00 */ s32 imgfxIdx;
     /* 0x04 */ s32 workerID;
     /* 0x08 */ s32 spriteIndex;
     /* 0x0C */ s32 rasterIndex;
@@ -22,32 +22,32 @@ StoneChompAmbushIsk05 N(ChompAmbush) = {};
 void N(func_80241610_97F0E0)(void) {
     StoneChompAmbushIsk05* ambush = &N(ChompAmbush);
     Camera* cam = &gCameras[gCurrentCameraID];
-    FoldImageRecPart foldImg;
+    ImgFXTexture ifxImg;
     SpriteRasterInfo spriteRaster;
     Matrix4f transformMtx, tempMtx;
 
-    gSPViewport(gMasterGfxPos++, &cam->vp);
+    gSPViewport(gMainGfxPos++, &cam->vp);
     if (!(cam->flags & CAMERA_FLAG_ORTHO)) {
-        gSPPerspNormalize(gMasterGfxPos++, cam->perspNorm);
+        gSPPerspNormalize(gMainGfxPos++, cam->perspNorm);
     }
     guMtxF2L(cam->perspectiveMatrix, &gDisplayContext->camPerspMatrix[gCurrentCameraID]);
 
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->camPerspMatrix[gCurrentCameraID],
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->camPerspMatrix[gCurrentCameraID],
         G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
-    gDPPipeSync(gMasterGfxPos++);
-    gDPSetCycleType(gMasterGfxPos++, G_CYC_1CYCLE);
-    gSPClearGeometryMode(gMasterGfxPos++, G_SHADE | G_CULL_BOTH | G_FOG | G_LIGHTING
+    gDPPipeSync(gMainGfxPos++);
+    gDPSetCycleType(gMainGfxPos++, G_CYC_1CYCLE);
+    gSPClearGeometryMode(gMainGfxPos++, G_SHADE | G_CULL_BOTH | G_FOG | G_LIGHTING
         | G_TEXTURE_GEN | G_TEXTURE_GEN_LINEAR | G_LOD | G_SHADING_SMOOTH);
-    gSPSetGeometryMode(gMasterGfxPos++, G_ZBUFFER | G_SHADE | G_SHADING_SMOOTH);
-    gSPTexture(gMasterGfxPos++, -1, -1, 0, G_TX_RENDERTILE, G_ON);
-    gDPSetTextureLOD(gMasterGfxPos++, G_TL_TILE);
-    gDPSetTexturePersp(gMasterGfxPos++, G_TP_PERSP);
-    gDPSetTextureFilter(gMasterGfxPos++, G_TF_BILERP);
-    gDPSetColorDither(gMasterGfxPos++, G_CD_DISABLE);
-    gDPSetTextureDetail(gMasterGfxPos++, G_TD_CLAMP);
-    gDPSetTextureConvert(gMasterGfxPos++, G_TC_FILT);
-    gDPSetCombineKey(gMasterGfxPos++, G_CK_NONE);
-    gDPSetAlphaCompare(gMasterGfxPos++, G_AC_NONE);
+    gSPSetGeometryMode(gMainGfxPos++, G_ZBUFFER | G_SHADE | G_SHADING_SMOOTH);
+    gSPTexture(gMainGfxPos++, -1, -1, 0, G_TX_RENDERTILE, G_ON);
+    gDPSetTextureLOD(gMainGfxPos++, G_TL_TILE);
+    gDPSetTexturePersp(gMainGfxPos++, G_TP_PERSP);
+    gDPSetTextureFilter(gMainGfxPos++, G_TF_BILERP);
+    gDPSetColorDither(gMainGfxPos++, G_CD_DISABLE);
+    gDPSetTextureDetail(gMainGfxPos++, G_TD_CLAMP);
+    gDPSetTextureConvert(gMainGfxPos++, G_TC_FILT);
+    gDPSetCombineKey(gMainGfxPos++, G_CK_NONE);
+    gDPSetAlphaCompare(gMainGfxPos++, G_AC_NONE);
 
     guTranslateF(transformMtx, ambush->pos.x, ambush->pos.y, ambush->pos.z);
     guRotateF(tempMtx, ambush->rot.y + gCameras[gCurrentCameraID].currentYaw + ambush->renderYaw, 0.0f, 1.0f, 0.0f);
@@ -59,21 +59,21 @@ void N(func_80241610_97F0E0)(void) {
     guScaleF(tempMtx, ambush->scale.x, ambush->scale.y, ambush->scale.z);
     guMtxCatF(tempMtx, transformMtx, transformMtx);
     guMtxF2L(transformMtx, &gDisplayContext->matrixStack[gMatrixListPos]);
-    gSPMatrix(gMasterGfxPos++, OS_PHYSICAL_TO_K0(&gDisplayContext->matrixStack[gMatrixListPos++]),
+    gSPMatrix(gMainGfxPos++, OS_PHYSICAL_TO_K0(&gDisplayContext->matrixStack[gMatrixListPos++]),
         G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
     spr_get_npc_raster_info(&spriteRaster, ambush->spriteIndex, ambush->rasterIndex);
-    foldImg.raster  = spriteRaster.raster;
-    foldImg.palette = spriteRaster.defaultPal;
-    ambush->width  = foldImg.width  = spriteRaster.width;
-    ambush->height = foldImg.height = spriteRaster.height;
-    foldImg.xOffset = -(spriteRaster.width / 2);
-    foldImg.yOffset = (spriteRaster.height / 2);
-    foldImg.opacity = 255;
+    ifxImg.raster  = spriteRaster.raster;
+    ifxImg.palette = spriteRaster.defaultPal;
+    ambush->width  = ifxImg.width  = spriteRaster.width;
+    ambush->height = ifxImg.height = spriteRaster.height;
+    ifxImg.xOffset = -(spriteRaster.width / 2);
+    ifxImg.yOffset = (spriteRaster.height / 2);
+    ifxImg.alpha = 255;
 
-    fold_update(ambush->foldID, FOLD_TYPE_7, 255, 255, 255, ambush->alpha, 0);
-    fold_appendGfx_component(ambush->foldID, &foldImg, 0, transformMtx);
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+    imgfx_update(ambush->imgfxIdx, IMGFX_SET_ALPHA, 255, 255, 255, ambush->alpha, 0);
+    imgfx_appendGfx_component(ambush->imgfxIdx, &ifxImg, 0, transformMtx);
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
 }
 
 API_CALLABLE(N(func_80241B28_97F5F8)) {
@@ -99,7 +99,7 @@ API_CALLABLE(N(func_80241B28_97F5F8)) {
     ambush->renderYaw = 85.0f;
     ambush->alpha = 0.0f;
 
-    ambush->foldID = 0;
+    ambush->imgfxIdx = 0;
     ambush->workerID = create_worker_frontUI(NULL, N(func_80241610_97F0E0));
     return ApiStatus_DONE2;
 }
@@ -218,7 +218,7 @@ EvtScript N(EVS_NpcIdle_StoneChomp) = {
     EVT_CALL(EnableNpcShadow, NPC_SELF, TRUE)
     EVT_WAIT(1)
     EVT_CALL(N(DestroyAmbushWorker))
-    EVT_CALL(func_802CFD30, NPC_SELF, FOLD_TYPE_NONE, 0, 0, 0, 0)
+    EVT_CALL(SetNpcImgFXParams, NPC_SELF, IMGFX_CLEAR, 0, 0, 0, 0)
     EVT_CALL(DisablePlayerInput, FALSE)
     EVT_CALL(BindNpcAI, NPC_SELF, EVT_PTR(N(EVS_NpcAI_StoneChomp)))
     EVT_RETURN

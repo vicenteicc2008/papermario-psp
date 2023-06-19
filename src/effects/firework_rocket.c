@@ -1,7 +1,7 @@
 #include "common.h"
 #include "effects_internal.h"
 
-void shim_func_80138D88(s32, s32, s32, s32, f32);
+void shim_draw_prev_frame_buffer_at_screen_pos(s32, s32, s32, s32, f32);
 
 void firework_rocket_init(EffectInstance* effect);
 void firework_rocket_render(EffectInstance* effect);
@@ -93,7 +93,7 @@ EffectInstance* firework_rocket_main(s32 variation, f32 centerX, f32 centerY, f3
     bp.update = firework_rocket_update;
     bp.renderWorld = firework_rocket_render;
     bp.unk_00 = 0;
-    bp.unk_14 = NULL;
+    bp.renderUI = NULL;
     bp.effectID = EFFECT_FIREWORK_ROCKET;
 
     effect = shim_create_effect_instance(&bp);
@@ -147,8 +147,8 @@ void firework_rocket_update(EffectInstance* effect) {
     s32 lifeTime;
     s32 i;
 
-    if (effect->flags & EFFECT_INSTANCE_FLAG_10) {
-        effect->flags &= ~EFFECT_INSTANCE_FLAG_10;
+    if (effect->flags & FX_INSTANCE_FLAG_DISMISS) {
+        effect->flags &= ~FX_INSTANCE_FLAG_DISMISS;
         data->timeLeft = 16;
     }
 
@@ -246,7 +246,7 @@ void firework_rocket_appendGfx(void* effect) {
     isExploded = data->isExploded;
     if (firework_rocket_frame_counter != gGameStatusPtr->frameCounter) {
         // draw previous frame to create motion blur effect
-        shim_func_80138D88(10, 10, SCREEN_WIDTH - 10, SCREEN_HEIGHT - 10, firework_rocket_blur_alpha * 0.8);
+        shim_draw_prev_frame_buffer_at_screen_pos(10, 10, SCREEN_WIDTH - 10, SCREEN_HEIGHT - 10, firework_rocket_blur_alpha * 0.8);
         firework_rocket_frame_counter = gGameStatusPtr->frameCounter;
         firework_rocket_blur_alpha = 0;
     }
@@ -254,8 +254,8 @@ void firework_rocket_appendGfx(void* effect) {
         firework_rocket_blur_alpha = minBlurAlpha;
     }
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
+    gDPPipeSync(gMainGfxPos++);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
 
     mtx_0_0 = camera->perspectiveMatrix[0][0];
     mtx_0_1 = camera->perspectiveMatrix[0][1];
@@ -274,13 +274,13 @@ void firework_rocket_appendGfx(void* effect) {
     mtx_3_2 = camera->perspectiveMatrix[3][2];
     mtx_3_3 = camera->perspectiveMatrix[3][3];
 
-    gSPDisplayList(gMasterGfxPos++, D_E010ACCC[variation]);
+    gSPDisplayList(gMainGfxPos++, D_E010ACCC[variation]);
     centerX = data->pos.x;
     centerY = data->pos.y;
     centerZ = data->pos.z;
     radius = data->radius;
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, data->r, data->g, data->b, minBlurAlpha);
-    gDPSetEnvColor(gMasterGfxPos++, data->r, data->g, data->b, 0);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, data->r, data->g, data->b, minBlurAlpha);
+    gDPSetEnvColor(gMainGfxPos++, data->r, data->g, data->b, 0);
 
     if (isExploded == TRUE) {
         sparkDir = D_E010AF68[variation].sparks;
@@ -330,7 +330,7 @@ void firework_rocket_appendGfx(void* effect) {
             y += camera->viewportStartY;
             y *= 4.0f;
 
-            gSPScisTextureRectangle(gMasterGfxPos++,
+            gSPScisTextureRectangle(gMainGfxPos++,
                 x, y, x + 8.0f, y + 8.0f,
                 G_TX_RENDERTILE, 4 << 5, 4 << 5, 16 << 10, 16 << 10);
         }

@@ -22,7 +22,7 @@ EffectInstance* squirt_main(s32 arg0, f32 arg1, f32 arg2, f32 arg3, f32 arg4, f3
     bp.update = squirt_update;
     bp.renderWorld = squirt_render;
     bp.unk_00 = 0;
-    bp.unk_14 = NULL;
+    bp.renderUI = NULL;
     bp.effectID = EFFECT_SQUIRT;
 
     effect = shim_create_effect_instance(&bp);
@@ -92,8 +92,8 @@ void squirt_update(EffectInstance* effect) {
     f32 factor;
     s32 i;
 
-    if (effect->flags & 0x10) {
-        effect->flags &= ~0x10;
+    if (effect->flags & FX_INSTANCE_FLAG_DISMISS) {
+        effect->flags &= ~FX_INSTANCE_FLAG_DISMISS;
         data->unk_2C = 16;
     }
 
@@ -172,22 +172,22 @@ void squirt_appendGfx(void* effect) {
     f32 var_f22;
     f32 theta;
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
+    gDPPipeSync(gMainGfxPos++);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
 
     shim_guTranslateF(sp10, 0.0f, 0.0f, 0.0f);
     shim_guScaleF(sp50, 0.05f, 0.05f, 0.05f);
     shim_guMtxCatF(sp50, sp10, sp10);
     shim_guMtxF2L(sp10, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, data->unk_34, data->unk_38, data->unk_3C, data->unk_40);
-    gDPSetEnvColor(gMasterGfxPos++, data->unk_44, data->unk_48, data->unk_4C, 200);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, data->unk_34, data->unk_38, data->unk_3C, data->unk_40);
+    gDPSetEnvColor(gMainGfxPos++, data->unk_44, data->unk_48, data->unk_4C, 200);
 
-    gSPBranchList(gMasterGfxPos, &gMasterGfxPos[49]);
-    savedGfxPos = gMasterGfxPos + 1;
+    gSPBranchList(gMainGfxPos, &gMainGfxPos[49]);
+    savedGfxPos = gMainGfxPos + 1;
 
-    gMasterGfxPos = &gMasterGfxPos[49];
+    gMainGfxPos = &gMainGfxPos[49];
 
     vtx = (Vtx_t*) savedGfxPos;
     for (i = 0; i < 12; i++) {
@@ -244,10 +244,10 @@ void squirt_appendGfx(void* effect) {
         vtx++;
     }
 
-    gSPVertex(gMasterGfxPos++, savedGfxPos, i * 2, 0);
+    gSPVertex(gMainGfxPos++, savedGfxPos, i * 2, 0);
 
     savedIdx = i;
-    gSPDisplayList(gMasterGfxPos++, unk_00 == 0 ? D_09000800_3B5B40 : D_090008A8_3B5BE8);
+    gSPDisplayList(gMainGfxPos++, unk_00 == 0 ? D_09000800_3B5B40 : D_090008A8_3B5BE8);
 
     for (i = 0; i < savedIdx - 1; i++) {
         s32 i2 = i * 2;
@@ -255,11 +255,11 @@ void squirt_appendGfx(void* effect) {
         if (i < zero) {
             continue;
         }
-        gSP2Triangles(gMasterGfxPos++,
+        gSP2Triangles(gMainGfxPos++,
             i2,     i2 + 2, i2 + 1, i2,
             i2 + 1, i2 + 2, i2 + 3, i2);
     }
 
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
-    gDPPipeSync(gMasterGfxPos++);
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
+    gDPPipeSync(gMainGfxPos++);
 }

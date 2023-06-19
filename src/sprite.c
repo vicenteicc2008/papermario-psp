@@ -62,7 +62,7 @@ Gfx D_802DF3F0[] = {
 
 Gfx D_802DF428[] = {
     gsSPClearGeometryMode(G_CULL_BOTH | G_LIGHTING),
-    gsDPSetCombineLERP(0, 0, 0, TEXEL0, TEXEL0, 0, PRIMITIVE, 0, 0, 0, 0, TEXEL0, TEXEL0, 0, PRIMITIVE, 0),
+    gsDPSetCombineMode(PM_CC_02, PM_CC_02),
     gsSPTexture(-1, -1, 0, G_TX_RENDERTILE, G_ON),
     gsSPSetGeometryMode(G_ZBUFFER | G_SHADE | G_SHADING_SMOOTH),
     gsDPSetRenderMode(G_RM_ZB_CLD_SURF, G_RM_ZB_CLD_SURF2),
@@ -228,75 +228,73 @@ void spr_appendGfx_component_flat(
     Matrix4f mtx,
     s32 alpha
 ) {
-    gDPLoadTLUT_pal16(gMasterGfxPos++, 0, palette);
+    gDPLoadTLUT_pal16(gMainGfxPos++, 0, palette);
     if (gSpriteShadingProfile->flags & 1) {
-        gDPScrollMultiTile2_4b(gMasterGfxPos++, raster, G_IM_FMT_CI, width, height,
+        gDPScrollMultiTile2_4b(gMainGfxPos++, raster, G_IM_FMT_CI, width, height,
                               0, 0, width - 1, height - 1, 0,
                               G_TX_CLAMP, G_TX_CLAMP, 8, 8, G_TX_NOLOD, G_TX_NOLOD,
                               256, 256);
-        gDPSetTile(gMasterGfxPos++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 4, 0x0100, 2, 0, G_TX_WRAP, G_TX_NOMASK, G_TX_NOLOD, G_TX_WRAP, G_TX_NOMASK, G_TX_NOLOD);
-        gDPSetTileSize(gMasterGfxPos++, 2, 0, 0, 63 << 2, 0);
+        gDPSetTile(gMainGfxPos++, G_IM_FMT_RGBA, G_IM_SIZ_16b, 4, 0x0100, 2, 0, G_TX_WRAP, G_TX_NOMASK, G_TX_NOLOD, G_TX_WRAP, G_TX_NOMASK, G_TX_NOLOD);
+        gDPSetTileSize(gMainGfxPos++, 2, 0, 0, 63 << 2, 0);
         if (gSpriteShadingProfile->flags & 2) {
             Camera* camera = &gCameras[gCurrentCamID];
             if (gGameStatusPtr->isBattle == 2) {
-                gSPViewport(gMasterGfxPos++, &D_802DF3E0);
+                gSPViewport(gMainGfxPos++, &D_802DF3E0);
             } else {
-                gSPViewport(gMasterGfxPos++, &camera->vpAlt);
+                gSPViewport(gMainGfxPos++, &camera->vpAlt);
             }
 
             if (alpha == 255) {
-                gDPSetRenderMode(gMasterGfxPos++, AA_EN | Z_CMP | Z_UPD | CVG_DST_FULL | ZMODE_OPA | CVG_X_ALPHA |
+                gDPSetRenderMode(gMainGfxPos++, AA_EN | Z_CMP | Z_UPD | CVG_DST_FULL | ZMODE_OPA | CVG_X_ALPHA |
                                  G_RM_PASS, AA_EN | Z_CMP | Z_UPD | CVG_DST_FULL | ZMODE_OPA | CVG_X_ALPHA |
                                  GBL_c2(G_BL_CLR_IN, G_BL_A_IN, G_BL_CLR_MEM, G_BL_A_MEM));
             } else {
-                gDPSetRenderMode(gMasterGfxPos++, G_RM_PASS, G_RM_ZB_CLD_SURF2);
+                gDPSetRenderMode(gMainGfxPos++, G_RM_PASS, G_RM_ZB_CLD_SURF2);
             }
 
-            gDPSetEnvColor(gMasterGfxPos++, 0, 0, 0, alpha);
-            gDPSetCombineLERP(gMasterGfxPos++, 0, 0, 0, 0, ENVIRONMENT, 0, TEXEL1, 0, 0, 0, 0, 0, 0, 0, 0, COMBINED);
-            gSPVertex(gMasterGfxPos++, vertices, 4, 0);
-            gSP2Triangles(gMasterGfxPos++, 0, 2, 1, 0, 0, 3, 2, 0);
-            gDPPipeSync(gMasterGfxPos++);
+            gDPSetEnvColor(gMainGfxPos++, 0, 0, 0, alpha);
+            gDPSetCombineMode(gMainGfxPos++, PM_CC_0B, PM_CC_0C);
+            gSPVertex(gMainGfxPos++, vertices, 4, 0);
+            gSP2Triangles(gMainGfxPos++, 0, 2, 1, 0, 0, 3, 2, 0);
+            gDPPipeSync(gMainGfxPos++);
         }
         create_shading_palette(mtx, 0, 0, width, height, alpha, alpha == 255 ? 0x111238 : 0x104B50); // TODO make macro for render mode
     } else {
-        gDPScrollTextureBlock_4b(gMasterGfxPos++, raster, G_IM_FMT_CI, width, height, 0,
+        gDPScrollTextureBlock_4b(gMainGfxPos++, raster, G_IM_FMT_CI, width, height, 0,
                                  G_TX_CLAMP, G_TX_CLAMP, 8, 8, G_TX_NOLOD, G_TX_NOLOD,
                                  256, 256);
         if (gSpriteShadingProfile->flags & 2) {
             Camera* camera =  &gCameras[gCurrentCamID];
             if (gGameStatusPtr->isBattle == 2) {
-                gSPViewport(gMasterGfxPos++, &D_802DF3E0);
+                gSPViewport(gMainGfxPos++, &D_802DF3E0);
             } else {
-                gSPViewport(gMasterGfxPos++, &camera->vpAlt);
+                gSPViewport(gMainGfxPos++, &camera->vpAlt);
             }
             if (alpha == 255) {
-                gDPSetRenderMode(gMasterGfxPos++, AA_EN | Z_CMP | Z_UPD | CVG_DST_FULL | ZMODE_OPA | CVG_X_ALPHA | ALPHA_CVG_SEL | GBL_c1(G_BL_CLR_IN, G_BL_A_IN, G_BL_CLR_MEM, G_BL_A_MEM), AA_EN | Z_CMP | Z_UPD | CVG_DST_FULL | ZMODE_OPA | CVG_X_ALPHA | ALPHA_CVG_SEL | GBL_c2(G_BL_CLR_IN, G_BL_A_IN, G_BL_CLR_MEM, G_BL_A_MEM));
+                gDPSetRenderMode(gMainGfxPos++, AA_EN | Z_CMP | Z_UPD | CVG_DST_FULL | ZMODE_OPA | CVG_X_ALPHA | ALPHA_CVG_SEL | GBL_c1(G_BL_CLR_IN, G_BL_A_IN, G_BL_CLR_MEM, G_BL_A_MEM), AA_EN | Z_CMP | Z_UPD | CVG_DST_FULL | ZMODE_OPA | CVG_X_ALPHA | ALPHA_CVG_SEL | GBL_c2(G_BL_CLR_IN, G_BL_A_IN, G_BL_CLR_MEM, G_BL_A_MEM));
             } else {
-                gDPSetRenderMode(gMasterGfxPos++, G_RM_ZB_CLD_SURF, G_RM_ZB_CLD_SURF2);
+                gDPSetRenderMode(gMainGfxPos++, G_RM_ZB_CLD_SURF, G_RM_ZB_CLD_SURF2);
             }
 
-            gDPSetEnvColor(gMasterGfxPos++, 0, 0, 0, alpha);
-            gDPSetCombineLERP(gMasterGfxPos++, 0, 0, 0, 0, ENVIRONMENT, 0, TEXEL0, 0, 0, 0, 0, 0, ENVIRONMENT, 0,
-                              TEXEL0, 0);
-            gSPVertex(gMasterGfxPos++, vertices, 4, 0);
-            gSP2Triangles(gMasterGfxPos++, 0, 2, 1, 0, 0, 3, 2, 0);
-            gDPPipeSync(gMasterGfxPos++);
+            gDPSetEnvColor(gMainGfxPos++, 0, 0, 0, alpha);
+            gDPSetCombineMode(gMainGfxPos++, PM_CC_0A, PM_CC_0A);
+            gSPVertex(gMainGfxPos++, vertices, 4, 0);
+            gSP2Triangles(gMainGfxPos++, 0, 2, 1, 0, 0, 3, 2, 0);
+            gDPPipeSync(gMainGfxPos++);
 
             if (alpha == 255) {
-                gDPSetRenderMode(gMasterGfxPos++, AA_EN | Z_CMP | Z_UPD | CVG_DST_FULL | ZMODE_OPA | CVG_X_ALPHA |
+                gDPSetRenderMode(gMainGfxPos++, AA_EN | Z_CMP | Z_UPD | CVG_DST_FULL | ZMODE_OPA | CVG_X_ALPHA |
                                  GBL_c1(G_BL_CLR_IN, G_BL_A_IN, G_BL_CLR_MEM, G_BL_A_MEM),
                                  AA_EN | Z_CMP | Z_UPD | CVG_DST_FULL | ZMODE_OPA | CVG_X_ALPHA |
                                  GBL_c2(G_BL_CLR_IN, G_BL_A_IN, G_BL_CLR_MEM, G_BL_A_MEM));
             } else {
-                gDPSetRenderMode(gMasterGfxPos++, G_RM_ZB_CLD_SURF, G_RM_ZB_CLD_SURF2);
+                gDPSetRenderMode(gMainGfxPos++, G_RM_ZB_CLD_SURF, G_RM_ZB_CLD_SURF2);
             }
 
-            gDPSetEnvColor(gMasterGfxPos++, 100, 100, 100, 255);
-            gDPSetPrimColor(gMasterGfxPos++, 0, 0, 0, 0, 0, alpha);
-            gDPSetCombineLERP(gMasterGfxPos++, SHADE, ENVIRONMENT, TEXEL0, TEXEL0, PRIMITIVE, 0, TEXEL0, 0, SHADE,
-                              ENVIRONMENT, TEXEL0, TEXEL0, PRIMITIVE, 0, TEXEL0, 0);
-            gDPSetColorDither(gMasterGfxPos++, G_CD_MAGICSQ);
+            gDPSetEnvColor(gMainGfxPos++, 100, 100, 100, 255);
+            gDPSetPrimColor(gMainGfxPos++, 0, 0, 0, 0, 0, alpha);
+            gDPSetCombineLERP(gMainGfxPos++, SHADE, ENVIRONMENT, TEXEL0, TEXEL0, PRIMITIVE, 0, TEXEL0, 0, SHADE, ENVIRONMENT, TEXEL0, TEXEL0, PRIMITIVE, 0, TEXEL0, 0);
+            gDPSetColorDither(gMainGfxPos++, G_CD_MAGICSQ);
         }
     }
 
@@ -304,17 +302,17 @@ void spr_appendGfx_component_flat(
         Camera* camera =  &gCameras[gCurrentCamID];
 
         if (gGameStatusPtr->isBattle == 2) {
-            gSPViewport(gMasterGfxPos++, &D_802DF3D0);
+            gSPViewport(gMainGfxPos++, &D_802DF3D0);
             D_802DF3E0.vp.vtrans[0] = D_802DF3D0.vp.vtrans[0] + gGameStatusPtr->unk_82;
             D_802DF3E0.vp.vtrans[1] = D_802DF3D0.vp.vtrans[1] + gGameStatusPtr->unk_83;
         } else {
-            gSPViewport(gMasterGfxPos++, &camera->vp);
+            gSPViewport(gMainGfxPos++, &camera->vp);
         }
     }
 
-    gSPVertex(gMasterGfxPos++, vertices, 4, 0);
-    gSP2Triangles(gMasterGfxPos++, 0, 2, 1, 0, 0, 3, 2, 0);
-    gDPPipeSync(gMasterGfxPos++);
+    gSPVertex(gMainGfxPos++, vertices, 4, 0);
+    gSP2Triangles(gMainGfxPos++, 0, 2, 1, 0, 0, 3, 2, 0);
+    gDPPipeSync(gMainGfxPos++);
 }
 
 void spr_appendGfx_component(
@@ -326,7 +324,7 @@ void spr_appendGfx_component(
 {
     Matrix4f mtxTransform;
     Matrix4f mtxTemp;
-    FoldImageRecPart foldImg;
+    ImgFXTexture ifxImg;
     s32 quadIndex;
     Quad* quad;
     s32 width;
@@ -354,21 +352,21 @@ void spr_appendGfx_component(
     }
 
     guMtxF2L(mtxTransform, &gDisplayContext->matrixStack[gMatrixListPos]);
-    gSPMatrix(gMasterGfxPos++, VIRTUAL_TO_PHYSICAL(&gDisplayContext->matrixStack[gMatrixListPos++]),
+    gSPMatrix(gMainGfxPos++, VIRTUAL_TO_PHYSICAL(&gDisplayContext->matrixStack[gMatrixListPos++]),
               G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
 
     if (gSpriteShadingProfile->flags & 1) {
         if ((u8) opacity == 255) {
-            gSPDisplayList(gMasterGfxPos++, D_802DF460);
+            gSPDisplayList(gMainGfxPos++, D_802DF460);
         } else {
-            gSPDisplayList(gMasterGfxPos++, D_802DF490);
+            gSPDisplayList(gMainGfxPos++, D_802DF490);
         }
     } else {
         if ((u8) opacity == 255) {
-            gSPDisplayList(gMasterGfxPos++, D_802DF3F0);
+            gSPDisplayList(gMainGfxPos++, D_802DF3F0);
         } else {
-            gDPSetPrimColor(gMasterGfxPos++, 0, 0, 0, 0, 0, (u8) opacity);
-            gSPDisplayList(gMasterGfxPos++, D_802DF428);
+            gDPSetPrimColor(gMainGfxPos++, 0, 0, 0, 0, 0, (u8) opacity);
+            gSPDisplayList(gMainGfxPos++, D_802DF428);
         }
     }
 
@@ -376,7 +374,7 @@ void spr_appendGfx_component(
     height = cache->height;
     quadIndex = cache->quadCacheIndex;
     quad = NULL;
-    if (!(D_802DF540 & (0x80000000 | 0x40000000 | 0x20000000 | 0x10000000))) {
+    if (!(D_802DF540 & SPR_IMGFX_FLAG_ALL)) {
         quad = spr_get_quad_for_size(&quadIndex, width, height);
         cache->quadCacheIndex = quadIndex;
     }
@@ -384,18 +382,18 @@ void spr_appendGfx_component(
     if (quad != NULL) {
         spr_appendGfx_component_flat(quad, cache->image, palette, width, height, rotY, mtxTransform, (u8) opacity);
     } else {
-        foldImg.raster = cache->image;
-        foldImg.palette = palette;
-        foldImg.width = width;
-        foldImg.height = height;
-        foldImg.xOffset = -(width / 2);
-        foldImg.yOffset = height;
-        foldImg.opacity = opacity;
-        if (fold_appendGfx_component((u8) (u16) D_802DF540, &foldImg, 0x80000, mtxTransform) == 1) { // todo bitfield?
-            D_802DF540 &= ~(0x80000000 | 0x40000000 | 0x20000000 | 0x10000000);
+        ifxImg.raster  = cache->image;
+        ifxImg.palette = palette;
+        ifxImg.width   = width;
+        ifxImg.height  = height;
+        ifxImg.xOffset = -(width / 2);
+        ifxImg.yOffset = height;
+        ifxImg.alpha = opacity;
+        if (imgfx_appendGfx_component((u8) D_802DF540, &ifxImg, IMGFX_FLAG_80000, mtxTransform) == 1) {
+            D_802DF540 &= ~SPR_IMGFX_FLAG_ALL;
         }
     }
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
 }
 
 void spr_transform_point(s32 rotX, s32 rotY, s32 rotZ, f32 inX, f32 inY, f32 inZ, f32* outX, f32* outY, f32* outZ) {
@@ -452,7 +450,7 @@ void spr_draw_component(s32 drawOpts, SpriteComponent* component, SpriteAnimComp
         if (drawOpts & DRAW_SPRITE_USE_PLAYER_RASTERS) {
             cacheEntry->image = spr_get_player_raster(component->currentRaster & 0xFFF, D_802DF57C);
         }
-        D_802DF540 = component->unk_4C;
+        D_802DF540 = component->imgfxIdx;
         pal = palettes[paletteIdx];
 
         spr_appendGfx_component(
@@ -466,7 +464,7 @@ void spr_draw_component(s32 drawOpts, SpriteComponent* component, SpriteAnimComp
             component->scale.z,
             drawOpts, pal, mtx
         );
-        component->unk_4C = D_802DF540;
+        component->imgfxIdx = D_802DF540;
     }
 }
 
@@ -774,7 +772,7 @@ void spr_init_sprites(s32 playerSpriteSet) {
 
     spr_allocateBtlComponentsOnWorldHeap = FALSE;
     _heap_create(&heap_spriteHead, 0x40000);
-    fold_init();
+    imgfx_init();
 
     for (i = 0; i < ARRAY_COUNT(spr_playerSprites); i++) {
         SpriteAnimData** playerSprites = spr_playerSprites;
@@ -843,7 +841,7 @@ s32 spr_update_player_sprite(s32 spriteInstanceID, s32 animID, f32 timeScale) {
         spr_playerCurrentAnimInfo[instanceIdx].componentList = compList;
         while (*compList != PTR_LIST_END) {
             component = *compList;
-            component->unk_4C = func_8013A704(1);
+            component->imgfxIdx = imgfx_get_free_instances(1);
             compList++;
         }
     }
@@ -969,11 +967,11 @@ s32 spr_draw_player_sprite(s32 spriteInstanceID, s32 yaw, s32 alphaIn, PAL_PTR* 
     return TRUE;
 }
 
-s32 func_802DDEC4(s32 arg0) {
-    return spr_playerCurrentAnimInfo[arg0].notifyValue;
+s32 func_802DDEC4(s32 spriteIdx) {
+    return spr_playerCurrentAnimInfo[spriteIdx].notifyValue;
 }
 
-void func_802DDEE4(s32 spriteIdx, s32 compIdx, FoldType foldType, s32 arg3, s32 arg4, s32 arg5, s32 arg6, s32 arg7) {
+void set_player_imgfx_comp(s32 spriteIdx, s32 compIdx, ImgFXType imgfx, s32 imgfxArg1, s32 imgfxArg2, s32 imgfxArg3, s32 imgfxArg4, s32 flags) {
     SpriteComponent* component;
     SpriteComponent** componentListIt;
     s32 i;
@@ -985,11 +983,11 @@ void func_802DDEE4(s32 spriteIdx, s32 compIdx, FoldType foldType, s32 arg3, s32 
         while (*componentListIt != PTR_LIST_END) {
             component = *componentListIt;
             if (compIdx == -1 || i == compIdx) {
-                fold_update(component->unk_4C & 0xFF, foldType, arg3, arg4, arg5, arg6, arg7);
-                if (foldType != 0) {
-                    component->unk_4C |= 0x10000000;
+                imgfx_update(component->imgfxIdx & 0xFF, imgfx, imgfxArg1, imgfxArg2, imgfxArg3, imgfxArg4, flags);
+                if (imgfx != IMGFX_CLEAR) {
+                    component->imgfxIdx |= SPR_IMGFX_FLAG_10000000;
                 } else {
-                    component->unk_4C &= ~0xF0000000;
+                    component->imgfxIdx &= ~SPR_IMGFX_FLAG_ALL;
                 }
             }
             componentListIt++;
@@ -998,8 +996,9 @@ void func_802DDEE4(s32 spriteIdx, s32 compIdx, FoldType foldType, s32 arg3, s32 
     }
 }
 
-void func_802DDFF8(s32 animID, FoldType foldType, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6) {
-    func_802DDEE4(PLAYER_SPRITE_MAIN, -1, foldType, arg2, arg3, arg4, arg5, arg6);
+// applied to all components
+void set_player_imgfx_all(s32 animID, ImgFXType imgfxType, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6) {
+    set_player_imgfx_comp(PLAYER_SPRITE_MAIN, -1, imgfxType, arg2, arg3, arg4, arg5, arg6);
 }
 
 void spr_get_player_raster_info(SpriteRasterInfo* out, s32 playerSpriteID, s32 rasterIndex) {
@@ -1067,7 +1066,7 @@ s32 spr_load_npc_sprite(s32 animID, u32* extraAnimList) {
     SpriteInstances[listIndex].componentList = compList;
     while (*compList != PTR_LIST_END) {
         SpriteComponent* comp = *compList;
-        comp->unk_4C = func_8013A704(1);
+        comp->imgfxIdx = imgfx_get_free_instances(1);
         compList++;
     }
     SpriteInstances[listIndex].spriteIndex = spriteIndex;
@@ -1194,7 +1193,7 @@ s32 spr_free_sprite(s32 spriteInstanceID) {
     compList = sprite->componentList;
     while (*compList != PTR_LIST_END) {
         SpriteComponent* comp = *compList;
-        func_8013A854(comp->unk_4C & 0xFF);
+        imgfx_release_instance(comp->imgfxIdx & 0xFF);
         compList++;
     }
 
@@ -1218,17 +1217,17 @@ s32 spr_free_sprite(s32 spriteInstanceID) {
     return 0;
 }
 
-s32 func_802DE748(s32 spriteIdx, s32 compIdx) {
+s32 get_npc_comp_imgfx_idx(s32 spriteIdx, s32 compIdx) {
     SpriteComponent** componentList = SpriteInstances[spriteIdx].componentList;
 
     if (componentList == NULL) {
         return -1;
     } else {
-        return componentList[compIdx]->unk_4C & 0xFF;
+        return componentList[compIdx]->imgfxIdx & 0xFF;
     }
 }
 
-void func_802DE780(s32 spriteIdx, s32 compIdx, FoldType foldType, s32 foldArg0, s32 foldArg1, s32 foldArg2, s32 foldArg3, s32 foldArg4) {
+void set_npc_imgfx_comp(s32 spriteIdx, s32 compIdx, ImgFXType imgfx, s32 imgfxArg1, s32 imgfxArg2, s32 imgfxArg3, s32 imgfxArg4, s32 imgfxArg5) {
     SpriteInstance* sprite = &SpriteInstances[spriteIdx];
     SpriteComponent** componentList;
     s32 i;
@@ -1241,11 +1240,11 @@ void func_802DE780(s32 spriteIdx, s32 compIdx, FoldType foldType, s32 foldArg0, 
             SpriteComponent* comp = *componentList;
 
             if (compIdx == -1 || i == compIdx) {
-                fold_update((u8)comp->unk_4C, foldType, foldArg0, foldArg1, foldArg2, foldArg3, foldArg4);
-                if (foldType != FOLD_TYPE_NONE) {
-                    comp->unk_4C |= 0x10000000;
+                imgfx_update((u8)comp->imgfxIdx, imgfx, imgfxArg1, imgfxArg2, imgfxArg3, imgfxArg4, imgfxArg5);
+                if (imgfx != IMGFX_CLEAR) {
+                    comp->imgfxIdx |= SPR_IMGFX_FLAG_10000000;
                 } else {
-                    comp->unk_4C &= ~0xF0000000;
+                    comp->imgfxIdx &= ~SPR_IMGFX_FLAG_ALL;
                 }
             }
             componentList++;
@@ -1254,11 +1253,11 @@ void func_802DE780(s32 spriteIdx, s32 compIdx, FoldType foldType, s32 foldArg0, 
     }
 }
 
-void func_802DE894(s32 spriteIdx, FoldType foldType, s32 foldArg0, s32 foldArg1, s32 foldArg2, s32 foldArg3, s32 foldArg4) {
-    func_802DE780(spriteIdx, -1, foldType, foldArg0, foldArg1, foldArg2, foldArg3, foldArg4);
+void set_npc_imgfx_all(s32 spriteIdx, ImgFXType imgfxType, s32 imgfxArg1, s32 imgfxArg2, s32 imgfxArg3, s32 imgfxArg4, s32 imgfxArg5) {
+    set_npc_imgfx_comp(spriteIdx, -1, imgfxType, imgfxArg1, imgfxArg2, imgfxArg3, imgfxArg4, imgfxArg5);
 }
 
-s32 func_802DE8DC(s32 spriteIdx, s32 compListIdx, s32* outX, s32* outY, s32* outZ) {
+s32 spr_get_comp_position(s32 spriteIdx, s32 compListIdx, s32* outX, s32* outY, s32* outZ) {
     SpriteInstance* sprite = &SpriteInstances[spriteIdx];
     SpriteAnimComponent** animCompList;
     SpriteAnimComponent* anim;
@@ -1269,7 +1268,7 @@ s32 func_802DE8DC(s32 spriteIdx, s32 compListIdx, s32* outX, s32* outY, s32* out
     u32* spriteData;
 
     if (sprite->componentList == NULL) {
-        return;
+        return; // bug: does not return a value
     }
 
     animID = sprite->currentAnimID;
@@ -1297,7 +1296,7 @@ s32 func_802DE8DC(s32 spriteIdx, s32 compListIdx, s32* outX, s32* outY, s32* out
             }
         }
     } else {
-        return;
+        return; // bug: does not return a value
     }
     return -1;
 }

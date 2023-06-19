@@ -1,4 +1,3 @@
-#include "common.h"
 #include "battle/battle.h"
 #include "script_api/battle.h"
 #include "npc.h"
@@ -8,7 +7,7 @@
 #include "sprite.h"
 #include "model.h"
 
-#if !VERSION_JP && !VERSION_CN
+#if !VERSION_JP && !VERSION_IQUE
 // TODO: remove this conditional when more of the JP rom has been processed
 #include "sprite/npc/BattleMerlee.h"
 #else
@@ -27,7 +26,7 @@ ApiStatus PlayMerleeOrbFX(Evt* script, s32 isInitialCall);
 
 s32 D_80077C40 = 0;
 
-EvtScript D_80077C44 = {
+EvtScript EVS_MerleeDropCoins = {
     EVT_WAIT(10)
     EVT_CALL(FadeBackgroundToBlack)
     EVT_WAIT(10)
@@ -66,7 +65,7 @@ EvtScript D_80077C44 = {
     EVT_END
 };
 
-EvtScript SCRIPT_NpcDefeat = {
+EvtScript EVS_NpcDefeat = {
     EVT_CALL(GetBattleOutcome, LVar0)
     EVT_SWITCH(LVar0)
         EVT_CASE_EQ(OUTCOME_PLAYER_WON)
@@ -78,13 +77,13 @@ EvtScript SCRIPT_NpcDefeat = {
     EVT_END
 };
 
-EvtScript D_80077E9C = {
+EvtScript EVS_FleeBattleDrops = {
     EVT_CALL(OnFleeBattleDrops)
     EVT_RETURN
     EVT_END
 };
 
-EnemyDrops D_80077EB8 = {
+EnemyDrops DefaultEnemyDrops = {
     .dropFlags = NPC_DROP_FLAG_80,
     .itemDropChance = 10,
     .itemDrops = {
@@ -339,8 +338,8 @@ ApiStatus MerleeUpdateFX(Evt* script, s32 isInitialCall) {
     if (D_800A0BB8 == 2) {
         WorldMerleeOrbEffect->data.energyOrbWave->scale = 0.00001f;
         WorldMerleeWaveEffect->data.energyOrbWave->scale = 0.00001f;
-        WorldMerleeOrbEffect->flags |= EFFECT_INSTANCE_FLAG_10;
-        WorldMerleeWaveEffect->flags |= EFFECT_INSTANCE_FLAG_10;
+        WorldMerleeOrbEffect->flags |= FX_INSTANCE_FLAG_DISMISS;
+        WorldMerleeWaveEffect->flags |= FX_INSTANCE_FLAG_DISMISS;
         return ApiStatus_DONE1;
     }
 
@@ -661,7 +660,7 @@ void update_encounters_neutral(void) {
                 gGameStatusPtr->debugEnemyContact == DEBUG_CONTACT_CANT_TOUCH ||
                 (playerStatus->flags & PS_FLAG_ARMS_RAISED) ||
                 (gOverrideFlags & GLOBAL_OVERRIDES_40) ||
-                gPartnerActionStatus.actingPartner == PARTNER_BOW ||
+                gPartnerStatus.actingPartner == PARTNER_BOW ||
                 (enemy->flags & ENEMY_FLAG_PASSIVE) ||
                 (gOverrideFlags & (GLOBAL_OVERRIDES_DISABLE_BATTLES | GLOBAL_OVERRIDES_200 | GLOBAL_OVERRIDES_400 | GLOBAL_OVERRIDES_800)) ||
                 is_picking_up_item()) {
@@ -683,7 +682,7 @@ void update_encounters_neutral(void) {
             npcZ = npc->pos.z;
             npcYaw = npc->yaw;
             colHeight = npc->collisionHeight;
-            colRadius = npc->collisionRadius / 2;
+            colRadius = npc->collisionDiameter / 2;
 
             if (enemy->unk_DC != 0) {
                 npcYaw = npc->yawCamOffset;
@@ -734,11 +733,11 @@ void update_encounters_neutral(void) {
                     testY = npcY;
                     testZ = npcZ;
 
-                    if (npc_test_move_taller_with_slipping(COLLISION_CHANNEL_10000, &testX, &testY, &testZ, distance, atan2(npcX, npcZ, playerX, playerZ), colHeight, colRadius * 2.0f) != 0) {
+                    if (npc_test_move_taller_with_slipping(COLLISION_CHANNEL_10000, &testX, &testY, &testZ, distance, atan2(npcX, npcZ, playerX, playerZ), colHeight, colRadius * 2.0f)) {
                         testX = playerX;
                         testY = playerY;
                         testZ = playerZ;
-                        if (npc_test_move_taller_with_slipping(COLLISION_CHANNEL_10000, &testX, &testY, &testZ, distance, atan2(playerX, playerZ, npcX, npcZ), colHeight, colRadius * 2.0f) != 0) {
+                        if (npc_test_move_taller_with_slipping(COLLISION_CHANNEL_10000, &testX, &testY, &testZ, distance, atan2(playerX, playerZ, npcX, npcZ), colHeight, colRadius * 2.0f)) {
                             break;
                         }
                     }
@@ -797,11 +796,11 @@ void update_encounters_neutral(void) {
                         testX = npcX;
                         testY = npcY;
                         testZ = npcZ;
-                        if (npc_test_move_taller_with_slipping(COLLISION_CHANNEL_10000, &testX, &testY, &testZ, distance, atan2(npcX, npcZ, playerX, playerZ), colHeight, colRadius * 2.0f) != 0) {
+                        if (npc_test_move_taller_with_slipping(COLLISION_CHANNEL_10000, &testX, &testY, &testZ, distance, atan2(npcX, npcZ, playerX, playerZ), colHeight, colRadius * 2.0f)) {
                             testX = playerX;
                             testY = playerY;
                             testZ = playerZ;
-                            if (npc_test_move_taller_with_slipping(COLLISION_CHANNEL_10000, &testX, &testY, &testZ, distance, atan2(playerX, playerZ, npcX, npcZ), colHeight, colRadius * 2.0f) != 0) {
+                            if (npc_test_move_taller_with_slipping(COLLISION_CHANNEL_10000, &testX, &testY, &testZ, distance, atan2(playerX, playerZ, npcX, npcZ), colHeight, colRadius * 2.0f)) {
                                 break;
                             }
                         }
@@ -882,11 +881,11 @@ void update_encounters_neutral(void) {
             testX = npcX;
             testY = npcY;
             testZ = npcZ;
-            if (npc_test_move_taller_with_slipping(COLLISION_CHANNEL_10000, &testX, &testY, &testZ, distance, atan2(npcX, npcZ, playerX, playerZ), colHeight, colRadius * 2.0f) != 0) {
+            if (npc_test_move_taller_with_slipping(COLLISION_CHANNEL_10000, &testX, &testY, &testZ, distance, atan2(npcX, npcZ, playerX, playerZ), colHeight, colRadius * 2.0f)) {
                 testX = playerX;
                 testY = playerY;
                 testZ = playerZ;
-                if (npc_test_move_taller_with_slipping(COLLISION_CHANNEL_10000, &testX, &testY, &testZ, distance, atan2(playerX, playerZ, npcX, npcZ), colHeight, colRadius * 2.0f) != 0) {
+                if (npc_test_move_taller_with_slipping(COLLISION_CHANNEL_10000, &testX, &testY, &testZ, distance, atan2(playerX, playerZ, npcX, npcZ), colHeight, colRadius * 2.0f)) {
                     continue;
                 }
             }
@@ -1400,12 +1399,12 @@ void update_encounters_pre_battle(void) {
                 load_battle(encounter->battle);
                 currentEncounter->unk_07 = 1;
                 currentEncounter->unk_08 = 0;
-                currentEncounter->merleeCoinBonus = 0;
+                currentEncounter->hasMerleeCoinBonus = FALSE;
                 currentEncounter->damageTaken = 0;
                 currentEncounter->coinsEarned = 0;
                 currentEncounter->fadeOutAccel = 0;
                 currentEncounter->fadeOutAmount = 255;
-                set_screen_overlay_params_front(0, 255.0f);
+                set_screen_overlay_params_front(OVERLAY_SCREEN_COLOR, 255.0f);
                 gEncounterState = ENCOUNTER_STATE_POST_BATTLE;
                 D_8009A678 = 1;
                 gEncounterSubState = ENCOUNTER_SUBSTATE_POST_BATTLE_INIT;
@@ -1433,7 +1432,7 @@ void update_encounters_pre_battle(void) {
             currentEncounter->unk_08 = 1;
             currentEncounter->unk_07 = 1;
             currentEncounter->battleOutcome = OUTCOME_PLAYER_WON;
-            currentEncounter->merleeCoinBonus = 0;
+            currentEncounter->hasMerleeCoinBonus = FALSE;
             currentEncounter->damageTaken = 0;
             gEncounterState = ENCOUNTER_STATE_POST_BATTLE;
             currentEncounter->coinsEarned = 0;
@@ -1489,21 +1488,21 @@ void draw_encounters_pre_battle(void) {
                 otherZ = playerZ;
             }
 
-            if (gGameStatusPtr->demoState == 2) {
-                set_screen_overlay_params_back(10, encounter->fadeOutAmount);
-                set_screen_overlay_alpha(1, 255.0f);
-                set_screen_overlay_color(1, 0, 0, 0);
+            if (gGameStatusPtr->demoState == DEMO_STATE_CHANGE_MAP) {
+                set_screen_overlay_params_back(OVERLAY_START_BATTLE, encounter->fadeOutAmount);
+                set_screen_overlay_alpha(SCREEN_LAYER_BACK, 255.0f);
+                set_screen_overlay_color(SCREEN_LAYER_BACK, 0, 0, 0);
                 get_screen_coords(gCurrentCameraID, playerX, playerY + 20.0f, playerZ, &pScreenX, &pScreenY, &pScreenZ);
                 get_screen_coords(gCurrentCameraID, otherX, otherY + 15.0f, otherZ, &oScreenX, &oScreenY, &oScreenZ);
-                set_screen_overlay_center(1, 0, (pScreenX - oScreenX) / 2 + oScreenX,
+                set_screen_overlay_center(SCREEN_LAYER_BACK, 0, (pScreenX - oScreenX) / 2 + oScreenX,
                                               (pScreenY - oScreenY) / 2 + oScreenY);
             } else {
-                set_screen_overlay_params_front(10, encounter->fadeOutAmount);
-                set_screen_overlay_alpha(0, 255.0f);
-                set_screen_overlay_color(0, 0, 0, 0);
+                set_screen_overlay_params_front(OVERLAY_START_BATTLE, encounter->fadeOutAmount);
+                set_screen_overlay_alpha(SCREEN_LAYER_FRONT, 255.0f);
+                set_screen_overlay_color(SCREEN_LAYER_FRONT, 0, 0, 0);
                 get_screen_coords(gCurrentCameraID, playerX, playerY + 20.0f, playerZ, &pScreenX, &pScreenY, &pScreenZ);
                 get_screen_coords(gCurrentCameraID, otherX, otherY + 15.0f, otherZ, &oScreenX, &oScreenY, &oScreenZ);
-                set_screen_overlay_center(0, 0, (pScreenX - oScreenX) / 2 + oScreenX,
+                set_screen_overlay_center(SCREEN_LAYER_FRONT, 0, (pScreenX - oScreenX) / 2 + oScreenX,
                                               (pScreenY - oScreenY) / 2 + oScreenY);
             }
         }
@@ -1570,7 +1569,7 @@ void update_encounters_post_battle(void) {
     EncounterStatus* currentEncounter = &gCurrentEncounter;
     PlayerStatus* playerStatus = &gPlayerStatus;
     PlayerData* playerData = &gPlayerData;
-    PartnerActionStatus* partnerActionStatus = &gPartnerActionStatus;
+    PartnerStatus* partnerStatus = &gPartnerStatus;
     Encounter* encounter;
     Evt* script;
     Enemy* enemy;
@@ -1611,7 +1610,7 @@ void update_encounters_post_battle(void) {
                 partner_handle_after_battle();
             }
             D_8009A63C = FALSE;
-            if (partnerActionStatus->partnerAction_unk_1) {
+            if (partnerStatus->shouldResumeAbility) {
                 D_8009A63C = TRUE;
             } else if (D_8009A670 == 0 &&
                        !(gPlayerStatus.flags & (PS_FLAG_JUMPING | PS_FLAG_FALLING)) &&
@@ -1638,9 +1637,9 @@ void update_encounters_post_battle(void) {
             }
             break;
         case ENCOUNTER_SUBSTATE_POST_BATTLE_WON_CHECK_MERLEE_BONUS:
-            if (currentEncounter->merleeCoinBonus != 0) {
+            if (currentEncounter->hasMerleeCoinBonus) {
                 if (get_coin_drop_amount(currentEncounter->currentEnemy) != 0) {
-                    D_800A0BB0 = start_script(&D_80077C44, EVT_PRIORITY_A, 0);
+                    D_800A0BB0 = start_script(&EVS_MerleeDropCoins, EVT_PRIORITY_A, 0);
                     D_800A0BB0->groupFlags = 0;
                     D_800A0BB4 = D_800A0BB0->id;
                 } else {
@@ -1651,7 +1650,7 @@ void update_encounters_post_battle(void) {
             gEncounterSubState = ENCOUNTER_SUBSTATE_POST_BATTLE_PLAY_NPC_DEFEAT;
             break;
         case ENCOUNTER_SUBSTATE_POST_BATTLE_PLAY_NPC_DEFEAT:
-            if ((currentEncounter->merleeCoinBonus != 0) && (get_coin_drop_amount(currentEncounter->currentEnemy) != 0)) {
+            if (currentEncounter->hasMerleeCoinBonus && (get_coin_drop_amount(currentEncounter->currentEnemy) != 0)) {
                 currentEncounter->fadeOutAccel += 4;
                 currentEncounter->fadeOutAmount -= currentEncounter->fadeOutAccel;
                 if (currentEncounter->fadeOutAmount < 0) {
@@ -1682,7 +1681,7 @@ void update_encounters_post_battle(void) {
                     script->groupFlags = 0;
                     currentEncounter->battleStartCountdown = 1;
                 } else {
-                    script = start_script_in_group(&SCRIPT_NpcDefeat, EVT_PRIORITY_A, 0, 0);
+                    script = start_script_in_group(&EVS_NpcDefeat, EVT_PRIORITY_A, 0, 0);
                     enemy->defeatScript = script;
                     enemy->defeatScriptID = script->id;
                     script->owner1.enemy = enemy;
@@ -1792,7 +1791,7 @@ void update_encounters_post_battle(void) {
             if (!D_8009A63C) {
                 suggest_player_anim_allow_backward(ANIM_Mario1_Idle);
             }
-            set_screen_overlay_params_front(255, -1.0f);
+            set_screen_overlay_params_front(OVERLAY_NONE, -1.0f);
             resume_all_group(EVT_GROUP_10);
             gEncounterState = ENCOUNTER_STATE_NEUTRAL;
             D_8009A678 = 1;
@@ -1895,7 +1894,7 @@ void update_encounters_post_battle(void) {
 
                 enemy = currentEncounter->currentEnemy;
                 if (!(currentEncounter->flags & ENCOUNTER_STATUS_FLAG_4)) {
-                    script = start_script(&D_80077E9C, EVT_PRIORITY_A, 0);
+                    script = start_script(&EVS_FleeBattleDrops, EVT_PRIORITY_A, 0);
                     enemy->defeatScript = script;
                     enemy->defeatScriptID = script->id;
                     script->owner1.enemy = enemy;
@@ -1907,7 +1906,7 @@ void update_encounters_post_battle(void) {
                 playerStatus->blinkTimer = 45;
                 enable_player_input();
                 partner_enable_input();
-                set_screen_overlay_params_front(255, -1.0f);
+                set_screen_overlay_params_front(OVERLAY_NONE, -1.0f);
                 if (!D_8009A63C) {
                     currentEncounter->unk_94 = 15;
                 } else {
@@ -2006,7 +2005,7 @@ void update_encounters_post_battle(void) {
                 }
                 enable_player_input();
                 partner_enable_input();
-                set_screen_overlay_params_front(255, -1.0f);
+                set_screen_overlay_params_front(OVERLAY_NONE, -1.0f);
                 currentEncounter->unk_94 = 15;
                 gEncounterSubState = ENCOUNTER_SUBSTATE_POST_BATTLE_LOST_TO_NEUTRAL;
             }
@@ -2044,7 +2043,7 @@ void update_encounters_post_battle(void) {
             }
             enable_player_input();
             partner_enable_input();
-            set_screen_overlay_params_front(255, -1.0f);
+            set_screen_overlay_params_front(OVERLAY_NONE, -1.0f);
             resume_all_group(EVT_GROUP_10);
             gEncounterState = ENCOUNTER_STATE_NEUTRAL;
             D_8009A678 = 1;
@@ -2147,7 +2146,7 @@ void update_encounters_post_battle(void) {
                 currentEncounter->battleTriggerCooldown = 45;
                 enable_player_input();
                 partner_enable_input();
-                set_screen_overlay_params_front(255, -1.0f);
+                set_screen_overlay_params_front(OVERLAY_NONE, -1.0f);
                 resume_all_group(EVT_GROUP_10);
                 gEncounterState = ENCOUNTER_STATE_NEUTRAL;
                 D_8009A678 = 1;
@@ -2186,8 +2185,8 @@ void draw_encounters_post_battle(void) {
     s32 ret = currentEncounter->fadeOutAccel;
 
     if (ret != 0) {
-        set_screen_overlay_params_front(0, currentEncounter->fadeOutAmount);
-        set_screen_overlay_color(0, 0, 0, 0);
+        set_screen_overlay_params_front(OVERLAY_SCREEN_COLOR, currentEncounter->fadeOutAmount);
+        set_screen_overlay_color(SCREEN_LAYER_FRONT, 0, 0, 0);
     }
 }
 
@@ -2281,7 +2280,7 @@ s32 check_conversation_trigger(void) {
     playerY = playerStatus->position.y;
     playerZ = playerStatus->position.z;
 
-    if (gPartnerActionStatus.partnerActionState != PARTNER_ACTION_NONE) {
+    if (gPartnerStatus.partnerActionState != PARTNER_ACTION_NONE) {
         return FALSE;
     }
 
@@ -2324,7 +2323,7 @@ s32 check_conversation_trigger(void) {
             deltaX = npcX - playerX;
             deltaZ = npcZ - playerZ;
             npcCollisionHeight = encounterNpc->collisionHeight;
-            npcCollisionRadius = encounterNpc->collisionRadius;
+            npcCollisionRadius = encounterNpc->collisionDiameter;
             length = sqrtf(SQ(deltaX) + SQ(deltaZ));
 
             if ((playerColliderRadius + npcCollisionRadius <= length) ||
@@ -2375,7 +2374,7 @@ s32 check_conversation_trigger(void) {
         playerStatus->encounteredNPC = npc;
         playerStatus->flags |= PS_FLAG_HAS_CONVERSATION_NPC;
         if (playerStatus->pressedButtons & BUTTON_A) {
-            close_status_menu();
+            close_status_bar();
             gCurrentEncounter.hitType = ENCOUNTER_TRIGGER_CONVERSATION;
             enemy->encountered = ENCOUNTER_TRIGGER_CONVERSATION;
             encounterStatus->currentEncounter = encounter;
@@ -2471,7 +2470,7 @@ void create_encounters(void) {
                     npcSettings = enemy->npcSettings = npcData->settings;
                     enemy->drops = &npcData->drops;
                     if ((*(s16*)(&npcData->drops) & 0xFF00) != 0x8000) { //TODO s16?
-                        enemy->drops = &D_80077EB8;
+                        enemy->drops = &DefaultEnemyDrops;
                     }
                     enemy->encountered = 0;
                     if ((s32) npcData->init < EVT_LIMIT) {
@@ -2543,7 +2542,7 @@ void create_encounters(void) {
 
                     newNpc = get_npc_by_index(newNpcIndex);
                     newNpc->npcID = npcData->id;
-                    newNpc->collisionRadius = npcSettings->radius;
+                    newNpc->collisionDiameter = npcSettings->radius;
                     newNpc->collisionHeight = npcSettings->height;
                     enemy->spawnPos[0] = newNpc->pos.x = npcData->pos.x;
                     enemy->spawnPos[1] = newNpc->pos.y = npcData->pos.y;
@@ -2555,8 +2554,8 @@ void create_encounters(void) {
                     newNpc->homePos.z = newNpc->pos.z;
                     set_npc_yaw(newNpc, npcData->yaw);
                     enemy->savedNpcYaw = 12345;
-                    if (newNpc->collisionRadius >= 24.0) {
-                        newNpc->shadowScale = newNpc->collisionRadius / 24.0;
+                    if (newNpc->collisionDiameter >= 24.0) {
+                        newNpc->shadowScale = newNpc->collisionDiameter / 24.0;
                     } else {
                         newNpc->shadowScale = 1.0f;
                     }

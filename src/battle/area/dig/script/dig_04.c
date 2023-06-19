@@ -1,7 +1,6 @@
-#include "common.h"
-#include "script_api/battle.h"
+#include "../area.h"
 
-#define NAMESPACE b_area_dig_dig_04_script
+#define NAMESPACE A(dig_04_script)
 
 API_CALLABLE(N(SetupDemoPlayerMove)) {
     BattleStatus* battleStatus = &gBattleStatus;
@@ -16,7 +15,7 @@ API_CALLABLE(N(SetupDemoPlayerMove)) {
     battleStatus->selectedMoveID = 0;
     battleStatus->currentAttackElement = 0;
     playerData->invItems[0] = selectedItemID;
-    battleStatus->currentTargetListFlags = gItemTable[playerData->invItems[0]].targetFlags | ITEM_TARGET_FLAG_8000;
+    battleStatus->currentTargetListFlags = gItemTable[playerData->invItems[0]].targetFlags | TARGET_FLAG_8000;
 
     player_create_target_list(player);
     player->selectedTargetIndex = 0;
@@ -28,11 +27,11 @@ API_CALLABLE(N(SetupDemoPlayerMove)) {
 }
 
 EvtScript NAMESPACE = {
-    EVT_CALL(UseBattleCamPreset, BTL_CAM_PRESET_C)
+    EVT_CALL(UseBattleCamPreset, BTL_CAM_DEFAULT)
     EVT_CALL(MoveBattleCamOver, 1)
     EVT_WAIT(3)
     EVT_CALL(SetCamViewport, CAM_BATTLE, 29, 20, 262, 177)
-    EVT_CALL(func_802535B4, 0)
+    EVT_CALL(EnableBattleStatusBar, FALSE)
     EVT_CALL(WaitForState, BATTLE_STATE_PLAYER_MENU)
     EVT_CALL(N(SetupDemoPlayerMove))
     EVT_CALL(SetBattleState, BATTLE_STATE_PLAYER_MOVE)

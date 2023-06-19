@@ -19,7 +19,7 @@ EffectInstance* merlin_house_stars_main(s32 arg0, f32 arg1, f32 arg2, f32 arg3) 
     bp.update = merlin_house_stars_update;
     bp.renderWorld = merlin_house_stars_render;
     bp.unk_00 = 0;
-    bp.unk_14 = NULL;
+    bp.renderUI = NULL;
     bp.effectID = EFFECT_MERLIN_HOUSE_STARS;
 
     effect = shim_create_effect_instance(&bp);
@@ -51,8 +51,8 @@ void merlin_house_stars_update(EffectInstance* effect) {
     MerlinHouseStarsFXData* data = effect->data.merlinHouseStars;
     s32 unk_04;
 
-    if (effect->flags & 0x10) {
-        effect->flags &= ~0x10;
+    if (effect->flags & FX_INSTANCE_FLAG_DISMISS) {
+        effect->flags &= ~FX_INSTANCE_FLAG_DISMISS;
         data->unk_04 = 30;
     }
 
@@ -134,29 +134,29 @@ void merlin_house_stars_appendGfx(void* effect) {
     s32 uls;
     s32 ult;
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
+    gDPPipeSync(gMainGfxPos++);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
 
     shim_guTranslateF(sp10, data->unk_0C, data->unk_10, data->unk_14);
     shim_guScaleF(sp50, 0.96f, 0.96f, 0.96f);
     shim_guMtxCatF(sp50, sp10, sp10);
     shim_guMtxF2L(sp10, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, 0, 0, 0, 127);
-    gDPSetEnvColor(gMasterGfxPos++, 0, 0, 0, unk_18);
-    gDPSetCombineLERP(gMasterGfxPos++, 0, 0, 0, 1, TEXEL1, 0, PRIMITIVE, TEXEL0, 0, 0, 0, COMBINED, COMBINED, 0, ENVIRONMENT, 0);
-    gSPDisplayList(gMasterGfxPos++, D_09001000_3A6BE0);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, 0, 0, 0, 127);
+    gDPSetEnvColor(gMainGfxPos++, 0, 0, 0, unk_18);
+    gDPSetCombineLERP(gMainGfxPos++, 0, 0, 0, 1, TEXEL1, 0, PRIMITIVE, TEXEL0, 0, 0, 0, COMBINED, COMBINED, 0, ENVIRONMENT, 0);
+    gSPDisplayList(gMainGfxPos++, D_09001000_3A6BE0);
 
     uls = data->unk_1C * 4.0f;
     ult = data->unk_20 * 4.0f;
-    gDPSetTileSize(gMasterGfxPos++, G_TX_RENDERTILE, uls, ult, uls + 252, ult + 252);
+    gDPSetTileSize(gMainGfxPos++, G_TX_RENDERTILE, uls, ult, uls + 252, ult + 252);
 
     uls = data->unk_24 * 4.0f;
     ult = data->unk_28 * 4.0f;
-    gDPSetTileSize(gMasterGfxPos++, 1, uls, ult, uls + 252, ult + 252);
+    gDPSetTileSize(gMainGfxPos++, 1, uls, ult, uls + 252, ult + 252);
 
-    gSPDisplayList(gMasterGfxPos++, D_09001418_3A6FF8);
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
-    gDPPipeSync(gMasterGfxPos++);
+    gSPDisplayList(gMainGfxPos++, D_09001418_3A6FF8);
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
+    gDPPipeSync(gMainGfxPos++);
 }

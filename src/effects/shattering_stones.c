@@ -49,7 +49,7 @@ void shattering_stones_main(s32 arg0, f32 arg1, f32 arg2, f32 arg3, f32 arg4) {
     bp.update = shattering_stones_update;
     bp.renderWorld = shattering_stones_render;
     bp.unk_00 = 0;
-    bp.unk_14 = NULL;
+    bp.renderUI = NULL;
     bp.effectID = EFFECT_SHATTERING_STONES;
 
     effect = shim_create_effect_instance(&bp);
@@ -146,8 +146,8 @@ void shattering_stones_appendGfx(void* effect) {
     Matrix4f spE0;
     s32 i;
 
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
-    gSPDisplayList(gMasterGfxPos++, D_09000C00_341480);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
+    gSPDisplayList(gMainGfxPos++, D_09000C00_341480);
 
     if (part->unk_24 == 0) {
         shim_guTranslateF(sp20, part->unk_00, part->unk_04, part->unk_08);
@@ -163,10 +163,10 @@ void shattering_stones_appendGfx(void* effect) {
         shim_guMtxCatF(sp60, spA0, spA0);
         shim_guMtxF2L(spA0, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-        gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-        gDPSetPrimColor(gMasterGfxPos++, 0, 0, 102, 109, 123, part->unk_28);
-        gSPDisplayList(gMasterGfxPos++, D_E002C940[0]);
-        gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+        gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+        gDPSetPrimColor(gMainGfxPos++, 0, 0, 102, 109, 123, part->unk_28);
+        gSPDisplayList(gMainGfxPos++, D_E002C940[0]);
+        gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
     } else {
         s32 unk_28 = part->unk_28;
 
@@ -188,10 +188,10 @@ void shattering_stones_appendGfx(void* effect) {
             shim_guMtxCatF(sp60, sp20, sp20);
             shim_guMtxF2L(sp20, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-            gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-            gDPSetPrimColor(gMasterGfxPos++, 0, 0, 150, 150, 200, unk_28);
-            gSPDisplayList(gMasterGfxPos++, dlist);
-            gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+            gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+            gDPSetPrimColor(gMainGfxPos++, 0, 0, 150, 150, 200, unk_28);
+            gSPDisplayList(gMainGfxPos++, dlist);
+            gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
         }
     }
 }

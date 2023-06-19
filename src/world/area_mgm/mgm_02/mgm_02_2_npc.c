@@ -11,7 +11,8 @@ void partner_enable_input(void);
 #define SMASH_DATA_VAR_IDX 0
 
 #define PLAY_COST   10
-#define PLAY_TIME   900
+#define PLAY_TIME   ((s32)(900 * DT))
+#define FRAME_RATE ((s32)(30 * DT))
 #define NUM_BOXES   35
 #define NUM_PANELS  10
 
@@ -110,6 +111,14 @@ typedef struct SmashGameData {
     /* 0x02C */ SmashGameBoxData box[NUM_BOXES];
 } SmashGameData; /* size = 0x400 */
 
+#if VERSION_PAL
+#define COUNT_POS_Y 31
+#define TEXT_POS_Y 39
+#else
+#define TEXT_POS_Y 28
+#define COUNT_POS_Y 43
+#endif
+
 void N(appendGfx_score_display)(void* renderData) {
     Enemy* scorekeeper = get_enemy(SCOREKEEPER_ENEMY_IDX);
     SmashGameData* data = scorekeeper->varTablePtr[SMASH_DATA_VAR_IDX];
@@ -163,14 +172,14 @@ void N(appendGfx_score_display)(void* renderData) {
     }
 
     draw_box(0, WINDOW_STYLE_9, data->windowA_posX, 23, 0, 80, 38, 180, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NULL, NULL, NULL, SCREEN_WIDTH, SCREEN_HEIGHT, NULL);
-    draw_msg(MSG_MGM_0047, data->windowA_posX + 42, 28, 255, MSG_PAL_WHITE, 0);
-    draw_number(NUM_PANELS - data->found, data->windowA_posX + 65, 43, DRAW_NUMBER_CHARSET_THIN, MSG_PAL_WHITE, 255, DRAW_NUMBER_STYLE_MONOSPACE | DRAW_NUMBER_STYLE_ALIGN_RIGHT);
+    draw_msg(MSG_MGM_0047, data->windowA_posX + 42, TEXT_POS_Y, 255, MSG_PAL_WHITE, 0);
+    draw_number(NUM_PANELS - data->found, data->windowA_posX + 65, COUNT_POS_Y, DRAW_NUMBER_CHARSET_THIN, MSG_PAL_WHITE, 255, DRAW_NUMBER_STYLE_MONOSPACE | DRAW_NUMBER_STYLE_ALIGN_RIGHT);
     draw_ci_image_with_clipping(&N(panel_peach_img), 32, 32, G_IM_FMT_CI, G_IM_SIZ_4b, &N(panel_peach_pal),
         data->windowA_posX + 5, 26, 10, 20, 300, 200, 255);
 
     timeLeft = MIN(data->timeLeft, PLAY_TIME);
-    deciseconds = ((f32)(timeLeft % 30) * 10.0) / 30;
-    seconds = timeLeft / 30;
+    deciseconds = ((f32)(timeLeft % FRAME_RATE) * 10.0) / FRAME_RATE;
+    seconds = timeLeft / FRAME_RATE;
 
     draw_box(0, WINDOW_STYLE_11, data->windowB_posX, 27, 0, 60, 20, 180, 0, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, NULL, NULL, NULL, SCREEN_WIDTH, SCREEN_HEIGHT, NULL);
     // draw whole seconds
@@ -217,8 +226,8 @@ API_CALLABLE(N(CreateScoreDisplay)) {
 
 API_CALLABLE(N(DisableMenus)) {
     gOverrideFlags |= GLOBAL_OVERRIDES_DISABLE_MENUS;
-    status_menu_ignore_changes();
-    close_status_menu();
+    status_bar_ignore_changes();
+    close_status_bar();
     return ApiStatus_DONE2;
 }
 
@@ -278,6 +287,10 @@ API_CALLABLE(N(OnHitBox)) {
     return ApiStatus_DONE2;
 }
 
+#if VERSION_PAL
+API_CALLABLE(N(SetBoxContents));
+INCLUDE_ASM(ApiResult, "world/area_mgm/mgm_02/mgm_02_2_npc", mgm_02_SetBoxContents);
+#else
 API_CALLABLE(N(SetBoxContents)) {
     s32 initialConfiguration;
     s32 configuration[NUM_BOXES];
@@ -400,7 +413,12 @@ API_CALLABLE(N(SetBoxContents)) {
     }
     return ApiStatus_DONE2;
 }
+#endif
 
+#if VERSION_PAL
+API_CALLABLE(N(RunMinigame));
+INCLUDE_ASM(ApiResult, "world/area_mgm/mgm_02/mgm_02_2_npc", mgm_02_RunMinigame);
+#else
 API_CALLABLE(N(RunMinigame)) {
     SmashGameData* data;
     Enemy* enemy;
@@ -600,7 +618,7 @@ API_CALLABLE(N(RunMinigame)) {
                 case BOX_STATE_BOMB_HIT:
                     enable_npc_shadow(npc);
                     npc->duration = 15;
-                    npc->currentAnim = ANIM_Bobomb_Anim05;
+                    npc->currentAnim = ANIM_Bobomb_WalkLit;
                     data->stunFlags |= (STUN_FLAG_STUNNED | STUN_FLAG_CHANGED);
                     data->box[i].state = BOX_STATE_BOMB_ATTACK;
                     get_model_center_and_size(data->box[i].modelID, &centerX, &centerY, &centerZ, &sizeX, &sizeY, &sizeZ);
@@ -825,6 +843,7 @@ API_CALLABLE(N(RunMinigame)) {
 
     return ApiStatus_BLOCK;
 }
+#endif
 
 API_CALLABLE(N(UpdateRecords)) {
     PlayerData* playerData = &gPlayerData;
@@ -832,8 +851,8 @@ API_CALLABLE(N(UpdateRecords)) {
     s32 seconds, deciseconds;
     s32 outScore;
 
-    seconds = data->timeLeft  / 30;
-    deciseconds = ((f32)(data->timeLeft % 30) * 10.0) / 30;
+    seconds = data->timeLeft  / FRAME_RATE;
+    deciseconds = ((f32)(data->timeLeft % FRAME_RATE) * 10.0) / FRAME_RATE;
 
     data->currentScore = (seconds * 10) + deciseconds;
     playerData->smashGameTotal += data->currentScore;
@@ -940,7 +959,7 @@ API_CALLABLE(N(CleanupGame)) {
                     if (data->box[i].state != BOX_STATE_BOMB_END) {
                         data->box[i].state = BOX_STATE_BOMB_END;
                         fx_emote(EMOTE_QUESTION, npc, 0.0f, npc->collisionHeight, 1.0f, 2.0f, 0.0f, 30, &writeback);
-                        npc->currentAnim = ANIM_Bobomb_Anim1C;
+                        npc->currentAnim = ANIM_Bobomb_Dizzy;
                         enable_npc_shadow(npc);
                     }
                     break;
@@ -959,8 +978,8 @@ API_CALLABLE(N(CreateMinigame)) {
     data->windowB_posX = SCREEN_WIDTH;
     data->timeLeft = PLAY_TIME;
 
-    status_menu_ignore_changes();
-    close_status_menu();
+    status_bar_ignore_changes();
+    close_status_bar();
 
     return ApiStatus_DONE2;
 }
@@ -1035,6 +1054,10 @@ s32 N(PanelModelIDs)[NUM_PANELS] = {
     MODEL_o50, MODEL_o51, MODEL_o52, MODEL_o53, MODEL_o54,
     MODEL_o55, MODEL_o56, MODEL_o57, MODEL_o58, MODEL_o59
 };
+
+#if VERSION_PAL
+s32 N(pal_variable) = 0;
+#endif
 
 EvtScript N(EVS_CreateScoreDisplay) = {
     EVT_CALL(N(CreateScoreDisplay))
@@ -1641,6 +1664,18 @@ EvtScript N(EVS_Toad_GovernGame) = {
         EVT_CASE_EQ(0)
             EVT_CALL(SetSelfVar, 3, 0)
             EVT_CALL(SpeakToPlayer, NPC_SELF, ANIM_Toad_Red_Talk, ANIM_Toad_Red_Idle, 0, MSG_MGM_0044)
+#if VERSION_PAL
+        EVT_CASE_EQ(1)
+            EVT_CALL(SpeakToPlayer, NPC_SELF, ANIM_Toad_Red_Talk, ANIM_Toad_Red_Idle, 0, MSG_PAL_MGM_0046)
+            EVT_CALL(ShowCoinCounter, TRUE)
+            EVT_WAIT(10)
+            EVT_CALL(N(GiveCoinReward))
+            EVT_WAIT(15)
+            EVT_CALL(ShowCoinCounter, FALSE)
+            EVT_CALL(SetSelfVar, 3, 0)
+            EVT_WAIT(5)
+            EVT_CALL(ContinueSpeech, NPC_Toad, ANIM_Toad_Red_Talk, ANIM_Toad_Red_Idle, 0, MSG_MGM_0045)
+#endif
         EVT_CASE_DEFAULT
             EVT_CALL(SpeakToPlayer, NPC_SELF, ANIM_Toad_Red_Talk, ANIM_Toad_Red_Idle, 0, MSG_MGM_0042)
             EVT_CALL(ShowCoinCounter, TRUE)
@@ -1806,7 +1841,7 @@ EvtScript N(EVS_NpcInit_Fuzzy) = {
 };
 
 EvtScript N(EVS_NpcInit_Bobomb) = {
-    EVT_CALL(SetNpcAnimation, NPC_SELF, ANIM_Bobomb_Anim0B)
+    EVT_CALL(SetNpcAnimation, NPC_SELF, ANIM_Bobomb_AngryIdle)
     EVT_CALL(SetSelfVar, 0, 0)
     EVT_CALL(SetNpcFlagBits, NPC_SELF, NPC_FLAG_8 | NPC_FLAG_JUMPING, TRUE)
     EVT_CALL(SetNpcFlagBits, NPC_SELF, NPC_FLAG_GRAVITY, FALSE)

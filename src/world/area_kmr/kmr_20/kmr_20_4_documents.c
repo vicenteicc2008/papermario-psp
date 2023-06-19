@@ -17,7 +17,7 @@ extern HudScript HES_Item_Unused_08C;
 extern HudScript HES_Item_Unused_08C_disabled;
 
 BSS PopupMenu N(ChooseDocumentPopupMenu);
-BSS IMG_BIN N(LetterBackgroundImg)[0x3D86];
+BSS IMG_BIN N(LetterBackgroundImg)[0x3D86] ALIGNED(16);
 BSS PAL_BIN N(LetterBackgroundPal)[0x100];
 BSS char N(static_pad)[0x8]; // padding
 BSS IMG_BIN N(LetterPhotoImg)[0x3D86];
@@ -192,8 +192,8 @@ API_CALLABLE(N(ReadLetters)){
             menu->numEntries = numEntries;
             menu->initialPos = script->functionTemp[3];
             create_standard_popup_menu(menu);
-            status_menu_respond_to_changes();
-            close_status_menu();
+            status_bar_respond_to_changes();
+            close_status_bar();
             script->functionTemp[1] = 0;
             script->functionTemp[0] = 1;
             break;
@@ -373,8 +373,8 @@ API_CALLABLE(N(ReadDiary)){
             menu->numEntries = numEntries;
             menu->initialPos = script->functionTemp[3];
             create_standard_popup_menu(menu);
-            status_menu_respond_to_changes();
-            close_status_menu();
+            status_bar_respond_to_changes();
+            close_status_bar();
             script->functionTemp[1] = 0;
             script->functionTemp[0] = 1;
             break;

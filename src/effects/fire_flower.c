@@ -28,7 +28,7 @@ EffectInstance* fire_flower_main(s32 arg0, f32 arg1, f32 arg2, f32 arg3, s32 arg
     bp.init = fire_flower_init;
     bp.update = fire_flower_update;
     bp.renderWorld = fire_flower_render;
-    bp.unk_14 = NULL;
+    bp.renderUI = NULL;
     bp.effectID = EFFECT_FIRE_FLOWER;
 
     effect = shim_create_effect_instance(&bp);
@@ -63,9 +63,9 @@ EffectInstance* fire_flower_main(s32 arg0, f32 arg1, f32 arg2, f32 arg3, s32 arg
         part->pos.z = 0;
         part->unk_14 = 8.0f;
         part->unk_18 = 0;
-        part->unk_1C = func_E0200000(20) - 8;
-        part->unk_20 = (func_E0200000(10) - 5) * 0.05;
-        part->unk_24 = func_E0200000(80) + 5;
+        part->unk_1C = effect_rand_int(20) - 8;
+        part->unk_20 = (effect_rand_int(10) - 5) * 0.05;
+        part->unk_24 = effect_rand_int(80) + 5;
         part->unk_3C = 255;
         partData->z = i - 1;
         partData->x = 10;
@@ -96,7 +96,7 @@ void fire_flower_update(EffectInstance* effect) {
 
     switch (unk_04) {
         case 0:
-            shim_load_effect(45);
+            shim_load_effect(EFFECT_STARS_SPREAD);
             stars_spread_main(0, part->pos.x - 10.0f, part->pos.y, part->pos.z, 7, 20);
             part->unk_34 = 0;
             part->unk_38 = 0;
@@ -209,24 +209,24 @@ void fire_flower_appendGfx(void* effect) {
     Matrix4f sp58;
     s32 i;
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
+    gDPPipeSync(gMainGfxPos++);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
 
     shim_guTranslateF(sp18, part->pos.x, part->pos.y, part->pos.z);
     shim_guRotateF(sp58, -gCameras[gCurrentCameraID].currentYaw, 0.0f, 1.0f, 0.0f);
     shim_guMtxCatF(sp58, sp18, sp18);
     shim_guMtxF2L(sp18, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, 255, 0, 0, part->unk_3C);
-    gDPSetEnvColor(gMasterGfxPos++, 255, 0, 0, part->unk_38);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, 255, 0, 0, part->unk_3C);
+    gDPSetEnvColor(gMainGfxPos++, 255, 0, 0, part->unk_38);
 
     if ((u32) (unk_04 - 4) < 3U) {
         shim_guTranslateF(sp18, 0.0f, 16.0f, 0.0f);
         shim_guMtxF2L(sp18, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-        gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-        gSPDisplayList(gMasterGfxPos++, D_09000DE0_381180);
+        gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+        gSPDisplayList(gMainGfxPos++, D_09000DE0_381180);
 
         part++;
         for (i = 1; i < ((EffectInstance*)effect)->numParts; i++, part++) {
@@ -236,23 +236,23 @@ void fire_flower_appendGfx(void* effect) {
                 shim_guMtxCatF(sp58, sp18, sp18);
                 shim_guMtxF2L(sp18, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-                gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-                gSPDisplayList(gMasterGfxPos++, part->unk_00 != 0 ? D_09000ED8_381278 : D_09000EB8_381258);
-                gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+                gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+                gSPDisplayList(gMainGfxPos++, part->unk_00 != 0 ? D_09000ED8_381278 : D_09000EB8_381258);
+                gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
             }
         }
 
-        gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+        gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
     }
 
-    gSPDisplayList(gMasterGfxPos++, D_09000D40_3810E0);
+    gSPDisplayList(gMainGfxPos++, D_09000D40_3810E0);
     gDPLoadTextureTile_4b(
-        gMasterGfxPos++, D_09000000_3803A0[3 - unk_34],
+        gMainGfxPos++, D_09000000_3803A0[3 - unk_34],
         G_IM_FMT_CI, 32, 0, 0, 0, 31, 31, 0,
         G_TX_MIRROR | G_TX_WRAP, G_TX_MIRROR | G_TX_WRAP,
         5, 5, G_TX_NOLOD, G_TX_NOLOD);
     gDPLoadMultiTile_4b(
-        gMasterGfxPos++, D_09000000_3803A0[2 - unk_34],
+        gMainGfxPos++, D_09000000_3803A0[2 - unk_34],
         0x0080, 1, G_IM_FMT_CI, 32, 0, 0, 0, 31, 31, 0,
         G_TX_MIRROR | G_TX_WRAP, G_TX_MIRROR | G_TX_WRAP,
         5, 5, G_TX_NOLOD, G_TX_NOLOD);
@@ -264,8 +264,8 @@ void fire_flower_appendGfx(void* effect) {
     shim_guMtxCatF(sp58, sp18, sp18);
     shim_guMtxF2L(sp18, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-    gSPDisplayList(gMasterGfxPos++, D_09000EF8_381298);
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+    gSPDisplayList(gMainGfxPos++, D_09000EF8_381298);
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
 }

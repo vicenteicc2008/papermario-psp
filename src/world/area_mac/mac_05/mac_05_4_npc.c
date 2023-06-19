@@ -698,7 +698,7 @@ API_CALLABLE(N(func_802430B4_855224)) {
         f32 z = npc->pos.z;
 
         temp = 12.0f;
-        if (npc_raycast_down_around(npc->collisionChannel, &x, &y, &z, &temp, npc->yaw, npc->collisionRadius) &&
+        if (npc_raycast_down_around(npc->collisionChannel, &x, &y, &z, &temp, npc->yaw, npc->collisionDiameter) &&
             temp <= 12.0f)
         {
             outVal = NpcHitQueryColliderID;
@@ -731,7 +731,7 @@ EvtScript N(D_80249E84_85BFF4) = {
             EVT_END_IF
             EVT_IF_EQ(LVar5, 2)
                 EVT_IF_EQ(LVarA, 2)
-                    EVT_SET(LocalFlag(0), TRUE)
+                    EVT_SET(LFlag0, TRUE)
                     EVT_RETURN
                 EVT_ELSE
                     EVT_CALL(DisablePlayerInput, TRUE)
@@ -759,14 +759,14 @@ EvtScript N(D_80249E84_85BFF4) = {
                 EVT_END_IF
             EVT_END_IF
             EVT_IF_EQ(LVar1, ACTION_STATE_SPIN_POUND)
-                EVT_SET(LocalFlag(0), TRUE)
+                EVT_SET(LFlag0, TRUE)
                 EVT_RETURN
             EVT_END_IF
         EVT_END_IF
         EVT_CALL(N(func_802430B4_855224), LVar2)
         EVT_IF_EQ(LVar2, 29)
             EVT_IF_EQ(LVar0, 29)
-                EVT_SET(LocalFlag(0), TRUE)
+                EVT_SET(LFlag0, TRUE)
             EVT_END_IF
             EVT_RETURN
         EVT_END_IF
@@ -785,14 +785,14 @@ EvtScript N(D_8024A1F8_85C368) = {
     EVT_WAIT(10)
     EVT_CALL(DisablePlayerPhysics, TRUE)
     EVT_EXEC_GET_TID(N(D_802486EC_85A85C), LVarA)
-    EVT_IF_EQ(LocalFlag(0), TRUE)
+    EVT_IF_EQ(LFlag0, TRUE)
         EVT_EXEC(N(D_80249C34_85BDA4))
     EVT_END_IF
     EVT_WAIT(10)
     EVT_CALL(SetNpcAnimation, NPC_Whale, ANIM_Kolorado_Run)
     EVT_WAIT(20)
     EVT_CALL(SpeakToPlayer, NPC_Whale, ANIM_Kolorado_Run, ANIM_Kolorado_Run, 5, MSG_MAC_Port_0090)
-    EVT_IF_EQ(LocalFlag(0), FALSE)
+    EVT_IF_EQ(LFlag0, FALSE)
         EVT_EXEC(N(D_80249D80_85BEF0))
     EVT_END_IF
     EVT_CALL(ModifyColliderFlags, MODIFY_COLLIDER_FLAGS_CLEAR_BITS, COLLIDER_kujira, COLLIDER_FLAGS_UPPER_MASK)
@@ -1114,16 +1114,16 @@ EvtScript N(EVS_NpcIdle_Kolorado) = {
     EVT_WAIT(10)
     EVT_CALL(SpeakToPlayer, NPC_SELF, ANIM_Kolorado_Talk, ANIM_Kolorado_Idle, 0, MSG_MAC_Port_00B3)
     EVT_THREAD
-        EVT_WAIT(15)
-        EVT_CALL(PlayerMoveTo, -340, 380, 20)
+        EVT_WAIT(15 * DT)
+        EVT_CALL(PlayerMoveTo, -340, 380, 20 * DT)
         EVT_CALL(InterpPlayerYaw, 45, 0)
     EVT_END_THREAD
     EVT_CALL(SetNpcAnimation, NPC_SELF, ANIM_Kolorado_Run)
-    EVT_CALL(SetNpcSpeed, NPC_SELF, EVT_FLOAT(8.0))
+    EVT_CALL(SetNpcSpeed, NPC_SELF, EVT_FLOAT(8.0 / DT))
     EVT_CALL(NpcMoveTo, NPC_SELF, -280, 280, 0)
     EVT_CALL(NpcMoveTo, NPC_SELF, -340, 70, 0)
     EVT_CALL(NpcMoveTo, NPC_SELF, -260, -140, 0)
-    EVT_CALL(SetNpcSpeed, NPC_SELF, EVT_FLOAT(7.0))
+    EVT_CALL(SetNpcSpeed, NPC_SELF, EVT_FLOAT(7.0 / DT))
     EVT_CALL(NpcMoveTo, NPC_SELF, 150, -140, 0)
     EVT_CALL(SetNpcPos, NPC_SELF, NPC_DISPOSE_LOCATION)
     EVT_SET(GB_StoryProgress, STORY_CH5_RETURNED_TO_TOAD_TOWN)
@@ -1852,18 +1852,18 @@ EvtScript N(EVS_NpcInteract_ArtistToad) = {
                 EVT_CALL(SetMusicTrack, 0, SONG_POP_DIVA_SONG, 0, 8)
                 EVT_CALL(SetNpcAnimation, NPC_Bartender, ANIM_Bartender_StrumGuitar)
                 EVT_CALL(SetNpcAnimation, NPC_Chanterelle, ANIM_Chanterelle_Idle)
-                EVT_WAIT(30)
+                EVT_WAIT(30 * DT)
                 EVT_CALL(SetNpcAnimation, NPC_Chanterelle, ANIM_Chanterelle_Sing)
-                EVT_WAIT(150)
-                EVT_WAIT(150)
-                EVT_WAIT(150)
+                EVT_WAIT(150 * DT)
+                EVT_WAIT(150 * DT)
+                EVT_WAIT(150 * DT)
                 EVT_CALL(SetNpcAnimation, NPC_Chanterelle, ANIM_Chanterelle_Idle)
                 EVT_CALL(SetNpcAnimation, NPC_Bartender, ANIM_Bartender_Idle)
-                EVT_WAIT(40)
+                EVT_WAIT(40 * DT)
                 EVT_CALL(SetNpcAnimation, NPC_Toad_02, ANIM_Toad_Red_Idle)
                 EVT_CALL(SetNpcAnimation, NPC_ArtistToad, ANIM_Musician_Poet_Idle)
                 EVT_CALL(SetPlayerAnimation, ANIM_Mario1_Idle)
-                EVT_WAIT(30)
+                EVT_WAIT(30 * DT)
                 EVT_EXEC(N(EVS_802442E8))
                 EVT_THREAD
                     EVT_CALL(SetNpcAnimation, NPC_Bartender, ANIM_Bartender_Walk)

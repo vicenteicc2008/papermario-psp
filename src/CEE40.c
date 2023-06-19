@@ -5,74 +5,77 @@ Gfx D_8014ED90[] = {
     gsSPEndDisplayList(),
 };
 
-Vp D_8014ED98 = {
+Vp DarknessStencilViewport = {
     .vp = {
         .vscale = { 128, 128, 511, 0 },
         .vtrans = { 128, 128, 511, 0 }
     }
 };
 
-Vtx D_8014EDA8[4] = {
+Vtx Vtx_DarknessStencil[] = {
     {{{ -16,-16, 0 }, 0, { 0x0000, 0x0000 }, { 0, 0, 0, 255 }}},
     {{{  16,-16, 0 }, 0, { 0x1000, 0x0000 }, { 0, 0, 0, 255 }}},
     {{{  16, 16, 0 }, 0, { 0x1000, 0x1000 }, { 0, 0, 0, 255 }}},
     {{{ -16, 16, 0 }, 0, { 0x0000, 0x1000 }, { 0, 0, 0, 255 }}},
 };
 
-Gfx D_8014EDE8[] = {
-    gsSPVertex(D_8014EDA8, 4, 0),
+Gfx Gfx_DarknessStencilQuad[] = {
+    gsSPVertex(Vtx_DarknessStencil, 4, 0),
     gsSP2Triangles(0, 1, 2, 0, 0, 2, 3, 0),
     gsDPPipeSync(),
     gsSPEndDisplayList(),
 };
 
-void func_80138740(s32 x1, s32 y1, s32 x2, s32 y2, f32 arg4) {
-    s32 t9, sp10;
+void appendGfx_draw_prev_frame_buffer(s32 x1, s32 y1, s32 x2, s32 y2, f32 alpha) {
+    s32 stripY, extraY;
     s32 i;
     u16* prevGfxCfb = NULL;
 
-    x1 -= x1 % 4;
-    x2 = x2 - x2 % 4 + 4;
-    t9 = (y2 - y1) / 6;
-    sp10 = (y2 - y1) % 6;
+    // round the x positions
+    x1 = x1 - (x1 % 4);
+    x2 = x2 - (x2 % 4) + 4;
+    // can only load 6 rows of the color buffer at a time: 320*6*2 = 3840 bytes of the 4096 capacity
+    stripY = (y2 - y1) / 6;
+    extraY = (y2 - y1) % 6;
 
+    // get previous color buffer
     for (i = 0; i < nuGfxCfbNum; i++) {
         if (nuGfxCfb[i] == nuGfxCfb_ptr) {
             prevGfxCfb = nuGfxCfb[(i + nuGfxCfbNum - 1) % nuGfxCfbNum];
         }
     }
 
-    gDPSetCycleType(gMasterGfxPos++, G_CYC_1CYCLE);
-    gDPSetCombineLERP(gMasterGfxPos++, 0, 0, 0, TEXEL0, 0, 0, 0, PRIMITIVE, 0, 0, 0, TEXEL0, 0, 0, 0, PRIMITIVE);
-    gDPSetRenderMode(gMasterGfxPos++, G_RM_CLD_SURF, G_RM_CLD_SURF2);
-    gDPSetColorDither(gMasterGfxPos++, G_CD_DISABLE);
-    gDPSetAlphaDither(gMasterGfxPos++, G_AD_NOISE);
-    gDPSetTextureFilter(gMasterGfxPos++, G_TF_POINT);
-    gDPSetTexturePersp(gMasterGfxPos++, G_TP_NONE);
-    gSPTexture(gMasterGfxPos++, 0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON);
-    gDPSetTextureLUT(gMasterGfxPos++, G_TT_NONE);
-    gDPSetTextureDetail(gMasterGfxPos++, G_TD_CLAMP);
-    gDPSetTextureLOD(gMasterGfxPos++, G_TL_TILE);
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, 255, 255, 255, arg4);
+    gDPSetCycleType(gMainGfxPos++, G_CYC_1CYCLE);
+    gDPSetCombineMode(gMainGfxPos++, PM_CC_10, PM_CC_10);
+    gDPSetRenderMode(gMainGfxPos++, G_RM_CLD_SURF, G_RM_CLD_SURF2);
+    gDPSetColorDither(gMainGfxPos++, G_CD_DISABLE);
+    gDPSetAlphaDither(gMainGfxPos++, G_AD_NOISE);
+    gDPSetTextureFilter(gMainGfxPos++, G_TF_POINT);
+    gDPSetTexturePersp(gMainGfxPos++, G_TP_NONE);
+    gSPTexture(gMainGfxPos++, 0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON);
+    gDPSetTextureLUT(gMainGfxPos++, G_TT_NONE);
+    gDPSetTextureDetail(gMainGfxPos++, G_TD_CLAMP);
+    gDPSetTextureLOD(gMainGfxPos++, G_TL_TILE);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, 255, 255, 255, alpha);
 
-    for (i = 0; i < t9; i++) {
-        gDPLoadTextureTile(gMasterGfxPos++, osVirtualToPhysical(prevGfxCfb), G_IM_FMT_RGBA, G_IM_SIZ_16b, 320, 6,
+    for (i = 0; i < stripY; i++) {
+        gDPLoadTextureTile(gMainGfxPos++, osVirtualToPhysical(prevGfxCfb), G_IM_FMT_RGBA, G_IM_SIZ_16b, 320, 6,
                            x1, y1 + i * 6, x2 - 1, y1 + i * 6 + 5, 0,
                            G_TX_WRAP, G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
-        gSPTextureRectangle(gMasterGfxPos++, x1 * 4, (y1 + i * 6) * 4, x2 * 4, (y1 + i * 6 + 6) * 4,
+        gSPTextureRectangle(gMainGfxPos++, x1 * 4, (y1 + i * 6) * 4, x2 * 4, (y1 + i * 6 + 6) * 4,
                             G_TX_RENDERTILE, x1 * 32, (y1 + i * 6) * 32, 1024, 1024);
     }
 
-    if (sp10 != 0) {
-        gDPLoadTextureTile(gMasterGfxPos++, osVirtualToPhysical(prevGfxCfb), G_IM_FMT_RGBA, G_IM_SIZ_16b, 320, sp10,
-                           x1, y1 + i * 6, x2 - 1, y1 + i * 6 + sp10 - 1, 0,
+    if (extraY != 0) {
+        gDPLoadTextureTile(gMainGfxPos++, osVirtualToPhysical(prevGfxCfb), G_IM_FMT_RGBA, G_IM_SIZ_16b, 320, extraY,
+                           x1, y1 + i * 6, x2 - 1, y1 + i * 6 + extraY - 1, 0,
                            G_TX_WRAP, G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
-        gSPTextureRectangle(gMasterGfxPos++, x1 * 4, (y1 + i * 6) * 4, x2 * 4, (y1 + i * 6 + sp10) * 4,
+        gSPTextureRectangle(gMainGfxPos++, x1 * 4, (y1 + i * 6) * 4, x2 * 4, (y1 + i * 6 + extraY) * 4,
                             G_TX_RENDERTILE, x1 * 32, (y1 + i * 6) * 32, 1024, 1024);
     }
 }
 
-void func_80138D88(s32 x1, s32 y1, s32 x2, s32 y2, f32 alpha) {
+void draw_prev_frame_buffer_at_screen_pos(s32 x1, s32 y1, s32 x2, s32 y2, f32 alpha) {
     s32 minX;
     s32 minY;
     s32 maxX;
@@ -86,8 +89,8 @@ void func_80138D88(s32 x1, s32 y1, s32 x2, s32 y2, f32 alpha) {
     } else {
         minX = x1;
     }
-    minY = maxY;
     if (maxY < y1) {
+        minY = maxY;
         maxY = y1;
     } else {
         minY = y1;
@@ -118,44 +121,44 @@ void func_80138D88(s32 x1, s32 y1, s32 x2, s32 y2, f32 alpha) {
             maxY = SCREEN_HEIGHT - 1;
         }
         if (minX != maxX && minY != maxY) {
-            func_80138740(minX, minY, maxX, maxY, alpha);
+            appendGfx_draw_prev_frame_buffer(minX, minY, maxX, maxY, alpha);
         }
     }
 }
 
-void func_80138E54(s32 arg0, s32 arg1, s32 arg2, f32 arg3, f32 arg4) {
+void appendGfx_darkness_stencil(b32 isWorld, s32 posX, s32 posY, f32 alpha, f32 progress) {
     Camera* camera = &gCameras[gCurrentCameraID];
     f32 texScale, f24;
     s32 i;
 
-    if (arg3 == 0.0f) {
+    if (alpha == 0.0f) {
         return;
     }
 
-    if (arg0 == 0) {
-        texScale = (255.0f - arg3) * 10.0f / 255.0f + 0.14;
+    if (!isWorld) {
+        texScale = (255.0f - alpha) * 10.0f / 255.0f + 0.14;
     } else {
         texScale = 0.5f;
-        texScale = (255.0f - arg3) * 9.5f / 255.0f + texScale;
-        arg1 += (camera->viewportW / 2 - arg1) * (255.0f - arg3) / 255.0f;
-        arg2 += (camera->viewportH / 2 - arg2) * (255.0f - arg3) / 255.0f;
+        texScale = (255.0f - alpha) * 9.5f / 255.0f + texScale;
+        posX += (camera->viewportW / 2 - posX) * (255.0f - alpha) / 255.0f;
+        posY += (camera->viewportH / 2 - posY) * (255.0f - alpha) / 255.0f;
     }
 
     guOrtho(&gDisplayContext->matrixStack[gMatrixListPos], -16.0f, 0.0f, 0.0f, 16.0f, -1000.0f, 1000.0f, 1.0f);
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
-    gDPSetAlphaDither(gMasterGfxPos++, G_AD_PATTERN);
-    gDPSetTextureFilter(gMasterGfxPos++, G_TF_POINT);
-    gDPSetTexturePersp(gMasterGfxPos++, G_TP_PERSP);
-    gDPSetColorImage(gMasterGfxPos++, G_IM_FMT_RGBA, G_IM_SIZ_32b, 64, osVirtualToPhysical(nuGfxZBuffer));
-    gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, 0, 0, 64, 64);
-    gSPViewport(gMasterGfxPos++, &D_8014ED98);
-    gDPSetCombineLERP(gMasterGfxPos++, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
+    gDPSetAlphaDither(gMainGfxPos++, G_AD_PATTERN);
+    gDPSetTextureFilter(gMainGfxPos++, G_TF_POINT);
+    gDPSetTexturePersp(gMainGfxPos++, G_TP_PERSP);
+    gDPSetColorImage(gMainGfxPos++, G_IM_FMT_RGBA, G_IM_SIZ_32b, 64, osVirtualToPhysical(nuGfxZBuffer));
+    gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, 0, 0, 64, 64);
+    gSPViewport(gMainGfxPos++, &DarknessStencilViewport);
+    gDPSetCombineMode(gMainGfxPos++, PM_CC_CONST_1, PM_CC_CONST_1);
     guRotate(&gDisplayContext->matrixStack[gMatrixListPos], 0.0f, 0.0f, 0.0f, 1.0f);
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
-    gSPDisplayList(gMasterGfxPos++, D_8014EDE8);
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
-    gDPPipeSync(gMasterGfxPos++);
-    gDPSetCombineLERP(gMasterGfxPos++, 0, 0, 0, 0, PRIMITIVE, TEXEL0, PRIMITIVE, 0, 0, 0, 0, 0, PRIMITIVE, TEXEL0, PRIMITIVE, 0);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+    gSPDisplayList(gMainGfxPos++, Gfx_DarknessStencilQuad);
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
+    gDPPipeSync(gMainGfxPos++);
+    gDPSetCombineLERP(gMainGfxPos++, 0, 0, 0, 0, PRIMITIVE, TEXEL0, PRIMITIVE, 0, 0, 0, 0, 0, PRIMITIVE, TEXEL0, PRIMITIVE, 0);
 
     for (i = 0; i < 2; i++) {
         f32 f20;
@@ -172,73 +175,73 @@ void func_80138E54(s32 arg0, s32 arg1, s32 arg2, f32 arg3, f32 arg4) {
             s0 = 255;
         }
 
-        gDPSetPrimColor(gMasterGfxPos++, 0, 0, 255, 255, 255, s0);
+        gDPSetPrimColor(gMainGfxPos++, 0, 0, 255, 255, 255, s0);
         guRotate(&gDisplayContext->matrixStack[gMatrixListPos], i * 70 + f2, 0.0f, 0.0f, 1.0f);
-        gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
+        gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
         guScale(&gDisplayContext->matrixStack[gMatrixListPos], f20, f20, 1.0f);
-        gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_NOPUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-        gSPDisplayList(gMasterGfxPos++, D_8014EDE8);
-        gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+        gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_NOPUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+        gSPDisplayList(gMainGfxPos++, Gfx_DarknessStencilQuad);
+        gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
     }
 
-    gDPPipeSync(gMasterGfxPos++);
-    gDPSetTexturePersp(gMasterGfxPos++, G_TP_NONE);
-    gDPSetColorImage(gMasterGfxPos++, G_IM_FMT_I, G_IM_SIZ_8b, 64, osVirtualToPhysical(nuGfxZBuffer));
-    gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, 0, 0, 64, 64);
-    gDPSetCombineLERP(gMasterGfxPos++, 0, 0, 0, TEXEL0, 0, 0, 0, 1, 0, 0, 0, TEXEL0, 0, 0, 0, 1);
+    gDPPipeSync(gMainGfxPos++);
+    gDPSetTexturePersp(gMainGfxPos++, G_TP_NONE);
+    gDPSetColorImage(gMainGfxPos++, G_IM_FMT_I, G_IM_SIZ_8b, 64, osVirtualToPhysical(nuGfxZBuffer));
+    gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, 0, 0, 64, 64);
+    gDPSetCombineMode(gMainGfxPos++, PM_CC_0F, PM_CC_0F);
 
     for (i = 0; i < 4; i++) {
-        gDPLoadTextureTile(gMasterGfxPos++, osVirtualToPhysical(&nuGfxZBuffer[i * 2048]), G_IM_FMT_RGBA, G_IM_SIZ_32b, 64, 16, 0, 0, 63, 15, 0, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
-        gDPPipeSync(gMasterGfxPos++);
-        gSPTextureRectangle(gMasterGfxPos++, 0, (i * 16) * 4, 64 * 4, (i * 16 + 16) * 4, G_TX_RENDERTILE, 0, 0, 0x400, 0x400);
-        gDPPipeSync(gMasterGfxPos++);
+        gDPLoadTextureTile(gMainGfxPos++, osVirtualToPhysical(&nuGfxZBuffer[i * 2048]), G_IM_FMT_RGBA, G_IM_SIZ_32b, 64, 16, 0, 0, 63, 15, 0, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMIRROR | G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
+        gDPPipeSync(gMainGfxPos++);
+        gSPTextureRectangle(gMainGfxPos++, 0, (i * 16) * 4, 64 * 4, (i * 16 + 16) * 4, G_TX_RENDERTILE, 0, 0, 0x400, 0x400);
+        gDPPipeSync(gMainGfxPos++);
     }
 
-    gDPLoadTextureTile(gMasterGfxPos++, osVirtualToPhysical(nuGfxZBuffer), G_IM_FMT_I, G_IM_SIZ_8b, 64, 64, 0, 0, 63, 63,
+    gDPLoadTextureTile(gMainGfxPos++, osVirtualToPhysical(nuGfxZBuffer), G_IM_FMT_I, G_IM_SIZ_8b, 64, 64, 0, 0, 63, 63,
                        0, G_TX_MIRROR | G_TX_CLAMP, G_TX_MIRROR | G_TX_CLAMP, 6, 6, 15, 15);
-    gDPSetTileSize(gMasterGfxPos++, G_TX_RENDERTILE, 0, 0, 0x01FC, 0x01FC);
-    gDPPipeSync(gMasterGfxPos++);
-    gDPSetCycleType(gMasterGfxPos++, G_CYC_FILL);
-    gDPSetRenderMode(gMasterGfxPos++, G_RM_NOOP, G_RM_NOOP2);
-    gDPSetColorImage(gMasterGfxPos++, G_IM_FMT_RGBA, G_IM_SIZ_32b, 64, osVirtualToPhysical(nuGfxZBuffer));
-    gDPSetFillColor(gMasterGfxPos++, GPACK_ZDZ(G_MAXFBZ, 0)<<16 | GPACK_ZDZ(G_MAXFBZ, 0));
-    gDPFillRectangle(gMasterGfxPos++, 0, 0, 63, 63);
-    gDPPipeSync(gMasterGfxPos++);
-    gDPSetColorImage(gMasterGfxPos++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH, osVirtualToPhysical(nuGfxCfb_ptr));
-    gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-    gDPSetCycleType(gMasterGfxPos++, G_CYC_1CYCLE);
-    gDPSetColorDither(gMasterGfxPos++, G_CD_MAGICSQ);
-    gDPSetAlphaDither(gMasterGfxPos++, G_AD_PATTERN);
-    gDPSetTextureFilter(gMasterGfxPos++, G_TF_AVERAGE);
-    gDPSetRenderMode(gMasterGfxPos++, G_RM_CLD_SURF, G_RM_CLD_SURF2);
+    gDPSetTileSize(gMainGfxPos++, G_TX_RENDERTILE, 0, 0, 0x01FC, 0x01FC);
+    gDPPipeSync(gMainGfxPos++);
+    gDPSetCycleType(gMainGfxPos++, G_CYC_FILL);
+    gDPSetRenderMode(gMainGfxPos++, G_RM_NOOP, G_RM_NOOP2);
+    gDPSetColorImage(gMainGfxPos++, G_IM_FMT_RGBA, G_IM_SIZ_32b, 64, osVirtualToPhysical(nuGfxZBuffer));
+    gDPSetFillColor(gMainGfxPos++, GPACK_ZDZ(G_MAXFBZ, 0)<<16 | GPACK_ZDZ(G_MAXFBZ, 0));
+    gDPFillRectangle(gMainGfxPos++, 0, 0, 63, 63);
+    gDPPipeSync(gMainGfxPos++);
+    gDPSetColorImage(gMainGfxPos++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WIDTH, osVirtualToPhysical(nuGfxCfb_ptr));
+    gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    gDPSetCycleType(gMainGfxPos++, G_CYC_1CYCLE);
+    gDPSetColorDither(gMainGfxPos++, G_CD_MAGICSQ);
+    gDPSetAlphaDither(gMainGfxPos++, G_AD_PATTERN);
+    gDPSetTextureFilter(gMainGfxPos++, G_TF_AVERAGE);
+    gDPSetRenderMode(gMainGfxPos++, G_RM_CLD_SURF, G_RM_CLD_SURF2);
 
-    if (arg3 != 255.0f || arg0 == 1) {
-        gDPSetCombineLERP(gMasterGfxPos++, 1, TEXEL0, PRIMITIVE, 0, TEXEL0, 0, ENVIRONMENT, PRIMITIVE, 1, TEXEL0, PRIMITIVE, 0, TEXEL0, 0, ENVIRONMENT, PRIMITIVE);
+    if (alpha != 255.0f || isWorld == 1) {
+        gDPSetCombineLERP(gMainGfxPos++, 1, TEXEL0, PRIMITIVE, 0, TEXEL0, 0, ENVIRONMENT, PRIMITIVE, 1, TEXEL0, PRIMITIVE, 0, TEXEL0, 0, ENVIRONMENT, PRIMITIVE);
     } else {
-        gDPSetCombineLERP(gMasterGfxPos++, 0, 0, 0, 0, 1, 0, ENVIRONMENT, PRIMITIVE, 0, 0, 0, 0, 1, 0, ENVIRONMENT, PRIMITIVE);
+        gDPSetCombineLERP(gMainGfxPos++, 0, 0, 0, 0, 1, 0, ENVIRONMENT, PRIMITIVE, 0, 0, 0, 0, 1, 0, ENVIRONMENT, PRIMITIVE);
     }
-    arg3 *= 0.5f;
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, 0, 0, 0, arg3 * 0.5f * arg4 / 255.0f);
-    gDPSetEnvColor(gMasterGfxPos++, 255, 255, 255, (255.0f - arg3 * 0.5f) * arg4 / 255.0f);
+    alpha *= 0.5f;
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, 0, 0, 0, alpha * 0.5f * progress / 255.0f);
+    gDPSetEnvColor(gMainGfxPos++, 255, 255, 255, (255.0f - alpha * 0.5f) * progress / 255.0f);
 
-    if (arg0 == 0) {
-        gSPTextureRectangle(gMasterGfxPos++,
+    if (!isWorld) {
+        gSPTextureRectangle(gMainGfxPos++,
                             camera->viewportStartX * 4, camera->viewportStartY * 4,
                             (camera->viewportStartX + camera->viewportW) * 4, (camera->viewportStartY + camera->viewportH) * 4,
                             G_TX_RENDERTILE,
-                            (12 - arg1) * 32.0f / texScale + 16.0f + 1024.0f, (19 - arg2) * 32.0f / texScale + 16.0f + 1024.0f,
+                            (12 - posX) * 32.0f / texScale + 16.0f + 1024.0f, (19 - posY) * 32.0f / texScale + 16.0f + 1024.0f,
                             1024.0f / texScale, 1024.0f / texScale);
     } else {
-        gSPTextureRectangle(gMasterGfxPos++,
+        gSPTextureRectangle(gMainGfxPos++,
                             camera->viewportStartX * 4, camera->viewportStartY * 4,
                             (camera->viewportStartX + camera->viewportW) * 4, (camera->viewportStartY + camera->viewportH) * 4,
                             G_TX_RENDERTILE,
-                            (9 - arg1) * 32.0f / texScale + 1024.0f, (32 - arg2) * 32.0f / texScale + 1024.0f,
+                            (9 - posX) * 32.0f / texScale + 1024.0f, (32 - posY) * 32.0f / texScale + 1024.0f,
                             1024.0f / texScale, 1024.0f / texScale);
     }
 }
 
-void func_80139F10(s32 arg0, s32 arg1, f32 alpha, s32 primR, s32 primG, s32 primB, s32 primA, s32 camID) {
+void appendGfx_screen_transition_stencil(s32 arg0, s32 arg1, f32 progress, s32 primR, s32 primG, s32 primB, s32 primA, s32 camID) {
     s32 x1, y1, x2, y2, t5, t6;
     f32 texScale;
 
@@ -258,18 +261,18 @@ void func_80139F10(s32 arg0, s32 arg1, f32 alpha, s32 primR, s32 primG, s32 prim
         t6 = 0;
     }
 
-    if (alpha == 0.0f) {
+    if (progress == 0.0f) {
         return;
     }
 
-    gDPSetScissor(gMasterGfxPos++, G_SC_NON_INTERLACE, x1, y1, x2, y2);
-    if (alpha == 255.0f) {
-        gDPSetCombineLERP(gMasterGfxPos++, 0, 0, 0, PRIMITIVE, 0, 0, 0, 1, 0, 0, 0, PRIMITIVE, 0, 0, 0, 1);
+    gDPSetScissor(gMainGfxPos++, G_SC_NON_INTERLACE, x1, y1, x2, y2);
+    if (progress == 255.0f) {
+        gDPSetCombineMode(gMainGfxPos++, PM_CC_08, PM_CC_08);
     }
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, primR, primG, primB, primA);
-    texScale = (255.0f - alpha) * 10.5f / 255.0f + 0.09; // range from
-    gSPTextureRectangle(gMasterGfxPos++, x1 * 4, y1 * 4, x2 * 4, y2 * 4, G_TX_RENDERTILE,
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, primR, primG, primB, primA);
+    texScale = (255.0f - progress) * 10.5f / 255.0f + 0.09; // range from
+    gSPTextureRectangle(gMainGfxPos++, x1 * 4, y1 * 4, x2 * 4, y2 * 4, G_TX_RENDERTILE,
                         (t5 - arg0) * 32.0f / texScale + 16.0f + 1024.0f, (t6 - arg1) * 32.0f / texScale + 16.0f + 1024.0f,
                         1024.0f / texScale, 1024.0f / texScale);
-    gDPPipeSync(gMasterGfxPos++);
+    gDPPipeSync(gMainGfxPos++);
 }

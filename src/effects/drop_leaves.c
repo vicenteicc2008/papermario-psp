@@ -20,7 +20,7 @@ void drop_leaves_main(s32 arg0, f32 arg1, f32 arg2, f32 arg3, s32 arg4) {
     bp.update = drop_leaves_update;
     bp.renderWorld = drop_leaves_render;
     bp.unk_00 = 0;
-    bp.unk_14 = NULL;
+    bp.renderUI = NULL;
     bp.effectID = EFFECT_DROP_LEAVES;
 
     effect = shim_create_effect_instance(&bp);
@@ -39,21 +39,21 @@ void drop_leaves_main(s32 arg0, f32 arg1, f32 arg2, f32 arg3, s32 arg4) {
     part++;
     for (i = 1; i < numParts; i++, part++) {
         if (arg0 == 0) {
-            part->unk_04 = func_E0200000(50) - 25;
-            part->unk_08 = func_E0200000(50) - 25;
+            part->unk_04 = effect_rand_int(50) - 25;
+            part->unk_08 = effect_rand_int(50) - 25;
             part->unk_0C = 0.0f;
-            part->unk_18 = func_E0200000(360);
-            part->unk_20 = func_E0200000(360);
-            part->unk_1C = func_E0200000(100) / 10.0f;
+            part->unk_18 = effect_rand_int(360);
+            part->unk_20 = effect_rand_int(360);
+            part->unk_1C = effect_rand_int(100) / 10.0f;
             part->unk_10 = 0;
             part->unk_14 = 0;
         } else {
-            part->unk_04 = func_E0200000(10) - 5;
-            part->unk_08 = func_E0200000(10) + 5;
+            part->unk_04 = effect_rand_int(10) - 5;
+            part->unk_08 = effect_rand_int(10) + 5;
             part->unk_0C = 10.0f;
-            part->unk_18 = func_E0200000(360);
-            part->unk_20 = func_E0200000(360);
-            part->unk_1C = func_E0200000(100) / 10.0f;
+            part->unk_18 = effect_rand_int(360);
+            part->unk_20 = effect_rand_int(360);
+            part->unk_1C = effect_rand_int(100) / 10.0f;
             part->unk_10 = 0;
             part->unk_14 = 2.0f;
         }
@@ -133,9 +133,9 @@ void drop_leaves_appendGfx(void* effect) {
     Matrix4f sp98;
     s32 i;
 
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
-    gSPDisplayList(gMasterGfxPos++, D_09001180_33E790);
-    gDPSetPrimColor(gMasterGfxPos++, 0, 0, 20, 100, 20, part->unk_24);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
+    gSPDisplayList(gMainGfxPos++, D_09001180_33E790);
+    gDPSetPrimColor(gMainGfxPos++, 0, 0, 20, 100, 20, part->unk_24);
 
     shim_guTranslateF(sp18, part->unk_04, part->unk_08, part->unk_0C);
     shim_guRotateF(sp58, -gCameras[gCurrentCameraID].currentYaw, 0.0f, 1.0f, 0.0f);
@@ -151,8 +151,8 @@ void drop_leaves_appendGfx(void* effect) {
         shim_guMtxCatF(sp58, sp18, sp18);
         shim_guMtxF2L(sp18, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-        gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
-        gSPDisplayList(gMasterGfxPos++, D_09001230_33E840);
-        gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
+        gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++], G_MTX_PUSH | G_MTX_MUL | G_MTX_MODELVIEW);
+        gSPDisplayList(gMainGfxPos++, D_09001230_33E840);
+        gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
     }
 }

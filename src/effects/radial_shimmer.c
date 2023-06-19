@@ -43,7 +43,7 @@ EffectInstance* radial_shimmer_main(s32 arg0, f32 arg1, f32 arg2, f32 arg3, f32 
     bp.update = radial_shimmer_update;
     bp.renderWorld = radial_shimmer_render;
     bp.unk_00 = 0;
-    bp.unk_14 = NULL;
+    bp.renderUI = NULL;
     bp.effectID = EFFECT_RADIAL_SHIMMER;
 
     effect = shim_create_effect_instance(&bp);
@@ -215,8 +215,8 @@ void radial_shimmer_update(EffectInstance* effect) {
     part->timeLeft--;
     part->lifeTime++;
 
-    if (effect->flags & 0x10) {
-        effect->flags &= ~0x10;
+    if (effect->flags & FX_INSTANCE_FLAG_DISMISS) {
+        effect->flags &= ~FX_INSTANCE_FLAG_DISMISS;
         part->timeLeft = 16;
     }
 
@@ -310,8 +310,8 @@ void radial_shimmer_appendGfx(void* effect) {
     dlist1 = D_E0066C8C[temp_s5];
     dlist2 = D_E0066C50[temp_s5];
 
-    gDPPipeSync(gMasterGfxPos++);
-    gSPSegment(gMasterGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
+    gDPPipeSync(gMainGfxPos++);
+    gSPSegment(gMainGfxPos++, 0x09, VIRTUAL_TO_PHYSICAL(((EffectInstance*)effect)->graphics->data));
 
     shim_guTranslateF(sp20, data->unk_10, data->unk_14, data->unk_18);
     shim_guScaleF(sp60, data->unk_1C, data->unk_1C, 1.0f);
@@ -320,20 +320,20 @@ void radial_shimmer_appendGfx(void* effect) {
     shim_guMtxCatF(sp60, sp20, sp20);
     shim_guMtxF2L(sp20, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++],
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++],
               G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
 
     shim_guTranslateF(sp20, 0.0f, 0.0f, data->unk_64);
     shim_guMtxF2L(sp20, &gDisplayContext->matrixStack[gMatrixListPos]);
 
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++],
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->matrixStack[gMatrixListPos++],
               G_MTX_PUSH | G_MTX_LOAD | G_MTX_MODELVIEW);
     alpha = data->unk_24;
-    gDPSetEnvColor(gMasterGfxPos++, data->unk_6B, data->unk_6C, data->unk_6D, 127);
-    gSPDisplayList(gMasterGfxPos++, dlist1);
+    gDPSetEnvColor(gMainGfxPos++, data->unk_6B, data->unk_6C, data->unk_6D, 127);
+    gSPDisplayList(gMainGfxPos++, dlist1);
 
     for (i = 0; i < effectTemp->numParts; i++, data++) {
-        gDPSetPrimColor(gMasterGfxPos++, 0, 0, data->unk_68, data->unk_69, data->unk_6A, alpha);
+        gDPSetPrimColor(gMainGfxPos++, 0, 0, data->unk_68, data->unk_69, data->unk_6A, alpha);
 
         switch (temp_s5) {
             case 0:
@@ -360,13 +360,13 @@ void radial_shimmer_appendGfx(void* effect) {
         temp_f4 = data->unk_38;
         temp_f6 = data->unk_48;
 
-        gDPSetTileSize(gMasterGfxPos++, 0, temp_f0, temp_f2, temp_f0 + other * 4, temp_f2 + var_a3 * 4);
-        gDPSetTileSize(gMasterGfxPos++, G_TX_MIRROR, temp_f4, temp_f6, temp_f4 + other * 4, temp_f6 + var_a3 * 4);
-        gSPDisplayList(gMasterGfxPos++, dlist2);
+        gDPSetTileSize(gMainGfxPos++, 0, temp_f0, temp_f2, temp_f0 + other * 4, temp_f2 + var_a3 * 4);
+        gDPSetTileSize(gMainGfxPos++, G_TX_MIRROR, temp_f4, temp_f6, temp_f4 + other * 4, temp_f6 + var_a3 * 4);
+        gSPDisplayList(gMainGfxPos++, dlist2);
     }
 
-    gSPPopMatrix(gMasterGfxPos++, G_MTX_MODELVIEW);
-    gSPMatrix(gMasterGfxPos++, &gDisplayContext->camPerspMatrix[gCurrentCameraID],
+    gSPPopMatrix(gMainGfxPos++, G_MTX_MODELVIEW);
+    gSPMatrix(gMainGfxPos++, &gDisplayContext->camPerspMatrix[gCurrentCameraID],
               G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION);
-    gDPPipeSync(gMasterGfxPos++);
+    gDPPipeSync(gMainGfxPos++);
 }
