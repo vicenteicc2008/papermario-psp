@@ -612,7 +612,7 @@ void pause_init(void) {
     MenuPanel** menuPanels;
     s32 i;
 
-    dma_copy(ui_images_ROM_START, ui_images_ROM_END, ui_images_VRAM);
+    DMA_COPY_SEGMENT(ui_images);
 
     for (i = 0; i < ARRAY_COUNT(gPauseIconScripts); i++) {
         gPauseCommonIconIDs[i] = hud_element_create(gPauseIconScripts[i]);
@@ -660,7 +660,7 @@ void pause_init(void) {
         }
 
         set_window_update(WINDOW_ID_PAUSE_TUTORIAL, WINDOW_UPDATE_SHOW);
-        sfx_play_sound(SOUND_MENU_START_TUTORIAL);
+        sfx_play_sound(SOUND_MENU_SHOW_CHOICE);
     }
 
     update_window_hierarchy(WINDOW_ID_PAUSE_CURSOR, 0x40);
@@ -717,8 +717,6 @@ void pause_tutorial_input(s32 *pressed, s32 *held) {
     *pressed = pressedNew;
     *held = heldNew;
 }
-
-
 
 void pause_handle_input(s32 pressed, s32 held) {
     s32 height;
@@ -827,8 +825,6 @@ void pause_cleanup(void) {
     set_window_update(WINDOW_ID_PAUSE_CURSOR, WINDOW_UPDATE_HIDE);
 }
 
-
-
 s32 pause_get_total_equipped_bp_cost(void) {
     s32 totalCost = 0;
     s32 i;
@@ -845,14 +841,14 @@ s32 pause_get_total_equipped_bp_cost(void) {
     return totalCost;
 }
 
-void pause_draw_rect(s32 ulx, s32 uly, s32 lrx, s32 lry, s32 tileDescriptor, s32 uls, s32 ult, s32 dsdx, s32 dtdy) {
+void pause_draw_rect(s32 ulx, s32 uly, s32 lrx, s32 lry, s32 tileIdx, s32 uls, s32 ult, s32 dsdx, s32 dtdy) {
     if (ulx <= -2688 || uly <= -2688 || lrx <= 0 || lry <= 0) {
         return;
     }
     if (ulx >= 1280 || uly >= 960 || lrx >= 2688 || lry >= 2688) {
         return;
     }
-    gSPScisTextureRectangle(gMainGfxPos++, ulx, uly, lrx, lry, tileDescriptor, uls, ult, dsdx, dtdy);
+    gSPScisTextureRectangle(gMainGfxPos++, ulx, uly, lrx, lry, tileIdx, uls, ult, dsdx, dtdy);
 }
 
 void pause_sort_item_list(s16* arr, s32 len, s32 (*compare)(s16*, s16 *)) {

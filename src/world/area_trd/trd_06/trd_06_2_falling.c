@@ -1,5 +1,6 @@
 #include "trd_06.h"
 #include "sprite.h"
+#include "sprite/player.h"
 
 typedef struct FallingSprite {
     /* 0x00 */ s32 animationEnabled;
@@ -84,9 +85,9 @@ API_CALLABLE(N(InitializeFallingSprite)) {
     falling->playerSpriteID = 1;
     falling->width  = gPlayerStatus.colliderHeight;
     falling->height = gPlayerStatus.colliderDiameter;
-    falling->pos.x = gPlayerStatus.position.x;
-    falling->pos.y = gPlayerStatus.position.y + (falling->height * SPRITE_WORLD_SCALE_D * 0.5);
-    falling->pos.z = gPlayerStatus.position.z;
+    falling->pos.x = gPlayerStatus.pos.x;
+    falling->pos.y = gPlayerStatus.pos.y + (falling->height * SPRITE_WORLD_SCALE_D * 0.5);
+    falling->pos.z = gPlayerStatus.pos.z;
     falling->rot.x = 0.0f;
     falling->rot.y = 0.0f;
     falling->rot.z = 0.0f;
@@ -169,7 +170,7 @@ EvtScript N(EVS_PlayerFalling) = {
     EVT_CALL(SetPlayerPos, 0, 130, 0)
     EVT_THREAD
         EVT_WAIT(5)
-        EVT_CALL(PlaySound, SOUND_175)
+        EVT_CALL(PlaySound, SOUND_0175)
     EVT_END_THREAD
     EVT_THREAD
         EVT_CALL(MakeLerp, 180, 210, 25, EASING_QUADRATIC_IN)
@@ -194,7 +195,7 @@ EvtScript N(EVS_PlayerFalling) = {
     EVT_IF_EQ(LVar0, 1)
         EVT_GOTO(0)
     EVT_END_IF
-    EVT_CALL(PlaySound, SOUND_108)
+    EVT_CALL(PlaySound, SOUND_HIT_SPIKE)
     EVT_ADD(LVar2, -1000)
     EVT_CALL(SetPlayerPos, LVar1, LVar2, LVar3)
     EVT_RETURN
@@ -206,7 +207,7 @@ EvtScript N(EVS_PartnerFalling) = {
     EVT_CALL(SetNpcPos, NPC_PARTNER, 0, LVar0, 0)
     EVT_THREAD
         EVT_WAIT(5)
-        EVT_CALL(PlaySound, SOUND_176)
+        EVT_CALL(PlaySound, SOUND_0176)
     EVT_END_THREAD
     EVT_THREAD
         EVT_CALL(MakeLerp, 180, 150, 25, EASING_QUADRATIC_IN)
@@ -232,7 +233,7 @@ EvtScript N(EVS_PartnerFalling) = {
     EVT_IF_EQ(LVar0, 1)
         EVT_GOTO(0)
     EVT_END_IF
-    EVT_CALL(PlaySound, SOUND_108)
+    EVT_CALL(PlaySound, SOUND_HIT_SPIKE)
     EVT_CALL(SetNpcPos, NPC_PARTNER, LVar1, LVar2, LVar3)
     EVT_RETURN
     EVT_END
@@ -301,7 +302,7 @@ EvtScript N(EVS_Scene_FallIntoCell) = {
     EVT_EXEC_WAIT(N(EVS_PlayerFalling))
     EVT_CALL(InterpNpcYaw, NPC_Bombette, 90, 0)
     EVT_CALL(SetNpcFlagBits, NPC_PARTNER, NPC_FLAG_INACTIVE | NPC_FLAG_GRAVITY, FALSE)
-    EVT_CALL(SetNpcFlagBits, NPC_PARTNER, NPC_FLAG_8 | NPC_FLAG_IGNORE_PLAYER_COLLISION, TRUE)
+    EVT_CALL(SetNpcFlagBits, NPC_PARTNER, NPC_FLAG_FLYING | NPC_FLAG_IGNORE_PLAYER_COLLISION, TRUE)
     EVT_EXEC_WAIT(N(EVS_PartnerFalling))
     EVT_CALL(InterpNpcYaw, NPC_Bombette, 270, 0)
     EVT_WAIT(20)
@@ -309,7 +310,7 @@ EvtScript N(EVS_Scene_FallIntoCell) = {
     EVT_CALL(SpeakToPlayer, NPC_Bombette, ANIM_WorldBombette_Talk, ANIM_WorldBombette_Idle, 0, MSG_CH1_00D8)
     EVT_CALL(N(EnableFallingAnimation))
     EVT_CALL(SetNpcFlagBits, NPC_PARTNER, NPC_FLAG_GRAVITY, TRUE)
-    EVT_CALL(SetNpcFlagBits, NPC_PARTNER, NPC_FLAG_8 | NPC_FLAG_IGNORE_PLAYER_COLLISION, FALSE)
+    EVT_CALL(SetNpcFlagBits, NPC_PARTNER, NPC_FLAG_FLYING | NPC_FLAG_IGNORE_PLAYER_COLLISION, FALSE)
     EVT_CALL(N(DeleteFallingSprite))
     EVT_THREAD
         EVT_CALL(SetNpcRotation, NPC_PARTNER, 0, 0, 0)

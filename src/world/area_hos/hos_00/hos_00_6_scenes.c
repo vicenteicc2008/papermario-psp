@@ -1,4 +1,5 @@
 #include "hos_00.h"
+#include "sprite/player.h"
 
 #include "world/common/complete/GiveReward.inc.c"
 
@@ -77,7 +78,7 @@ API_CALLABLE(N(HavePartyFaceTwink)) {
     Npc* npc = get_npc_unsafe(NPC_Twink);
 
     partner->yaw = atan2(partner->pos.x, partner->pos.z, npc->pos.x, npc->pos.z);
-    gPlayerStatus.targetYaw = atan2(gPlayerStatus.position.x, gPlayerStatus.position.z, npc->pos.x, npc->pos.z);
+    gPlayerStatus.targetYaw = atan2(gPlayerStatus.pos.x, gPlayerStatus.pos.z, npc->pos.x, npc->pos.z);
     npc->yaw = atan2(N(LastTwinkPosX), N(LastTwinkPosZ), npc->pos.x, npc->pos.z);
     N(LastTwinkPosX) = npc->pos.x;
     N(LastTwinkPosZ) = npc->pos.z;
@@ -201,7 +202,7 @@ EvtScript N(EVS_Scene_MeetingTwink) = {
     EVT_CALL(SetNpcJumpscale, NPC_Twink, 0)
     EVT_ADD(LVar0, -10)
     EVT_CALL(NpcJump0, NPC_Twink, LVar0, 20, LVar2, 15 * DT)
-    EVT_CALL(PlaySoundAtPlayer, SOUND_HIT_PLAYER_NORMAL, 0)
+    EVT_CALL(PlaySoundAtPlayer, SOUND_HIT_PLAYER_NORMAL, SOUND_SPACE_DEFAULT)
     EVT_CALL(SetPlayerAnimation, ANIM_Mario1_VacantStare)
     EVT_CALL(SetNpcAnimation, NPC_Twink, ANIM_Twink_Cringe)
     EVT_THREAD

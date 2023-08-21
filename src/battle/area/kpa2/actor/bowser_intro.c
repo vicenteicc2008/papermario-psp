@@ -2,14 +2,15 @@
 #include "sprite.h"
 #include "sprite/npc/BattleBowser.h"
 #include "sprite/npc/ParadePeach.h"
+#include "sprite/player.h"
 
 #define NAMESPACE A(bowser_intro)
 
-extern EvtScript N(init);
-extern EvtScript N(idle);
-extern EvtScript N(takeTurn);
-extern EvtScript N(handleEvent);
-extern EvtScript N(nextTurn);
+extern EvtScript N(EVS_Init);
+extern EvtScript N(EVS_Idle);
+extern EvtScript N(EVS_TakeTurn);
+extern EvtScript N(EVS_HandleEvent);
+extern EvtScript N(EVS_HandlePhase);
 extern EvtScript N(unkDecorationScript);
 extern EvtScript N(makeWalkingSounds);
 extern EvtScript N(onHit);
@@ -17,7 +18,7 @@ extern EvtScript N(onDeath);
 extern EvtScript N(attackClawSwipe);
 extern EvtScript N(powerUp);
 extern EvtScript N(attackFireBreath);
-extern EvtScript N(returnHome);
+extern EvtScript N(EVS_ReturnHome);
 extern EvtScript N(useStarRod);
 
 enum N(ActorPartIDs) {
@@ -25,6 +26,16 @@ enum N(ActorPartIDs) {
 };
 
 enum N(ActorVars) {
+    AVAR_Unk_0      = 0,
+    AVAR_Unk_1      = 1,
+    AVAR_Unk_E      = 14,
+};
+
+enum N(ActorParams) {
+    DMG_UNK         = 0,
+};
+
+enum N(OldActorVars) {
     N(VAR_TURN_COUNTER) = 0,
     N(VAR_PEACH_SPOKE) = 1,
 };
@@ -121,11 +132,11 @@ ActorPartBlueprint N(ActorParts)[] = {
 ActorBlueprint NAMESPACE = {
     .flags = 0,
     .type = ACTOR_TYPE_INTRO_BOWSER,
-    .level = 0,
+    .level = ACTOR_LEVEL_INTRO_BOWSER,
     .maxHP = 10,
     .partCount = ARRAY_COUNT(N(ActorParts)),
     .partsData = N(ActorParts),
-    .initScript = &N(init),
+    .initScript = &N(EVS_Init),
     .statusTable = N(StatusTable),
     .escapeChance = 0,
     .airLiftChance = 0,
@@ -144,25 +155,25 @@ ActorBlueprint NAMESPACE = {
 #include "common/StartRumbleWithParams.inc.c"
 #include "common/UnkFireBreathFXFunc.inc.c"
 #include "common/UnkBowserFunc1.inc.c"
-#include "common/FadeBackgroundToBlack.inc.c"
-#include "common/UnfadeBackgroundToBlack.inc.c"
+#include "common/FadeBackgroundDarken.inc.c"
+#include "common/FadeBackgroundLighten.inc.c"
 #include "common/RemoveChillOut.inc.c"
 #include "common/StarRodAppearEffect.inc.c"
 #include "common/StarRodPowerUpEffect.inc.c"
 
-EvtScript N(init) = {
+EvtScript N(EVS_Init) = {
     EVT_CALL(SetActorVar, ACTOR_SELF, N(VAR_TURN_COUNTER), 0)
     EVT_CALL(SetActorVar, ACTOR_SELF, N(VAR_PEACH_SPOKE), 0)
-    EVT_CALL(SetActorVar, ACTOR_SELF, 14, 0)
+    EVT_CALL(SetActorVar, ACTOR_SELF, AVAR_Unk_E, 0)
     EVT_CALL(SetBattleMenuEnabledFlags, BTL_MENU_ENABLED_JUMP)
     EVT_CALL(CreateNpc, NPC_BTL_COMPANION, ANIM_ParadePeach_IdleRaisedArms)
     EVT_CALL(SetNpcYaw, NPC_BTL_COMPANION, 90)
     EVT_CALL(SetNpcPos, NPC_BTL_COMPANION, -130, 0, -12)
     EVT_CALL(EnableNpcShadow, NPC_BTL_COMPANION, TRUE)
-    EVT_CALL(BindTakeTurn, ACTOR_SELF, EVT_PTR(N(takeTurn)))
-    EVT_CALL(BindIdle, ACTOR_SELF, EVT_PTR(N(idle)))
-    EVT_CALL(BindHandleEvent, ACTOR_SELF, EVT_PTR(N(handleEvent)))
-    EVT_CALL(BindNextTurn, ACTOR_SELF, EVT_PTR(N(nextTurn)))
+    EVT_CALL(BindTakeTurn, ACTOR_SELF, EVT_PTR(N(EVS_TakeTurn)))
+    EVT_CALL(BindIdle, ACTOR_SELF, EVT_PTR(N(EVS_Idle)))
+    EVT_CALL(BindHandleEvent, ACTOR_SELF, EVT_PTR(N(EVS_HandleEvent)))
+    EVT_CALL(BindHandlePhase, ACTOR_SELF, EVT_PTR(N(EVS_HandlePhase)))
     EVT_CALL(ModifyActorDecoration, ACTOR_SELF, PRT_MAIN, 1, 100, 0, 0, 0)
     EVT_EXEC(N(unkDecorationScript))
     EVT_CALL(SetBattleFlagBits, BS_FLAGS1_NO_GAME_OVER, TRUE)
@@ -171,7 +182,7 @@ EvtScript N(init) = {
     EVT_END
 };
 
-EvtScript N(idle) = {
+EvtScript N(EVS_Idle) = {
     EVT_CALL(GetActorPos, ACTOR_SELF, LVar0, LVar1, LVar2)
     EVT_LABEL(0)
     EVT_EXEC_WAIT(N(makeWalkingSounds))
@@ -181,7 +192,7 @@ EvtScript N(idle) = {
     EVT_END
 };
 
-EvtScript N(nextTurn) = {
+EvtScript N(EVS_HandlePhase) = {
     EVT_CALL(UseIdleAnimation, ACTOR_SELF, FALSE)
     EVT_CALL(GetBattlePhase, LVar0)
     EVT_SWITCH(LVar0)
@@ -219,7 +230,7 @@ EvtScript N(nextTurn) = {
     EVT_END
 };
 
-EvtScript N(handleEvent) = {
+EvtScript N(EVS_HandleEvent) = {
     EVT_CALL(UseIdleAnimation, ACTOR_SELF, FALSE)
     EVT_CALL(GetLastElement, LVarE)
     EVT_CALL(GetLastEvent, ACTOR_SELF, LVar0)
@@ -305,7 +316,7 @@ EvtScript N(onDeath) = {
     EVT_END
 };
 
-EvtScript N(takeTurn) = {
+EvtScript N(EVS_TakeTurn) = {
     EVT_CALL(UseIdleAnimation, ACTOR_SELF, FALSE)
     EVT_CALL(GetActorVar, ACTOR_SELF, N(VAR_TURN_COUNTER), LVar0)
     EVT_ADD(LVar0, 1)
@@ -345,7 +356,7 @@ EvtScript N(attackClawSwipe) = {
     EVT_CALL(SetAnimation, ACTOR_SELF, PRT_MAIN, ANIM_BattleBowser_RearUpMock)
     EVT_WAIT(25)
     EVT_CALL(SetAnimation, ACTOR_SELF, PRT_MAIN, ANIM_BattleBowser_Swipe)
-    EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_35E)
+    EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_035E)
     EVT_WAIT(3)
     EVT_WAIT(2)
     EVT_CALL(SetGoalToTarget, ACTOR_SELF)
@@ -381,7 +392,7 @@ EvtScript N(attackClawSwipe) = {
             EVT_END_IF
             EVT_CALL(SetActorSpeed, ACTOR_SELF, EVT_FLOAT(5.0))
             EVT_SET(LVar1, ANIM_BattleBowser_Walk)
-            EVT_EXEC_WAIT(N(returnHome))
+            EVT_EXEC_WAIT(N(EVS_ReturnHome))
         EVT_END_CASE_GROUP
     EVT_END_SWITCH
     EVT_CALL(UseIdleAnimation, ACTOR_SELF, TRUE)
@@ -416,9 +427,9 @@ EvtScript N(attackFireBreath) = {
     EVT_CALL(N(UnkFireBreathFXFunc), LVarF)
     EVT_THREAD
         EVT_CALL(N(StartRumbleWithParams), 50, 148)
-        EVT_CALL(PlaySound, SOUND_3BD)
+        EVT_CALL(PlaySound, SOUND_03BD)
         EVT_WAIT(70)
-        EVT_CALL(PlaySound, SOUND_3BD | SOUND_ID_TRIGGER_CHANGE_SOUND)
+        EVT_CALL(PlaySound, SOUND_03BD | SOUND_ID_TRIGGER_CHANGE_SOUND)
     EVT_END_THREAD
     EVT_CALL(SetNpcAnimation, NPC_BTL_COMPANION, ANIM_ParadePeach_Weep)
     EVT_CALL(UseBattleCamPreset, BTL_CAM_DEFAULT)
@@ -500,7 +511,7 @@ EvtScript N(powerUp) = {
     EVT_END
 };
 
-EvtScript N(returnHome) = {
+EvtScript N(EVS_ReturnHome) = {
     EVT_SET(LVar0, 1)
     EVT_CALL(GetActorPos, ACTOR_SELF, LVarA, LVarB, LVarC)
     EVT_CALL(SetGoalToHome, ACTOR_SELF)
@@ -530,7 +541,7 @@ EvtScript N(unkDecorationScript) = {
 };
 
 EvtScript N(useStarRod) = {
-    EVT_CALL(N(FadeBackgroundToBlack))
+    EVT_CALL(N(FadeBackgroundDarken))
     EVT_CALL(GetStatusFlags, ACTOR_SELF, LVar3)
     EVT_CALL(GetActorPos, ACTOR_SELF, LVar0, LVar1, LVar2)
     EVT_IF_NOT_FLAG(LVar3, STATUS_FLAG_SHRINK)
@@ -597,7 +608,7 @@ EvtScript N(useStarRod) = {
     EVT_END_THREAD
     EVT_WAIT(75)
     EVT_THREAD
-        EVT_CALL(N(UnfadeBackgroundToBlack))
+        EVT_CALL(N(FadeBackgroundLighten))
     EVT_END_THREAD
     EVT_CALL(SetAnimation, ACTOR_SELF, PRT_MAIN, ANIM_BattleBowser_RearUpLaugh)
     EVT_CALL(GetStatusFlags, ACTOR_SELF, LVar3)

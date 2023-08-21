@@ -1,5 +1,6 @@
 #include "flo_19.h"
 #include "effects.h"
+#include "sprite/player.h"
 
 API_CALLABLE(N(GetPlayerAngles)) {
     Bytecode* args = script->ptrReadPos;
@@ -19,10 +20,10 @@ API_CALLABLE(N(PlayerRideBeanstalk)) {
     f32 clamped = clamp_angle(angle - temp);
 
     temp = sin_deg(clamped);
-    gPlayerStatus.position.x = (dist * temp) + 0.0f;
-    gPlayerStatus.position.y = evt_get_variable(NULL, script->varTable[10]) + evt_get_variable(NULL, script->varTable[3]);
+    gPlayerStatus.pos.x = (dist * temp) + 0.0f;
+    gPlayerStatus.pos.y = evt_get_variable(NULL, script->varTable[10]) + evt_get_variable(NULL, script->varTable[3]);
     temp = cos_deg(clamped);
-    gPlayerStatus.position.z = 0.0f - (dist * temp);
+    gPlayerStatus.pos.z = 0.0f - (dist * temp);
 
     return ApiStatus_DONE2;
 }
@@ -203,7 +204,7 @@ EvtScript N(EVS_Enter_Beanstalk) = {
     EVT_CALL(InterpPlayerYaw, 90, 0)
     EVT_WAIT(5)
     EVT_SET(AF_FLO_RidingBeanstalk, FALSE)
-    EVT_CALL(StopSound, SOUND_19C)
+    EVT_CALL(StopSound, SOUND_019C)
     EVT_EXEC_WAIT(N(EVS_SetupMusic))
     EVT_CALL(ResetCam, CAM_DEFAULT, EVT_FLOAT(1.0))
     EVT_CALL(DisablePlayerInput, FALSE)
@@ -229,7 +230,7 @@ EvtScript N(EVS_Exit_Beanstalk) = {
         EVT_CALL(PlayerMoveTo, LVar9, LVarB, 8)
         EVT_CALL(SetNpcJumpscale, NPC_PARTNER, EVT_FLOAT(0.0))
         EVT_CALL(NpcJump0, NPC_PARTNER, LVarC, LVarD, LVarE, 5)
-        EVT_CALL(PlaySound, SOUND_19D)
+        EVT_CALL(PlaySound, SOUND_019D)
         EVT_CALL(SetMusicTrack, 0, SONG_MAGIC_BEANSTALK, 1, 8)
         EVT_CALL(SetNpcAnimation, NPC_PARTNER, PARTNER_ANIM_IDLE)
         EVT_CALL(SetPlayerAnimation, ANIM_Mario1_Walk)

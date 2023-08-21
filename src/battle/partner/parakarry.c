@@ -24,11 +24,11 @@ extern HudScript HES_AimShimmerE;
 extern HudScript HES_AimShimmerF;
 extern HudScript HES_AimTarget;
 
-extern EvtScript N(handleEvent);
-extern EvtScript N(idle);
-extern EvtScript N(nextTurn);
-extern EvtScript N(takeTurn);
-extern EvtScript N(init);
+extern EvtScript N(EVS_HandleEvent);
+extern EvtScript N(EVS_Idle);
+extern EvtScript N(EVS_HandlePhase);
+extern EvtScript N(EVS_TakeTurn);
+extern EvtScript N(EVS_Init);
 extern EvtScript N(firstStrike);
 extern EvtScript N(executeAction);
 extern EvtScript N(celebrate);
@@ -148,22 +148,22 @@ API_CALLABLE(N(ShellShotActionCommand)) {
             state->goalPos.z = state->goalPos.z;
             state->unk_24 = (targetActorPart->size.y + targetActorPart->size.x) / 2 / 24.0;
             hud_element_set_scale(hudTarget, state->unk_24 * targetActor->scalingFactor);
-            state->currentPos.x = parakarry->currentPos.x + 8.0f;
-            state->currentPos.y = parakarry->currentPos.y + 16.0f;
-            state->currentPos.z = parakarry->currentPos.z;
-            state->angle = atan2(state->currentPos.x, state->currentPos.y, state->goalPos.x, state->goalPos.y);
+            state->curPos.x = parakarry->curPos.x + 8.0f;
+            state->curPos.y = parakarry->curPos.y + 16.0f;
+            state->curPos.z = parakarry->curPos.z;
+            state->angle = atan2(state->curPos.x, state->curPos.y, state->goalPos.x, state->goalPos.y);
             state->bounceDivisor = state->angle;
-            state->distance = 116.0f;
+            state->dist = 116.0f;
             state->unk_18.x = state->angle;
             i = 0;
 
             for (i = 0; i < 30; i++) {
                 state->unk_18.x -= 1.0f;
                 aimAngle = clamp_angle(state->unk_18.x);
-                x = state->currentPos.x;
-                y = state->currentPos.y;
-                z = state->currentPos.z;
-                clampedAngleDiff = state->distance;
+                x = state->curPos.x;
+                y = state->curPos.y;
+                z = state->curPos.z;
+                clampedAngleDiff = state->dist;
                 add_vec2D_polar(&x, &y, clampedAngleDiff, aimAngle);
                 get_screen_coords(gCurrentCameraID, x, y, z, &screenX, &screenY, &screenZ);
                 if (screenY > 180) {
@@ -177,10 +177,10 @@ API_CALLABLE(N(ShellShotActionCommand)) {
             for (i = 0; i < 30; i++) {
                 state->unk_18.y += 1.0f;
                 aimAngle = clamp_angle(state->unk_18.y);
-                x = state->currentPos.x;
-                y = state->currentPos.y;
-                z = state->currentPos.z;
-                add_vec2D_polar(&x, &y, state->distance, aimAngle);
+                x = state->curPos.x;
+                y = state->curPos.y;
+                z = state->curPos.z;
+                add_vec2D_polar(&x, &y, state->dist, aimAngle);
                 get_screen_coords(gCurrentCameraID, x, y, z, &screenX, &screenY, &screenZ);
                 if (screenY < 30) {
                     break;
@@ -192,17 +192,17 @@ API_CALLABLE(N(ShellShotActionCommand)) {
             hudTargetRotation = 0;
             shellShotTimer = 90;
 #if VERSION_PAL
-            state->velocity = 4.0f;
+            state->vel = 4.0f;
 #else
-            state->velocity = 3.0f;
+            state->vel = 3.0f;
 #endif
-            battleStatus->unk_86 = 0;
+            battleStatus->actionResult = ACTION_RESULT_FAIL;
             action_command_init_status();
             func_80269118();
             script->functionTemp[0] = 1;
             break;
         case 1:
-            if (gActionCommandStatus.autoSucceed || battleStatus->currentButtonsDown & BUTTON_STICK_LEFT) {
+            if (gActionCommandStatus.autoSucceed || battleStatus->curButtonsDown & BUTTON_STICK_LEFT) {
                 shellShotTimer = 0;
             }
 
@@ -219,13 +219,13 @@ API_CALLABLE(N(ShellShotActionCommand)) {
                 }
             }
 
-            sfx_play_sound(SOUND_311);
+            sfx_play_sound(SOUND_AIM_SHELL_SHOT);
             shellShotTimer = 60;
             script->functionTemp[0] = 2;
             break;
         case 2:
             if (!(gActionCommandStatus.autoSucceed)) {
-                if (!(battleStatus->currentButtonsDown & BUTTON_STICK_LEFT)) {
+                if (!(battleStatus->curButtonsDown & BUTTON_STICK_LEFT)) {
                     script->functionTemp[0] = 3;
                     break;
                 }
@@ -243,16 +243,16 @@ API_CALLABLE(N(ShellShotActionCommand)) {
                 }
             }
 
-            state->angle += state->velocity;
+            state->angle += state->vel;
 
             if (state->angle <= state->unk_18.x) {
                 state->angle = state->unk_18.x;
-                state->velocity = 0.0f - state->velocity;
+                state->vel = 0.0f - state->vel;
             }
 
             if (state->angle >= state->unk_18.y) {
                 state->angle = state->unk_18.y;
-                state->velocity = 0.0f - state->velocity;
+                state->vel = 0.0f - state->vel;
             }
             break;
         case 3:
@@ -260,25 +260,25 @@ API_CALLABLE(N(ShellShotActionCommand)) {
             clampedAngleDiff = get_clamped_angle_diff(state->angle, state->bounceDivisor);
             aimAngle = fabsf(clampedAngleDiff) / state->unk_24 * targetActor->scalingFactor;
 
-            if (state->velocity >= 0.0f) {
+            if (state->vel >= 0.0f) {
                 if (clampedAngleDiff < 0.0f) {
-                    battleStatus->unk_86 = 0;
+                    battleStatus->actionResult = ACTION_RESULT_FAIL;
                 } else {
-                    battleStatus->unk_86 = -1;
+                    battleStatus->actionResult = ACTION_RESULT_EARLY;
                 }
             } else if (clampedAngleDiff < 0.0f) {
-                battleStatus->unk_86 = -1;
+                battleStatus->actionResult = ACTION_RESULT_EARLY;
             } else {
-                battleStatus->unk_86 = 0;
+                battleStatus->actionResult = ACTION_RESULT_FAIL;
             }
-            battleStatus->actionResult = 0;
+            battleStatus->actionQuality = 0;
 
             if (aimAngle < 7.0f) {
-                battleStatus->actionResult = 1;
-                battleStatus->unk_86 = 1;
+                battleStatus->actionQuality = 1;
+                battleStatus->actionResult = ACTION_RESULT_SUCCESS;
                 func_80269160();
             } else if (state->angle < state->bounceDivisor) {
-                battleStatus->actionResult = -1;
+                battleStatus->actionQuality = -1;
             }
 
             for (i = 0; i < ARRAY_COUNT(hudMarkers); i++) {
@@ -326,18 +326,18 @@ API_CALLABLE(N(ShellShotActionCommand)) {
     if (script->functionTemp[0] >= 2) {
         if (script->functionTemp[0] < 3) {
             aimAngle = clamp_angle(state->angle);
-            aimX = state->currentPos.x;
-            aimY = state->currentPos.y;
-            aimZ = state->currentPos.z;
-            add_vec2D_polar(&aimX, &aimY, state->distance, aimAngle);
-            z = state->currentPos.z;
-            x = state->currentPos.x;
-            y = state->currentPos.y;
+            aimX = state->curPos.x;
+            aimY = state->curPos.y;
+            aimZ = state->curPos.z;
+            add_vec2D_polar(&aimX, &aimY, state->dist, aimAngle);
+            z = state->curPos.z;
+            x = state->curPos.x;
+            y = state->curPos.y;
 
             for (i = 0; i < ARRAY_COUNT(hudShimmers); i++) {
-                x += (aimX - state->currentPos.x) / 6.0f;
-                y += (aimY - state->currentPos.y) / 6.0f;
-                z += (aimZ - state->currentPos.z) / 6.0f;
+                x += (aimX - state->curPos.x) / 6.0f;
+                y += (aimY - state->curPos.y) / 6.0f;
+                z += (aimZ - state->curPos.z) / 6.0f;
                 get_screen_coords(gCurrentCameraID, x, y, z, &screenX, &screenY, &screenZ);
                 hud_element_set_render_pos(hudMarkers[i], screenX, screenY);
                 hudID = hudShimmers[i];
@@ -378,7 +378,7 @@ API_CALLABLE(N(AirLiftChance)) {
     Actor* targetActor = get_actor(partnerActor->targetActorID);
     ActorPart* targetActorPart = get_actor_part(targetActor, partnerActor->targetPartIndex);
     s32 airLiftChance = targetActor->actorBlueprint->airLiftChance;
-    s32 hpPercentLost = 100 - targetActor->currentHP * 100 / targetActor->maxHP;
+    s32 hpPercentLost = 100 - targetActor->curHP * 100 / targetActor->maxHP;
 
     if (targetActor->transparentStatus == STATUS_KEY_TRANSPARENT) {
         airLiftChance = 0;
@@ -428,39 +428,39 @@ API_CALLABLE(N(CarryAway)) {
 
     switch (script->functionTemp[0]) {
         case 0:
-            parakarry->state.goalPos.x = targetActor->currentPos.x - parakarry->currentPos.x;
-            parakarry->state.goalPos.y = targetActor->currentPos.y - parakarry->currentPos.y;
-            parakarry->state.goalPos.z = targetActor->currentPos.z - parakarry->currentPos.z;
+            parakarry->state.goalPos.x = targetActor->curPos.x - parakarry->curPos.x;
+            parakarry->state.goalPos.y = targetActor->curPos.y - parakarry->curPos.y;
+            parakarry->state.goalPos.z = targetActor->curPos.z - parakarry->curPos.z;
             parakarry->state.speed = 2.0f;
             parakarry->state.moveTime = 0;
             script->functionTemp[0] = 1;
             break;
         case 1:
-            parakarry->state.currentPos.x += parakarry->state.speed;
+            parakarry->state.curPos.x += parakarry->state.speed;
             *animationRatePtr = 1.0f;
-            y = parakarry->state.currentPos.y;
-            parakarry->state.currentPos.y = y + (sin_rad(2.0f * sin_rad(DEG_TO_RAD(parakarry->state.moveTime)) * PI_S) * 1.4 + 0.5);
+            y = parakarry->state.curPos.y;
+            parakarry->state.curPos.y = y + (sin_rad(2.0f * sin_rad(DEG_TO_RAD(parakarry->state.moveTime)) * PI_S) * 1.4 + 0.5);
             parakarry->state.moveTime += 6;
             parakarry->state.moveTime = clamp_angle(parakarry->state.moveTime);
 
             if (gGameStatusPtr->frameCounter % 10 == 0) {
-                sfx_play_sound_at_position(SOUND_2009, SOUND_SPACE_MODE_0, parakarry->state.currentPos.x, parakarry->state.currentPos.y, parakarry->state.currentPos.z);
+                sfx_play_sound_at_position(SOUND_2009, SOUND_SPACE_DEFAULT, parakarry->state.curPos.x, parakarry->state.curPos.y, parakarry->state.curPos.z);
             }
 
-            if (parakarry->state.currentPos.x > 240.0f) {
-                battleStatus->actionResult = temp_s4;
+            if (parakarry->state.curPos.x > 240.0f) {
+                battleStatus->actionQuality = temp_s4;
                 return ApiStatus_DONE2;
             }
             break;
     }
 
-    parakarry->currentPos.x = actorState->currentPos.x;
-    parakarry->currentPos.y = actorState->currentPos.y;
-    parakarry->currentPos.z = actorState->currentPos.z;
+    parakarry->curPos.x = actorState->curPos.x;
+    parakarry->curPos.y = actorState->curPos.y;
+    parakarry->curPos.z = actorState->curPos.z;
 
-    targetActor->currentPos.x = actorState->currentPos.x + actorState->goalPos.x;
-    targetActor->currentPos.y = actorState->currentPos.y + actorState->goalPos.y;
-    targetActor->currentPos.z = actorState->currentPos.z + actorState->goalPos.z;
+    targetActor->curPos.x = actorState->curPos.x + actorState->goalPos.x;
+    targetActor->curPos.y = actorState->curPos.y + actorState->goalPos.y;
+    targetActor->curPos.z = actorState->curPos.z + actorState->goalPos.z;
     return ApiStatus_BLOCK;
 }
 
@@ -474,9 +474,9 @@ API_CALLABLE(N(FlyAround)) {
 
     switch (script->functionTemp[0]) {
         case 0:
-            state->currentPos.x = partner->currentPos.x;
-            state->currentPos.y = partner->currentPos.y;
-            state->currentPos.z = partner->currentPos.z;
+            state->curPos.x = partner->curPos.x;
+            state->curPos.y = partner->curPos.y;
+            state->curPos.z = partner->curPos.z;
             state->angle = 60 - rand_int(10);
             state->bounceDivisor = 0.0f;
             state->moveTime = 90;
@@ -484,15 +484,15 @@ API_CALLABLE(N(FlyAround)) {
             script->functionTemp[1] = 0;
             script->functionTemp[2] = 0;
             script->functionTemp[3] = 0;
-            airRaidEffect = fx_65(0, state->currentPos.x, state->currentPos.y, state->currentPos.z, 1.0f, 0);
+            airRaidEffect = fx_effect_65(0, state->curPos.x, state->curPos.y, state->curPos.z, 1.0f, 0);
             script->functionTemp[0] = 1;
             break;
         case 1:
-            add_vec2D_polar(&state->currentPos.x, &state->currentPos.y, state->speed, state->angle);
-            airRaidEffect->data.unk_65->pos.x = state->currentPos.x;
-            airRaidEffect->data.unk_65->pos.y = state->currentPos.y;
-            airRaidEffect->data.unk_65->pos.z = state->currentPos.z;
-            if (state->currentPos.x < -190.0f) {
+            add_vec2D_polar(&state->curPos.x, &state->curPos.y, state->speed, state->angle);
+            airRaidEffect->data.unk_65->pos.x = state->curPos.x;
+            airRaidEffect->data.unk_65->pos.y = state->curPos.y;
+            airRaidEffect->data.unk_65->pos.z = state->curPos.z;
+            if (state->curPos.x < -190.0f) {
                 if (script->functionTemp[1] != 0) {
                     script->functionTemp[0] = 2;
                     break;
@@ -507,14 +507,14 @@ API_CALLABLE(N(FlyAround)) {
                 }
 
                 if (script->functionTemp[3] != 0) {
-                    sfx_play_sound_at_position(SOUND_200A, SOUND_SPACE_MODE_0, state->currentPos.x, state->currentPos.y, state->currentPos.z);
+                    sfx_play_sound_at_position(SOUND_200A, SOUND_SPACE_DEFAULT, state->curPos.x, state->curPos.y, state->curPos.z);
                 } else {
-                    sfx_play_sound_at_position(SOUND_200B, SOUND_SPACE_MODE_0, state->currentPos.x, state->currentPos.y, state->currentPos.z);
+                    sfx_play_sound_at_position(SOUND_200B, SOUND_SPACE_DEFAULT, state->curPos.x, state->curPos.y, state->curPos.z);
                 }
                 script->functionTemp[3] = 1 - script->functionTemp[3];
             }
 
-            if (state->currentPos.x > 190.0f) {
+            if (state->curPos.x > 190.0f) {
                 if (script->functionTemp[1] != 0) {
                     script->functionTemp[0] = 2;
                     break;
@@ -529,14 +529,14 @@ API_CALLABLE(N(FlyAround)) {
                 } while (0);
 
                 if (script->functionTemp[3] != 0) {
-                    sfx_play_sound_at_position(SOUND_200A, SOUND_SPACE_MODE_0, state->currentPos.x, state->currentPos.y, state->currentPos.z);
+                    sfx_play_sound_at_position(SOUND_200A, SOUND_SPACE_DEFAULT, state->curPos.x, state->curPos.y, state->curPos.z);
                 } else {
-                    sfx_play_sound_at_position(SOUND_200B, SOUND_SPACE_MODE_0, state->currentPos.x, state->currentPos.y, state->currentPos.z);
+                    sfx_play_sound_at_position(SOUND_200B, SOUND_SPACE_DEFAULT, state->curPos.x, state->curPos.y, state->curPos.z);
                 }
                 script->functionTemp[3] = 1 - script->functionTemp[3];
             }
 
-            if (state->currentPos.y < -30.0f) {
+            if (state->curPos.y < -30.0f) {
                 if (script->functionTemp[1] != 0) {
                     script->functionTemp[0] = 2;
                     break;
@@ -551,14 +551,14 @@ API_CALLABLE(N(FlyAround)) {
                 } while (0); // TODO macro?
 
                 if (script->functionTemp[3] != 0) {
-                    sfx_play_sound_at_position(SOUND_200A, SOUND_SPACE_MODE_0, state->currentPos.x, state->currentPos.y, state->currentPos.z);
+                    sfx_play_sound_at_position(SOUND_200A, SOUND_SPACE_DEFAULT, state->curPos.x, state->curPos.y, state->curPos.z);
                 } else {
-                    sfx_play_sound_at_position(SOUND_200B, SOUND_SPACE_MODE_0, state->currentPos.x, state->currentPos.y, state->currentPos.z);
+                    sfx_play_sound_at_position(SOUND_200B, SOUND_SPACE_DEFAULT, state->curPos.x, state->curPos.y, state->curPos.z);
                 }
                 script->functionTemp[3] = 1 - script->functionTemp[3];
             }
 
-            if (state->currentPos.y > 160.0f) {
+            if (state->curPos.y > 160.0f) {
                 if (script->functionTemp[1] != 0) {
                     script->functionTemp[0] = 2;
                     break;
@@ -573,9 +573,9 @@ API_CALLABLE(N(FlyAround)) {
                 } while (0); // TODO macro?
 
                 if (script->functionTemp[3] != 0) {
-                    sfx_play_sound_at_position(SOUND_200A, SOUND_SPACE_MODE_0, state->currentPos.x, state->currentPos.y, state->currentPos.z);
+                    sfx_play_sound_at_position(SOUND_200A, SOUND_SPACE_DEFAULT, state->curPos.x, state->curPos.y, state->curPos.z);
                 } else {
-                    sfx_play_sound_at_position(SOUND_200B, SOUND_SPACE_MODE_0, state->currentPos.x, state->currentPos.y, state->currentPos.z);
+                    sfx_play_sound_at_position(SOUND_200B, SOUND_SPACE_DEFAULT, state->curPos.x, state->curPos.y, state->curPos.z);
                 }
                 script->functionTemp[3] = 1 - script->functionTemp[3];
             }
@@ -596,17 +596,17 @@ API_CALLABLE(N(FlyAround)) {
             airRaidEffect->flags |= FX_INSTANCE_FLAG_DISMISS;
             // fallthrough
         case 3:
-            add_vec2D_polar(&state->currentPos.x, &state->currentPos.y, state->speed, state->angle);
+            add_vec2D_polar(&state->curPos.x, &state->curPos.y, state->speed, state->angle);
             if (state->moveTime == 0) {
-                partner->rotation.z = 0.0f;
+                partner->rot.z = 0.0f;
                 return ApiStatus_DONE2;
             }
             state->moveTime--;
             // fallthrough
         default:
-            partner->currentPos.x = state->currentPos.x;
-            partner->currentPos.y = state->currentPos.y;
-            partner->currentPos.z = state->currentPos.z;
+            partner->curPos.x = state->curPos.x;
+            partner->curPos.y = state->curPos.y;
+            partner->curPos.z = state->curPos.z;
             return ApiStatus_BLOCK;
     }
 }
@@ -676,11 +676,11 @@ ActorPartBlueprint N(ActorParts)[] = {
 ActorBlueprint NAMESPACE = {
     .flags = ACTOR_FLAG_FLYING,
     .type = ACTOR_TYPE_PARAKARRY,
-    .level = 0,
+    .level = ACTOR_LEVEL_PARAKARRY,
     .maxHP = 99,
     .partCount = ARRAY_COUNT(N(ActorParts)),
     .partsData = N(ActorParts),
-    .initScript = &N(init),
+    .initScript = &N(EVS_Init),
     .statusTable = N(StatusTable),
     .escapeChance = 0,
     .airLiftChance = 0,
@@ -696,21 +696,21 @@ ActorBlueprint NAMESPACE = {
     .statusTextOffset = { 10, 30 },
 };
 
-EvtScript N(init) = {
-    EVT_CALL(BindTakeTurn, ACTOR_PARTNER, EVT_PTR(N(takeTurn)))
-    EVT_CALL(BindIdle, ACTOR_PARTNER, EVT_PTR(N(idle)))
-    EVT_CALL(BindHandleEvent, ACTOR_PARTNER, EVT_PTR(N(handleEvent)))
-    EVT_CALL(BindNextTurn, ACTOR_PARTNER, EVT_PTR(N(nextTurn)))
+EvtScript N(EVS_Init) = {
+    EVT_CALL(BindTakeTurn, ACTOR_PARTNER, EVT_PTR(N(EVS_TakeTurn)))
+    EVT_CALL(BindIdle, ACTOR_PARTNER, EVT_PTR(N(EVS_Idle)))
+    EVT_CALL(BindHandleEvent, ACTOR_PARTNER, EVT_PTR(N(EVS_HandleEvent)))
+    EVT_CALL(BindHandlePhase, ACTOR_PARTNER, EVT_PTR(N(EVS_HandlePhase)))
     EVT_RETURN
     EVT_END
 };
 
-EvtScript N(idle) = {
+EvtScript N(EVS_Idle) = {
     EVT_RETURN
     EVT_END
 };
 
-EvtScript N(handleEvent) = {
+EvtScript N(EVS_HandleEvent) = {
     EVT_CALL(UseIdleAnimation, ACTOR_PARTNER, FALSE)
     EVT_CALL(CloseActionCommandInfo)
     EVT_CALL(GetLastEvent, ACTOR_PARTNER, LVar0)
@@ -725,7 +725,7 @@ EvtScript N(handleEvent) = {
         EVT_END_CASE_GROUP
         EVT_CASE_OR_EQ(EVENT_ZERO_DAMAGE)
         EVT_CASE_OR_EQ(EVENT_IMMUNE)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_208C)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_NO_DAMGE)
             EVT_SET_CONST(LVar0, PRT_MAIN)
             EVT_SET_CONST(LVar1, ANIM_BattleParakarry_HurtStill)
             EVT_EXEC_WAIT(EVS_Partner_NoDamageHit)
@@ -767,7 +767,7 @@ EvtScript N(handleEvent) = {
             EVT_EXEC_WAIT(EVS_Partner_Recover)
         EVT_CASE_OR_EQ(EVENT_18)
         EVT_CASE_OR_EQ(EVENT_BLOCK)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_208C)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_NO_DAMGE)
             EVT_SET_CONST(LVar0, PRT_MAIN)
             EVT_SET_CONST(LVar1, ANIM_BattleParakarry_OrientShell)
             EVT_EXEC_WAIT(EVS_Partner_NoDamageHit)
@@ -781,7 +781,7 @@ EvtScript N(handleEvent) = {
     EVT_END
 };
 
-EvtScript N(takeTurn) = {
+EvtScript N(EVS_TakeTurn) = {
     EVT_CALL(GetBattlePhase, LVar0)
     EVT_SWITCH(LVar0)
         EVT_CASE_EQ(PHASE_FIRST_STRIKE)
@@ -813,7 +813,7 @@ EvtScript N(executeAction) = {
     EVT_CALL(ShowActionHud, TRUE)
     EVT_CALL(GetMenuSelection, LVar0, LVar1, LVar2)
     EVT_SWITCH(LVar0)
-        EVT_CASE_EQ(8)
+        EVT_CASE_EQ(BTL_MENU_TYPE_STAR_POWERS)
             EVT_CALL(LoadStarPowerScript)
             EVT_EXEC_WAIT(LVar0)
             EVT_RETURN
@@ -873,7 +873,7 @@ EvtScript N(runAwayFail) = {
     EVT_END
 };
 
-EvtScript N(nextTurn) = {
+EvtScript N(EVS_HandlePhase) = {
     EVT_RETURN
     EVT_END
 };
@@ -903,7 +903,7 @@ EvtScript N(returnHome2) = {
     EVT_END
 };
 
-EvtScript N(returnHome) = {
+EvtScript N(EVS_ReturnHome) = {
     EVT_CALL(PartnerYieldTurn)
     EVT_CALL(UseBattleCamPreset, BTL_CAM_PRESET_51)
     EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, LVarA)
@@ -931,7 +931,7 @@ EvtScript N(returnHome) = {
 s32 N(actionCommandTable)[] = { 7, 6, 5, 4, 3, 2, 1, 0 };
 
 EvtScript N(skyDive) = {
-    EVT_CALL(EnableIdleScript, ACTOR_PARTNER, 0)
+    EVT_CALL(EnableIdleScript, ACTOR_PARTNER, IDLE_SCRIPT_DISABLE)
     EVT_CALL(UseIdleAnimation, ACTOR_PARTNER, FALSE)
     EVT_CALL(LoadActionCommand, ACTION_COMMAND_JUMP)
     EVT_CALL(action_command_jump_init)
@@ -961,7 +961,7 @@ EvtScript N(skyDive) = {
     EVT_CALL(AddGoalPos, ACTOR_PARTNER, -26, 25, 0)
     EVT_CALL(FlyToGoal, ACTOR_PARTNER, 20, -20, EASING_QUARTIC_OUT)
     EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_2005)
-    EVT_CALL(EnableActorBlur, ACTOR_PARTNER, 1)
+    EVT_CALL(EnableActorBlur, ACTOR_PARTNER, ACTOR_BLUR_ENABLE)
     EVT_CALL(SetGoalToTarget, ACTOR_PARTNER)
     EVT_CALL(AddGoalPos, ACTOR_PARTNER, -10, 0, 0)
     EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleParakarry_Dive)
@@ -976,7 +976,7 @@ EvtScript N(skyDive) = {
         EVT_CALL(AddGoalPos, ACTOR_PARTNER, 40, 10, 0)
         EVT_CALL(FlyToGoal, ACTOR_PARTNER, 10, -20, EASING_QUADRATIC_OUT)
         EVT_WAIT(20)
-        EVT_CALL(EnableActorBlur, ACTOR_PARTNER, 0)
+        EVT_CALL(EnableActorBlur, ACTOR_PARTNER, ACTOR_BLUR_DISABLE)
         EVT_CALL(SetGoalToHome, ACTOR_PARTNER)
         EVT_CALL(SetActorSpeed, ACTOR_PARTNER, EVT_FLOAT(8.0))
         EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleParakarry_Run)
@@ -984,7 +984,7 @@ EvtScript N(skyDive) = {
         EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleParakarry_Walk)
         EVT_RETURN
     EVT_END_IF
-    EVT_CALL(EnableActorBlur, ACTOR_PARTNER, 0)
+    EVT_CALL(EnableActorBlur, ACTOR_PARTNER, ACTOR_BLUR_DISABLE)
     EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleParakarry_PostDive)
     EVT_WAIT(2)
     EVT_CALL(GetActionCommandResult, LVar0)
@@ -994,12 +994,12 @@ EvtScript N(skyDive) = {
         EVT_CASE_DEFAULT
             EVT_CALL(PartnerDamageEnemy, LVar0, 0, SUPPRESS_EVENT_SPIKY_FRONT, 0, LVarE, BS_FLAGS1_10 | BS_FLAGS1_SP_EVT_ACTIVE)
     EVT_END_SWITCH
-    EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_0)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_NONE)
     EVT_SWITCH(LVar0)
         EVT_CASE_OR_EQ(HIT_RESULT_HIT)
         EVT_CASE_OR_EQ(HIT_RESULT_NO_DAMAGE)
             EVT_SET_CONST(LVarA, ANIM_BattleParakarry_Think)
-            EVT_EXEC_WAIT(N(returnHome))
+            EVT_EXEC_WAIT(N(EVS_ReturnHome))
         EVT_END_CASE_GROUP
         EVT_CASE_OR_EQ(HIT_RESULT_1)
         EVT_CASE_OR_EQ(HIT_RESULT_3)
@@ -1007,7 +1007,7 @@ EvtScript N(skyDive) = {
             EVT_EXEC_WAIT(N(returnHome2))
         EVT_END_CASE_GROUP
     EVT_END_SWITCH
-    EVT_CALL(EnableIdleScript, ACTOR_PARTNER, 1)
+    EVT_CALL(EnableIdleScript, ACTOR_PARTNER, IDLE_SCRIPT_ENABLE)
     EVT_CALL(UseIdleAnimation, ACTOR_PARTNER, TRUE)
     EVT_RETURN
     EVT_END
@@ -1020,9 +1020,9 @@ EvtScript N(shellShot) = {
     EVT_CALL(InitTargetIterator)
     EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleParakarry_ShellFly)
     EVT_CALL(N(ShellShotActionCommand))
-    EVT_CALL(StopSound, SOUND_311)
+    EVT_CALL(StopSound, SOUND_AIM_SHELL_SHOT)
     EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_2006)
-    EVT_CALL(GetActionResult, LVar0)
+    EVT_CALL(GetActionQuality, LVar0)
     EVT_CALL(PartnerTestEnemy, LVarA, 0, SUPPRESS_EVENT_SPIKY_FRONT | SUPPRESS_EVENT_BURN_CONTACT, 0, 1, BS_FLAGS1_10)
     EVT_IF_EQ(LVarA, HIT_RESULT_MISS)
         EVT_SET(LVar0, -2)
@@ -1031,48 +1031,48 @@ EvtScript N(shellShot) = {
         EVT_CASE_EQ(1)
             EVT_CALL(UseBattleCamPreset, BTL_CAM_PRESET_52)
             EVT_CALL(MoveBattleCamOver, 5)
-            EVT_CALL(EnableActorBlur, ACTOR_PARTNER, 1)
+            EVT_CALL(EnableActorBlur, ACTOR_PARTNER, ACTOR_BLUR_ENABLE)
             EVT_CALL(SetGoalToTarget, ACTOR_PARTNER)
             EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleParakarry_ShellFlyFastest)
             EVT_CALL(FlyToGoal, ACTOR_PARTNER, 7, 0, EASING_LINEAR)
-            EVT_CALL(EnableActorBlur, ACTOR_PARTNER, 0)
+            EVT_CALL(EnableActorBlur, ACTOR_PARTNER, ACTOR_BLUR_DISABLE)
         EVT_CASE_EQ(-1)
             EVT_CALL(UseBattleCamPreset, BTL_CAM_PRESET_52)
             EVT_CALL(MoveBattleCamOver, 5)
-            EVT_CALL(EnableActorBlur, ACTOR_PARTNER, 1)
+            EVT_CALL(EnableActorBlur, ACTOR_PARTNER, ACTOR_BLUR_ENABLE)
             EVT_CALL(SetGoalToTarget, ACTOR_PARTNER)
             EVT_CALL(AddGoalPos, ACTOR_PARTNER, 50, -50, 0)
             EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleParakarry_ShellFlyFastest)
             EVT_CALL(FlyToGoal, ACTOR_PARTNER, 7, 0, 0x00000064)
-            EVT_CALL(EnableActorBlur, ACTOR_PARTNER, 0)
+            EVT_CALL(EnableActorBlur, ACTOR_PARTNER, ACTOR_BLUR_DISABLE)
         EVT_CASE_EQ(0)
             EVT_CALL(UseBattleCamPreset, BTL_CAM_PRESET_52)
             EVT_CALL(MoveBattleCamOver, 5)
-            EVT_CALL(EnableActorBlur, ACTOR_PARTNER, 1)
+            EVT_CALL(EnableActorBlur, ACTOR_PARTNER, ACTOR_BLUR_ENABLE)
             EVT_CALL(SetGoalToTarget, ACTOR_PARTNER)
             EVT_CALL(AddGoalPos, ACTOR_PARTNER, 50, 50, 0)
             EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleParakarry_ShellFlyFastest)
             EVT_CALL(FlyToGoal, ACTOR_PARTNER, 7, 0, EASING_LINEAR)
-            EVT_CALL(EnableActorBlur, ACTOR_PARTNER, 0)
+            EVT_CALL(EnableActorBlur, ACTOR_PARTNER, ACTOR_BLUR_DISABLE)
         EVT_CASE_EQ(-2)
             EVT_CALL(UseBattleCamPreset, BTL_CAM_PRESET_52)
             EVT_CALL(MoveBattleCamOver, 5)
-            EVT_CALL(EnableActorBlur, ACTOR_PARTNER, 1)
+            EVT_CALL(EnableActorBlur, ACTOR_PARTNER, ACTOR_BLUR_ENABLE)
             EVT_CALL(SetGoalToTarget, ACTOR_PARTNER)
             EVT_CALL(AddGoalPos, ACTOR_PARTNER, 40, 0, 0)
             EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleParakarry_ShellFlyFastest)
             EVT_CALL(FlyToGoal, ACTOR_PARTNER, 7, 0, EASING_LINEAR)
-            EVT_CALL(EnableActorBlur, ACTOR_PARTNER, 0)
+            EVT_CALL(EnableActorBlur, ACTOR_PARTNER, ACTOR_BLUR_DISABLE)
     EVT_END_SWITCH
     EVT_CALL(N(GetShellShotDamage))
     EVT_SWITCH(LVar0)
         EVT_CASE_GT(0)
             EVT_CALL(PartnerDamageEnemy, LVar0, 0, SUPPRESS_EVENT_SPIKY_TOP | SUPPRESS_EVENT_EXPLODE_CONTACT | SUPPRESS_EVENT_SPIKY_FRONT | SUPPRESS_EVENT_SHOCK_CONTACT | SUPPRESS_EVENT_BURN_CONTACT | SUPPRESS_EVENT_FLAG_80, 0, LVarF, BS_FLAGS1_10 | BS_FLAGS1_SP_EVT_ACTIVE | BS_FLAGS1_40)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_110)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_HIT_RATTLE)
         EVT_CASE_DEFAULT
             EVT_SET(LVar0, HIT_RESULT_NO_DAMAGE)
     EVT_END_SWITCH
-    EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_0)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_NONE)
     EVT_LABEL(10)
     EVT_SWITCH(LVar0)
         EVT_CASE_OR_EQ(HIT_RESULT_HIT)
@@ -1082,7 +1082,7 @@ EvtScript N(shellShot) = {
             EVT_ELSE
                 EVT_SET_CONST(LVarA, ANIM_BattleParakarry_Think)
             EVT_END_IF
-            EVT_EXEC_WAIT(N(returnHome))
+            EVT_EXEC_WAIT(N(EVS_ReturnHome))
         EVT_END_CASE_GROUP
         EVT_CASE_OR_EQ(HIT_RESULT_1)
         EVT_CASE_OR_EQ(HIT_RESULT_3)
@@ -1152,11 +1152,11 @@ EvtScript N(airLift) = {
         EVT_CALL(SetBattleFlagBits, BS_FLAGS1_4000, FALSE)
         EVT_CHILD_THREAD
             EVT_WAIT(1)
-            EVT_CALL(GetActionResult, LVar1)
+            EVT_CALL(GetActionQuality, LVar1)
             EVT_DIV(LVar1, 10)
             EVT_ADD(LVar1, 1)
             EVT_LOOP(88 * DT)
-                EVT_CALL(GetActionResult, LVar0)
+                EVT_CALL(GetActionQuality, LVar0)
                 EVT_SET(LVar2, LVar1)
                 EVT_MUL(LVar2, 10)
                 EVT_IF_GT(LVar0, LVar2)
@@ -1234,7 +1234,7 @@ EvtScript N(airRaid) = {
     EVT_WAIT(2)
     EVT_CALL(UseBattleCamPreset, BTL_CAM_DEFAULT)
     EVT_CALL(MoveBattleCamOver, 20)
-    EVT_CALL(EnableActorBlur, ACTOR_PARTNER, 1)
+    EVT_CALL(EnableActorBlur, ACTOR_PARTNER, ACTOR_BLUR_ENABLE)
     EVT_CHILD_THREAD
         EVT_LOOP(5)
             EVT_WAIT(18)
@@ -1251,10 +1251,10 @@ EvtScript N(airRaid) = {
     EVT_END_CHILD_THREAD
     EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleParakarry_ShellFlyFastest)
     EVT_CALL(N(FlyAround))
-    EVT_CALL(EnableActorBlur, ACTOR_PARTNER, 0)
+    EVT_CALL(EnableActorBlur, ACTOR_PARTNER, ACTOR_BLUR_DISABLE)
     EVT_CALL(UseBattleCamPreset, BTL_CAM_PRESET_03)
     EVT_CALL(MoveBattleCamOver, 20)
-    EVT_CALL(GetActionResult, LVar0)
+    EVT_CALL(GetActionQuality, LVar0)
     EVT_CALL(N(GetAirRaidDamage))
     EVT_CALL(InitTargetIterator)
     EVT_LABEL(10)
@@ -1267,11 +1267,11 @@ EvtScript N(airRaid) = {
     EVT_SWITCH(LVar0)
         EVT_CASE_GT(99)
             EVT_CALL(PartnerDamageEnemy, LVar0, DAMAGE_TYPE_NO_CONTACT | DAMAGE_TYPE_MULTIPLE_POPUPS, SUPPRESS_EVENT_SPIKY_TOP | SUPPRESS_EVENT_SPIKY_FRONT | SUPPRESS_EVENT_BURN_CONTACT | SUPPRESS_EVENT_FLAG_80, 0, LVarF, BS_FLAGS1_10 | BS_FLAGS1_SP_EVT_ACTIVE | BS_FLAGS1_40)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_110)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_HIT_RATTLE)
         EVT_CASE_DEFAULT
             EVT_CALL(PartnerDamageEnemy, LVar0, DAMAGE_TYPE_NO_CONTACT | DAMAGE_TYPE_MULTIPLE_POPUPS, SUPPRESS_EVENT_SPIKY_TOP | SUPPRESS_EVENT_SPIKY_FRONT | SUPPRESS_EVENT_BURN_CONTACT | SUPPRESS_EVENT_FLAG_80, 0, LVarF, BS_FLAGS1_10 | BS_FLAGS1_SP_EVT_ACTIVE)
     EVT_END_SWITCH
-    EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_0)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_NONE)
     EVT_WAIT(5)
     EVT_LABEL(11)
     EVT_CALL(ChooseNextTarget, ITER_NEXT, LVar0)

@@ -11,7 +11,7 @@ API_CALLABLE(N(ClearTrackVols)) {
 }
 
 API_CALLABLE(N(ManageBigPalmTreeVisibility)) {
-    u16 currentFloor = gCollisionStatus.currentFloor;
+    u16 currentFloor = gCollisionStatus.curFloor;
 
     if (N(PrevPalmTreeVisibility) != 0) {
         if (currentFloor == COLLIDER_o327 || currentFloor == COLLIDER_o330) {
@@ -73,7 +73,7 @@ EvtScript N(EVS_Main) = {
     EVT_SET(LVar0, EVT_PTR(N(EVS_BindExitTriggers)))
     EVT_EXEC(EnterWalk)
     EVT_EXEC(N(EVS_SetupMusic))
-    EVT_CALL(PlaySound, SOUND_80000017)
+    EVT_CALL(PlaySound, SOUND_LOOP_JAN_BEACH_WAVES)
     EVT_CALL(EnableTexPanning, MODEL_o202, TRUE)
     EVT_CALL(EnableTexPanning, MODEL_o203, TRUE)
     EVT_CALL(EnableTexPanning, MODEL_o103, TRUE)

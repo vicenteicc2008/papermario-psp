@@ -1,4 +1,5 @@
 #include "flo_00.h"
+#include "sprite/player.h"
 
 #define BEANSTALK_BASE_X -83
 #define BEANSTALK_BASE_Z  87
@@ -21,10 +22,10 @@ API_CALLABLE(N(PlayerRideBeanstalk)) {
     f32 clamped = clamp_angle(angle - temp);
 
     temp = sin_deg(clamped);
-    gPlayerStatus.position.x = BEANSTALK_BASE_X + (dist * temp);
-    gPlayerStatus.position.y = evt_get_variable(NULL, script->varTable[10]) + evt_get_variable(NULL, script->varTable[3]);
+    gPlayerStatus.pos.x = BEANSTALK_BASE_X + (dist * temp);
+    gPlayerStatus.pos.y = evt_get_variable(NULL, script->varTable[10]) + evt_get_variable(NULL, script->varTable[3]);
     temp = cos_deg(clamped);
-    gPlayerStatus.position.z = BEANSTALK_BASE_Z - (dist * temp);
+    gPlayerStatus.pos.z = BEANSTALK_BASE_Z - (dist * temp);
 
     return ApiStatus_DONE2;
 }
@@ -251,7 +252,7 @@ EvtScript N(EVS_Exit_Beanstalk) = {
         EVT_CALL(PlayerMoveTo, LVar9, LVarB, 8)
         EVT_CALL(SetNpcJumpscale, NPC_PARTNER, EVT_FLOAT(0.0))
         EVT_CALL(NpcJump0, NPC_PARTNER, LVarC, LVarD, LVarE, 5)
-        EVT_CALL(PlaySound, SOUND_19C)
+        EVT_CALL(PlaySound, SOUND_019C)
         EVT_CALL(SetMusicTrack, 0, SONG_MAGIC_BEANSTALK, 1, 8)
         EVT_CALL(SetNpcAnimation, NPC_PARTNER, PARTNER_ANIM_IDLE)
         EVT_CALL(SetPlayerAnimation, ANIM_Mario1_Walk)
@@ -351,7 +352,7 @@ EvtScript N(EVS_Enter_Beanstalk) = {
     EVT_CALL(ModifyColliderFlags, MODIFY_COLLIDER_FLAGS_CLEAR_BITS, COLLIDER_o261, COLLIDER_FLAGS_UPPER_MASK)
     EVT_CALL(ModifyColliderFlags, MODIFY_COLLIDER_FLAGS_CLEAR_BITS, COLLIDER_o351, COLLIDER_FLAGS_UPPER_MASK)
     EVT_SET(AF_FLO_RidingBeanstalk, FALSE)
-    EVT_CALL(StopSound, SOUND_19D)
+    EVT_CALL(StopSound, SOUND_019D)
     EVT_EXEC_WAIT(N(EVS_SetupMusic))
     EVT_CALL(ResetCam, CAM_DEFAULT, EVT_FLOAT(1.0))
     EVT_CALL(DisablePlayerInput, FALSE)
@@ -360,7 +361,7 @@ EvtScript N(EVS_Enter_Beanstalk) = {
 };
 
 EvtScript N(EVS_Scene_BeanstalkGrowing) = {
-    EVT_CALL(PlaySoundAtCollider, COLLIDER_o261, SOUND_19B, SOUND_SPACE_MODE_0)
+    EVT_CALL(PlaySoundAtCollider, COLLIDER_o261, SOUND_019B, SOUND_SPACE_DEFAULT)
     EVT_SET(LVarF, 0)
     EVT_LOOP(100)
         EVT_ADD(LVarF, 1)

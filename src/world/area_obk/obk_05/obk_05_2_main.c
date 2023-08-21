@@ -48,7 +48,7 @@ EvtScript N(EVS_TexPan_Fog) = {
 #include "world/common/todo/SetCamera0MoveFlag1.inc.c"
 
 API_CALLABLE(N(RetroJar_AwaitPlayerEntry)) {
-    if (gCollisionStatus.currentFloor == COLLIDER_o420) {
+    if (gCollisionStatus.curFloor == COLLIDER_o420) {
         return ApiStatus_DONE2;
     } else {
         return ApiStatus_BLOCK;
@@ -61,12 +61,12 @@ EvtScript N(EVS_ManageRetroJar) = {
         EVT_CALL(DisablePlayerInput, TRUE)
         EVT_WAIT(1)
         EVT_IF_EQ(MF_IsRetroMario, FALSE)
-            EVT_CALL(PlaySoundAtPlayer, SOUND_JUMP_8BIT_MARIO, SOUND_SPACE_MODE_0)
+            EVT_CALL(PlaySoundAtPlayer, SOUND_JUMP_8BIT_MARIO, SOUND_SPACE_DEFAULT)
             EVT_CALL(Disable8bitMario, FALSE)
             EVT_CALL(SetMusicTrack, 0, SONG_CHAPTER_START, 1, 8)
             EVT_SET(MF_IsRetroMario, TRUE)
         EVT_ELSE
-            EVT_CALL(PlaySoundAtPlayer, SOUND_JUMP_2081, SOUND_SPACE_MODE_0)
+            EVT_CALL(PlaySoundAtPlayer, SOUND_JUMP_2081, SOUND_SPACE_DEFAULT)
             EVT_CALL(Disable8bitMario, TRUE)
             EVT_EXEC(N(EVS_SetupMusic))
             EVT_SET(MF_IsRetroMario, FALSE)

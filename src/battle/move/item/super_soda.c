@@ -2,6 +2,7 @@
 #include "script_api/battle.h"
 #include "effects.h"
 #include "entity.h"
+#include "sprite/player.h"
 
 #define NAMESPACE battle_item_super_soda
 
@@ -16,9 +17,9 @@ API_CALLABLE(N(func_802A123C_724F1C)) {
     s32 c = evt_get_variable(script, *args++);
     ItemEntity* item = get_item_entity(script->varTable[14]);
 
-    item->position.x = a;
-    item->position.y = b;
-    item->position.z = c;
+    item->pos.x = a;
+    item->pos.y = b;
+    item->pos.z = c;
 
     return ApiStatus_DONE2;
 }
@@ -78,7 +79,7 @@ API_CALLABLE(N(func_802A1378_725058)) {
     return ApiStatus_DONE2;
 }
 
-API_CALLABLE(N(ShowFlowerRecoveryFX)) {
+API_CALLABLE(N(SpawnFlowerRecoveryFX)) {
     Bytecode* args = script->ptrReadPos;
     s32 a = evt_get_variable(script, *args++);
     s32 b = evt_get_variable(script, *args++);
@@ -177,13 +178,13 @@ EvtScript N(EVS_UseItem) = {
     EVT_CALL(InitTargetIterator)
     EVT_CALL(GetOwnerTarget, LVar0, LVar1)
     EVT_IF_EQ(LVar0, ACTOR_PLAYER)
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_2095)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_EAT_OR_DRINK)
         EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_Mario1_Drink)
         EVT_WAIT(45)
         EVT_CALL(GetActorPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)
         EVT_ADD(LVar0, 0)
         EVT_ADD(LVar1, 35)
-        EVT_CALL(N(ShowFlowerRecoveryFX), LVar0, LVar1, LVar2, 5)
+        EVT_CALL(N(SpawnFlowerRecoveryFX), LVar0, LVar1, LVar2, 5)
         EVT_CALL(N(AddFP), 5)
         EVT_CALL(GetActorPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)
         EVT_ADD(LVar1, 25)

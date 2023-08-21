@@ -1,6 +1,7 @@
 #include "obk_07.h"
 #include "hud_element.h"
 #include "battle/action_cmd.h"
+#include "sprite/player.h"
 
 extern HudScript HES_SlowlyMashAButton;
 
@@ -546,7 +547,7 @@ API_CALLABLE(N(UpdateGuardBooPos)) {
     if (data->state == PHONOGRAPH_HUD_STATE_DESTROYED) {
         // return to guard position
         speed = 2.0f;
-        npc->currentAnim = ANIM_Boo_Run;
+        npc->curAnim = ANIM_Boo_Run;
         if (dist2D(x, z, guardPosX, booPosZ) < speed) {
             npc->pos.x = guardPosX;
             npc->pos.z = booPosZ;
@@ -589,13 +590,13 @@ API_CALLABLE(N(UpdateGuardBooPos)) {
     }
 
     if (data->meterFillAmount > 7000) {
-        npc->currentAnim = ANIM_Boo_Wave;
+        npc->curAnim = ANIM_Boo_Wave;
     } else if (data->meterFillAmount > 5000) {
-        npc->currentAnim = ANIM_Boo_Run;
+        npc->curAnim = ANIM_Boo_Run;
     } else if (data->meterFillAmount > 3000) {
-        npc->currentAnim = ANIM_Boo_Walk;
+        npc->curAnim = ANIM_Boo_Walk;
     } else {
-        npc->currentAnim = ANIM_Boo_Idle;
+        npc->curAnim = ANIM_Boo_Idle;
     }
 
     return ApiStatus_DONE2;
@@ -1079,7 +1080,7 @@ EvtScript N(EVS_DummyUpdateGuardBoo) = {
 EvtScript N(EVS_GuardBooVanish) = {
     EVT_THREAD
         EVT_WAIT(25)
-        EVT_CALL(PlaySoundAtNpc, NPC_GuardBoo, SOUND_BOO_SPOOK, SOUND_SPACE_MODE_0)
+        EVT_CALL(PlaySoundAtNpc, NPC_GuardBoo, SOUND_BOO_SPOOK, SOUND_SPACE_DEFAULT)
     EVT_END_THREAD
     EVT_CALL(SetNpcAnimation, NPC_GuardBoo, ANIM_Boo_Spook)
     EVT_WAIT(10)

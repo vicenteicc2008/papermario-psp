@@ -45,8 +45,8 @@ void btl_merlee_on_start_turn(void) {
             if (playerData->merleeTurnCount <= 0) {
                 s32 temp = rand_int(100);
 
-                if (currentEncounter->currentEnemy != NULL) {
-                    if (currentEncounter->currentEnemy->flags & ACTOR_FLAG_NO_HEALTH_BAR) {
+                if (currentEncounter->curEnemy != NULL) {
+                    if (currentEncounter->curEnemy->flags & ACTOR_FLAG_NO_HEALTH_BAR) {
                         // 46/101 ≈ 45.5%
                         if (temp <= 45) {
                             playerData->merleeSpellType = MERLEE_SPELL_1;
@@ -103,8 +103,8 @@ void btl_merlee_on_first_strike(void) {
             if (playerData->merleeTurnCount <= 0) {
                 s32 temp = rand_int(100);
 
-                if (currentEncounter->currentEnemy != NULL) {
-                    if (currentEncounter->currentEnemy->flags & ACTOR_FLAG_NO_HEALTH_BAR) {
+                if (currentEncounter->curEnemy != NULL) {
+                    if (currentEncounter->curEnemy->flags & ACTOR_FLAG_NO_HEALTH_BAR) {
                         // 46/101 ≈ 45.5%
                         if (temp <= 45) {
                             playerData->merleeSpellType = MERLEE_SPELL_1;
@@ -193,8 +193,8 @@ void btl_state_update_normal_start(void) {
     s32 size;
     UiStatus* uiStatus;
     void* compressedAsset;
-    ModelNode* model;
-    s32 textureRom;
+    ModelNode* rootModel;
+    s32 texturesOffset;
     Actor* actor;
     Evt* script;
     s32 enemyNotDone;
@@ -215,7 +215,7 @@ void btl_state_update_normal_start(void) {
         stage = gCurrentStagePtr->stage;
     }
 
-    battleStatus->currentStage = stage;
+    battleStatus->curStage = stage;
     switch (gBattleSubState) {
         case BTL_SUBSTATE_NORMAL_START_INIT:
             BattleEnemiesCreated = battle->formationSize;
@@ -226,10 +226,10 @@ void btl_state_update_normal_start(void) {
 
             ASSERT(size <= 0x8000);
 
-            model = gMapShapeData.header.root;
-            textureRom = get_asset_offset(stage->texture, &size);
-            if (model != NULL) {
-                load_data_for_models(model, textureRom, size);
+            rootModel = gMapShapeData.header.root;
+            texturesOffset = get_asset_offset(stage->texture, &size);
+            if (rootModel != NULL) {
+                load_data_for_models(rootModel, texturesOffset, size);
             }
             load_battle_hit_asset(stage->hit);
 
@@ -238,7 +238,7 @@ void btl_state_update_normal_start(void) {
                 read_background_size(&gBackgroundImage);
             }
 
-            if (gGameStatusPtr->demoFlags & 1) {
+            if (gGameStatusPtr->demoBattleFlags & DEMO_BTL_FLAG_ENABLED) {
                 set_curtain_scale_goal(1.0f);
             }
 
@@ -247,7 +247,7 @@ void btl_state_update_normal_start(void) {
             battleStatus->unk_90 = 0;
             battleStatus->preUpdateCallback = NULL;
             battleStatus->initBattleCallback = NULL;
-            battleStatus->currentSubmenu = 0;
+            battleStatus->curSubmenu = 0;
             battleStatus->unk_49 = 0;
             battleStatus->unk_4A = 0;
             battleStatus->unk_4B = 0;
@@ -446,7 +446,7 @@ void btl_state_update_normal_start(void) {
                     btl_set_state(BATTLE_STATE_ENEMY_FIRST_STRIKE);
                     break;
                 default:
-                    if (!(gGameStatusPtr->demoFlags & 1)) {
+                    if (!(gGameStatusPtr->demoBattleFlags & DEMO_BTL_FLAG_ENABLED)) {
                         actor = battleStatus->playerActor;
                         if (gBattleStatus.flags2 & BS_FLAGS2_PEACH_BATTLE) {
                             script = start_script(&EVS_PeachEnterStage, EVT_PRIORITY_A, 0);
@@ -458,8 +458,8 @@ void btl_state_update_normal_start(void) {
                         script->owner1.actorID = ACTOR_PLAYER;
                     }
 
-                    if (currentEncounter->currentEnemy != NULL
-                        && currentEncounter->currentEnemy->encountered == ENCOUNTER_TRIGGER_SPIN
+                    if (currentEncounter->curEnemy != NULL
+                        && currentEncounter->curEnemy->encountered == ENCOUNTER_TRIGGER_SPIN
                         && is_ability_active(ABILITY_DIZZY_ATTACK)
                     ) {
                         actor = battleStatus->enemyActors[0];
@@ -486,7 +486,7 @@ void btl_state_update_normal_start(void) {
                 btl_cam_use_preset(BTL_CAM_DEFAULT);
             }
 
-            if (!(gGameStatusPtr->demoFlags & 1)) {
+            if (!(gGameStatusPtr->demoBattleFlags & DEMO_BTL_FLAG_ENABLED)) {
                 BattleScreenFadeAmt -= 10;
             } else {
                 BattleScreenFadeAmt -= 50;
@@ -720,8 +720,8 @@ void btl_state_update_begin_player_turn(void) {
             if (btl_cam_is_moving_done()) {
                 gBattleStatus.flags1 &= ~BS_FLAGS1_PARTNER_ACTING;
                 reset_actor_turn_info();
-                battleStatus->unk_86 = 127;
-                battleStatus->blockResult = 127;
+                battleStatus->actionResult = ACTION_RESULT_NONE;
+                battleStatus->blockResult = BLOCK_RESULT_NONE;
                 battleStatus->selectedMoveID = 0;
                 gBattleStatus.flags1 |= BS_FLAGS1_SHOW_PLAYER_DECORATIONS;
                 gBattleStatus.flags2 &= ~BS_FLAGS2_1000000;
@@ -766,12 +766,12 @@ void btl_state_update_begin_player_turn(void) {
                     battleStatus->buffEffect->data.partnerBuff->unk_0C[FX_BUFF_DATA_WATER_BLOCK].turnsLeft = battleStatus->waterBlockTurnsLeft;
                     if (battleStatus->waterBlockTurnsLeft <= 0) {
                         battleStatus->waterBlockEffect->flags |= FX_INSTANCE_FLAG_DISMISS;
-                        fx_water_block(1, player->currentPos.x, player->currentPos.y + 18.0f, player->currentPos.z + 5.0f, 1.5f, 10);
-                        fx_water_splash(0, player->currentPos.x - 10.0f, player->currentPos.y + 5.0f, player->currentPos.z + 5.0f, 1.0f, 24);
-                        fx_water_splash(0, player->currentPos.x - 15.0f, player->currentPos.y + 32.0f, player->currentPos.z + 5.0f, 1.0f, 24);
-                        fx_water_splash(1, player->currentPos.x + 15.0f, player->currentPos.y + 22.0f, player->currentPos.z + 5.0f, 1.0f, 24);
+                        fx_water_block(1, player->curPos.x, player->curPos.y + 18.0f, player->curPos.z + 5.0f, 1.5f, 10);
+                        fx_water_splash(0, player->curPos.x - 10.0f, player->curPos.y + 5.0f, player->curPos.z + 5.0f, 1.0f, 24);
+                        fx_water_splash(0, player->curPos.x - 15.0f, player->curPos.y + 32.0f, player->curPos.z + 5.0f, 1.0f, 24);
+                        fx_water_splash(1, player->curPos.x + 15.0f, player->curPos.y + 22.0f, player->curPos.z + 5.0f, 1.0f, 24);
                         battleStatus->waterBlockEffect = NULL;
-                        sfx_play_sound(SOUND_299);
+                        sfx_play_sound(SOUND_DESTROY_WATER_BLOCK);
                         btl_show_battle_message(BTL_MSG_WATER_BLOCK_END, 60);
                         gBattleSubState = BTL_SUBSTATE_BEGIN_PLAYER_TURN_AWAIT_WATER_BLOCK;
                     } else {
@@ -918,11 +918,11 @@ back:
                 }
                 if (player->transparentStatus != 0) {
                     player->transparentDuration--;
-                    part->flags |= ACTOR_PART_FLAG_100;
+                    part->flags |= ACTOR_PART_FLAG_TRANSPARENT;
                     do {
                         if (player->transparentDuration <= 0) {
                             player->transparentStatus = 0;
-                            part->flags &= ~ACTOR_PART_FLAG_100;
+                            part->flags &= ~ACTOR_PART_FLAG_TRANSPARENT;
                             remove_status_transparent(player->hudElementDataIndex);
                         }
                     } while (0); // TODO required to match
@@ -1066,8 +1066,8 @@ void btl_state_update_switch_to_player(void) {
         gBattleStatus.flags1 &= ~BS_FLAGS1_PARTNER_ACTING;
         reset_actor_turn_info();
         gBattleStatus.selectedMoveID = MOVE_NONE;
-        gBattleStatus.unk_86 = 127;
-        gBattleStatus.blockResult = 127;
+        gBattleStatus.actionResult = ACTION_RESULT_NONE;
+        gBattleStatus.blockResult = BLOCK_RESULT_NONE;
         gBattleStatus.flags1 |= BS_FLAGS1_SHOW_PLAYER_DECORATIONS;
         player->flags |= ACTOR_FLAG_8000000;
         if (partner != NULL) {
@@ -1121,8 +1121,8 @@ void btl_state_update_begin_partner_turn(void) {
             D_8029F258 = 0;
             reset_actor_turn_info();
             partner = battleStatus->partnerActor;
-            battleStatus->unk_86 = 127;
-            battleStatus->blockResult = 127;
+            battleStatus->actionResult = ACTION_RESULT_NONE;
+            battleStatus->blockResult = BLOCK_RESULT_NONE;
             D_8029F254 = 0;
             gBattleStatus.flags1 |= BS_FLAGS1_PARTNER_ACTING;
             gBattleStatus.flags2 |= BS_FLAGS1_PLAYER_IN_BACK;
@@ -1213,8 +1213,8 @@ void btl_state_update_switch_to_partner(void) {
         reset_actor_turn_info();
         gBattleStatus.flags1 |= BS_FLAGS1_PARTNER_ACTING;
         gBattleStatus.selectedMoveID = MOVE_NONE;
-        gBattleStatus.unk_86 = 127;
-        gBattleStatus.blockResult = 127;
+        gBattleStatus.actionResult = ACTION_RESULT_NONE;
+        gBattleStatus.blockResult = BLOCK_RESULT_NONE;
         gBattleStatus.flags1 |= BS_FLAGS1_SHOW_PLAYER_DECORATIONS;
         player->flags |= (ACTOR_FLAG_8000000 | ACTOR_FLAG_4000000);
         partner->flags |= ACTOR_FLAG_8000000;
@@ -1400,13 +1400,13 @@ void btl_state_update_9(void) {
                         partner->flags |= ACTOR_FLAG_4000000;
                         state = &partner->state;
                         if (!battleStatus->outtaSightActive) {
-                            partner->state.currentPos.x = partner->homePos.x;
-                            partner->state.currentPos.z = partner->homePos.z;
+                            partner->state.curPos.x = partner->homePos.x;
+                            partner->state.curPos.z = partner->homePos.z;
                             partner->state.goalPos.x = player->homePos.x;
                             partner->state.goalPos.z = player->homePos.z;
                         } else {
-                            partner->state.currentPos.x = partner->homePos.x;
-                            partner->state.currentPos.z = partner->homePos.z;
+                            partner->state.curPos.x = partner->homePos.x;
+                            partner->state.curPos.z = partner->homePos.z;
                             partner->state.goalPos.x = partner->homePos.x;
                             partner->state.goalPos.z = partner->homePos.z + 5.0f;
                             partner->homePos.x = player->homePos.x;
@@ -1423,32 +1423,32 @@ void btl_state_update_9(void) {
 
     if (gBattleSubState == BTL_SUBSTATE_9_3) {
         if (partner->state.moveTime != 0) {
-            partner->currentPos.x += (partner->state.goalPos.x - partner->currentPos.x) / partner->state.moveTime;
-            partner->currentPos.z += (partner->state.goalPos.z - partner->currentPos.z) / partner->state.moveTime;
-            player->currentPos.x += (partner->state.currentPos.x - player->currentPos.x) / partner->state.moveTime;
-            player->currentPos.z += (partner->state.currentPos.z - player->currentPos.z) / partner->state.moveTime;
+            partner->curPos.x += (partner->state.goalPos.x - partner->curPos.x) / partner->state.moveTime;
+            partner->curPos.z += (partner->state.goalPos.z - partner->curPos.z) / partner->state.moveTime;
+            player->curPos.x += (partner->state.curPos.x - player->curPos.x) / partner->state.moveTime;
+            player->curPos.z += (partner->state.curPos.z - player->curPos.z) / partner->state.moveTime;
         }
-        partner->currentPos.z -= sin_rad(DEG_TO_RAD(partner->state.angle)) * 16.0f;
+        partner->curPos.z -= sin_rad(DEG_TO_RAD(partner->state.angle)) * 16.0f;
         partner->yaw = clamp_angle(partner->state.angle);
-        player->currentPos.z += sin_rad(DEG_TO_RAD(partner->state.angle)) * 16.0f;
+        player->curPos.z += sin_rad(DEG_TO_RAD(partner->state.angle)) * 16.0f;
         player->yaw = clamp_angle(partner->state.angle);
         partner->state.angle += 90.0f;
 
         if (partner->state.moveTime != 0) {
             partner->state.moveTime--;
         } else {
-            partner->currentPos.x = partner->state.goalPos.x;
-            partner->currentPos.z = partner->state.goalPos.z;
-            player->currentPos.x = partner->state.currentPos.x;
-            player->currentPos.z = partner->state.currentPos.z;
+            partner->curPos.x = partner->state.goalPos.x;
+            partner->curPos.z = partner->state.goalPos.z;
+            player->curPos.x = partner->state.curPos.x;
+            player->curPos.z = partner->state.curPos.z;
             if (!battleStatus->outtaSightActive) {
-                partner->homePos.x = partner->currentPos.x;
-                partner->homePos.z = partner->currentPos.z;
-                player->homePos.x = player->currentPos.x;
-                player->homePos.z = player->currentPos.z;
+                partner->homePos.x = partner->curPos.x;
+                partner->homePos.z = partner->curPos.z;
+                player->homePos.x = player->curPos.x;
+                player->homePos.z = player->curPos.z;
             } else {
-                player->homePos.x = player->currentPos.x;
-                player->homePos.z = player->currentPos.z;
+                player->homePos.x = player->curPos.x;
+                player->homePos.z = player->curPos.z;
             }
             gBattleSubState = BTL_SUBSTATE_9_4;
             gBattleStatus.flags1 &= ~ACTOR_FLAG_100000;
@@ -1536,7 +1536,7 @@ void btl_state_update_prepare_menu(void) {
     battleStatus->lastPartnerMenuSelection[BTL_MENU_IDX_STAR_POWER] = -1;
     battleStatus->lastPartnerMenuSelection[BTL_MENU_IDX_STRATEGY] = -1;
 
-    dma_copy(_415D90_ROM_START, _415D90_ROM_END, _415D90_VRAM);
+    DMA_COPY_SEGMENT(_415D90);
 
     if (battleStatus->flags1 & BS_FLAGS1_PARTNER_ACTING) {
         btl_set_state(BATTLE_STATE_PARTNER_MENU);
@@ -1605,8 +1605,8 @@ void btl_state_update_end_turn(void) {
             partner->flags &= ~ACTOR_FLAG_8000000;
             player->flags |= ACTOR_FLAG_4000000;
             partner->flags |= ACTOR_FLAG_4000000;
-            partner->state.currentPos.x = partner->homePos.x;
-            partner->state.currentPos.z = partner->homePos.z;
+            partner->state.curPos.x = partner->homePos.x;
+            partner->state.curPos.z = partner->homePos.z;
             partner->state.goalPos.x = player->homePos.x;
             partner->state.goalPos.z = player->homePos.z;
             partner->state.moveTime = 4;
@@ -1617,27 +1617,27 @@ void btl_state_update_end_turn(void) {
 
     if (gBattleSubState == BTL_SUBSTATE_END_TURN_PERFORM_SWAP) {
         if (partner->state.moveTime != 0) {
-            partner->currentPos.x += (partner->state.goalPos.x - partner->currentPos.x) / partner->state.moveTime;
-            partner->currentPos.z += (partner->state.goalPos.z - partner->currentPos.z) / partner->state.moveTime;
-            player->currentPos.x += (partner->state.currentPos.x - player->currentPos.x) / partner->state.moveTime;
-            player->currentPos.z += (partner->state.currentPos.z - player->currentPos.z) / partner->state.moveTime;
+            partner->curPos.x += (partner->state.goalPos.x - partner->curPos.x) / partner->state.moveTime;
+            partner->curPos.z += (partner->state.goalPos.z - partner->curPos.z) / partner->state.moveTime;
+            player->curPos.x += (partner->state.curPos.x - player->curPos.x) / partner->state.moveTime;
+            player->curPos.z += (partner->state.curPos.z - player->curPos.z) / partner->state.moveTime;
         }
-        partner->currentPos.z -= sin_rad(DEG_TO_RAD(partner->state.angle)) * 16.0f;
+        partner->curPos.z -= sin_rad(DEG_TO_RAD(partner->state.angle)) * 16.0f;
         partner->yaw = clamp_angle(partner->state.angle);
-        player->currentPos.z += sin_rad(DEG_TO_RAD(partner->state.angle)) * 16.0f;
+        player->curPos.z += sin_rad(DEG_TO_RAD(partner->state.angle)) * 16.0f;
         player->yaw = clamp_angle(partner->state.angle);
         partner->state.angle += 90.0f;
         if (partner->state.moveTime != 0) {
             partner->state.moveTime--;
         } else {
-            partner->currentPos.x = partner->state.goalPos.x;
-            partner->currentPos.z = partner->state.goalPos.z;
-            player->currentPos.x = partner->state.currentPos.x;
-            player->currentPos.z = partner->state.currentPos.z;
-            partner->homePos.x = partner->currentPos.x;
-            partner->homePos.z = partner->currentPos.z;
-            player->homePos.x = player->currentPos.x;
-            player->homePos.z = player->currentPos.z;
+            partner->curPos.x = partner->state.goalPos.x;
+            partner->curPos.z = partner->state.goalPos.z;
+            player->curPos.x = partner->state.curPos.x;
+            player->curPos.z = partner->state.curPos.z;
+            partner->homePos.x = partner->curPos.x;
+            partner->homePos.z = partner->curPos.z;
+            player->homePos.x = player->curPos.x;
+            player->homePos.z = player->curPos.z;
             player->flags |= ACTOR_FLAG_8000000;
             partner->flags |= ACTOR_FLAG_8000000;
             if (gBattleStatus.flags2 & BS_FLAGS2_PEACH_BATTLE) {
@@ -1825,10 +1825,10 @@ void btl_state_update_victory(void) {
         if (partner == NULL || !(gBattleStatus.flags1 & BS_FLAGS1_PLAYER_IN_BACK)) {
             gBattleSubState = BTL_SUBSTATE_VICTORY_CHECK_MERLEE;
         } else {
-            partner->state.currentPos.x = partner->currentPos.x;
-            partner->state.currentPos.z = partner->currentPos.z;
-            partner->state.goalPos.x = player->currentPos.x;
-            partner->state.goalPos.z = player->currentPos.z;
+            partner->state.curPos.x = partner->curPos.x;
+            partner->state.curPos.z = partner->curPos.z;
+            partner->state.goalPos.x = player->curPos.x;
+            partner->state.goalPos.z = player->curPos.z;
             partner->state.moveTime = 4;
             partner->state.angle = 0.0f;
             gBattleSubState = BTL_SUBSTATE_VICTORY_AWAIT_SWAP;
@@ -1837,28 +1837,28 @@ void btl_state_update_victory(void) {
 
     if (gBattleSubState == BTL_SUBSTATE_VICTORY_AWAIT_SWAP) {
         if (partner->state.moveTime != 0) {
-            partner->currentPos.x += (partner->state.goalPos.x - partner->currentPos.x) / partner->state.moveTime;
-            partner->currentPos.z += (partner->state.goalPos.z - partner->currentPos.z) / partner->state.moveTime;
-            player->currentPos.x += (partner->state.currentPos.x - player->currentPos.x) / partner->state.moveTime;
-            player->currentPos.z += (partner->state.currentPos.z - player->currentPos.z) / partner->state.moveTime;
+            partner->curPos.x += (partner->state.goalPos.x - partner->curPos.x) / partner->state.moveTime;
+            partner->curPos.z += (partner->state.goalPos.z - partner->curPos.z) / partner->state.moveTime;
+            player->curPos.x += (partner->state.curPos.x - player->curPos.x) / partner->state.moveTime;
+            player->curPos.z += (partner->state.curPos.z - player->curPos.z) / partner->state.moveTime;
         }
-        partner->currentPos.z += sin_rad(DEG_TO_RAD(partner->state.angle)) * 16.0f;
+        partner->curPos.z += sin_rad(DEG_TO_RAD(partner->state.angle)) * 16.0f;
         partner->yaw = clamp_angle(-partner->state.angle);
-        player->currentPos.z -= sin_rad(DEG_TO_RAD(partner->state.angle)) * 16.0f;
+        player->curPos.z -= sin_rad(DEG_TO_RAD(partner->state.angle)) * 16.0f;
         player->yaw = clamp_angle(-partner->state.angle);
         partner->state.angle += 90.0f;
 
         if (partner->state.moveTime != 0) {
             partner->state.moveTime--;
         } else {
-            partner->currentPos.x = partner->state.goalPos.x;
-            partner->currentPos.z = partner->state.goalPos.z;
-            player->currentPos.x = partner->state.currentPos.x;
-            player->currentPos.z = partner->state.currentPos.z;
-            partner->homePos.x = partner->currentPos.x;
-            partner->homePos.z = partner->currentPos.z;
-            player->homePos.x = player->currentPos.x;
-            player->homePos.z = player->currentPos.z;
+            partner->curPos.x = partner->state.goalPos.x;
+            partner->curPos.z = partner->state.goalPos.z;
+            player->curPos.x = partner->state.curPos.x;
+            player->curPos.z = partner->state.curPos.z;
+            partner->homePos.x = partner->curPos.x;
+            partner->homePos.z = partner->curPos.z;
+            player->homePos.x = player->curPos.x;
+            player->homePos.z = player->curPos.z;
             gBattleSubState = BTL_SUBSTATE_VICTORY_CHECK_MERLEE;
             gBattleStatus.flags1 &= ~BS_FLAGS1_PLAYER_IN_BACK;
         }
@@ -2294,7 +2294,7 @@ void btl_state_update_run_away(void) {
             enemyCount = prevSP - battleStatus->totalStarPoints;
 
             if (enemyCount > 0) {
-                sfx_play_sound(SOUND_211);
+                sfx_play_sound(SOUND_COIN_PICKUP);
             }
             playerData->starPoints += enemyCount;
             BattleScreenFadeAmt++;
@@ -2494,9 +2494,9 @@ void btl_state_update_change_partner(void) {
             battleStatus->controlScript = script;
             battleStatus->controlScriptID = script->id;
             script->owner1.actorID = ACTOR_PARTNER;
-            state->unk_18.x = partner->currentPos.x;
+            state->unk_18.x = partner->curPos.x;
             state->unk_18.y = 0.0f;
-            state->unk_18.z = partner->currentPos.z;
+            state->unk_18.z = partner->curPos.z;
             gBattleSubState = BTL_SUBSTATE_CHANGE_PARTNER_LOAD_NEW_PARTNER;
             break;
         case BTL_SUBSTATE_CHANGE_PARTNER_LOAD_NEW_PARTNER:
@@ -2504,18 +2504,18 @@ void btl_state_update_change_partner(void) {
                 break;
             }
             btl_delete_actor(partner);
-            playerData->currentPartner = battleStatus->unk_1AC;
+            playerData->curPartner = battleStatus->unk_1AC;
             load_partner_actor();
             partner = battleStatus->partnerActor;
             partner->scale.x = 0.1f;
             partner->scale.y = 0.1f;
             partner->scale.z = 0.1f;
             partner->state.goalPos.x = state->unk_18.x;
-            partner->state.goalPos.y = partner->currentPos.y;
+            partner->state.goalPos.y = partner->curPos.y;
             partner->state.goalPos.z = state->unk_18.z;
-            partner->currentPos.x = player->currentPos.x;
-            partner->currentPos.y = player->currentPos.y + 25.0f;
-            partner->currentPos.z = player->currentPos.z;
+            partner->curPos.x = player->curPos.x;
+            partner->curPos.y = player->curPos.y + 25.0f;
+            partner->curPos.z = player->curPos.z;
             gBattleSubState = BTL_SUBSTATE_CHANGE_PARTNER_EXEC_BRING_OUT;
             break;
         case BTL_SUBSTATE_CHANGE_PARTNER_EXEC_BRING_OUT:
@@ -2597,10 +2597,10 @@ void btl_state_update_player_move(void) {
 
     if (gBattleSubState == BTL_SUBSTATE_PLAYER_MOVE_INIT) {
         battleStatus->stateFreezeCount = 0;
-        battleStatus->unk_86 = 127;
-        battleStatus->blockResult = 127;
+        battleStatus->actionResult = ACTION_RESULT_NONE;
+        battleStatus->blockResult = BLOCK_RESULT_NONE;
         battleStatus->lastAttackDamage = 0;
-        battleStatus->currentDamageSource = DMG_SRC_DEFAULT;
+        battleStatus->curDamageSource = DMG_SRC_DEFAULT;
         gBattleStatus.flags1 &= ~BS_FLAGS1_AUTO_SUCCEED_ACTION;
         gBattleStatus.flags1 &= ~BS_FLAGS1_MENU_OPEN;
         reset_actor_turn_info();
@@ -2763,7 +2763,7 @@ void btl_state_update_player_move(void) {
                 break;
             }
 
-            if (gGameStatusPtr->demoFlags & 1) {
+            if (gGameStatusPtr->demoBattleFlags & DEMO_BTL_FLAG_ENABLED) {
                 btl_set_state(BATTLE_STATE_END_DEMO_BATTLE);
                 break;
             }
@@ -2852,7 +2852,7 @@ void btl_state_update_player_move(void) {
                         gBattleSubState = BTL_SUBSTATE_PLAYER_MOVE_CHECK_PLAYER_STATUS;
                         break;
                 }
-                sfx_play_sound(SOUND_2107);
+                sfx_play_sound(SOUND_INFLICT_KO);
                 btl_show_battle_message(messageIndex, 60);
                 for (i = 0; i < ARRAY_COUNT(battleStatus->enemyActors); i++) {
                     actor = battleStatus->enemyActors[i];
@@ -3029,8 +3029,8 @@ void btl_state_update_end_player_turn(void) {
             if (!(gBattleStatus.flags2 & BS_FLAGS2_PEACH_BATTLE) || (gBattleStatus.flags1 & BS_FLAGS1_PLAYER_IN_BACK)) {
                 gBattleSubState = BTL_SUBSTATE_END_PLAYER_TURN_DONE;
             } else {
-                player->state.currentPos.x = player->homePos.x;
-                player->state.currentPos.z = player->homePos.z;
+                player->state.curPos.x = player->homePos.x;
+                player->state.curPos.z = player->homePos.z;
                 player->state.goalPos.x = partner->homePos.x;
                 player->state.goalPos.z = partner->homePos.z;
                 player->state.moveTime = 4;
@@ -3042,28 +3042,28 @@ void btl_state_update_end_player_turn(void) {
 
     if (gBattleSubState == BTL_SUBSTATE_END_PLAYER_TURN_AWAIT_SWAP) {
         if (player->state.moveTime != 0) {
-            player->currentPos.x += (player->state.goalPos.x - player->currentPos.x) / player->state.moveTime;
-            player->currentPos.z += (player->state.goalPos.z - player->currentPos.z) / player->state.moveTime;
-            partner->currentPos.x += (player->state.currentPos.x - partner->currentPos.x) / player->state.moveTime;
-            partner->currentPos.z += (player->state.currentPos.z - partner->currentPos.z) / player->state.moveTime;
+            player->curPos.x += (player->state.goalPos.x - player->curPos.x) / player->state.moveTime;
+            player->curPos.z += (player->state.goalPos.z - player->curPos.z) / player->state.moveTime;
+            partner->curPos.x += (player->state.curPos.x - partner->curPos.x) / player->state.moveTime;
+            partner->curPos.z += (player->state.curPos.z - partner->curPos.z) / player->state.moveTime;
         }
-        player->currentPos.z += sin_rad(DEG_TO_RAD(player->state.angle)) * 16.0f;
+        player->curPos.z += sin_rad(DEG_TO_RAD(player->state.angle)) * 16.0f;
         player->yaw = clamp_angle(-player->state.angle);
-        partner->currentPos.z -= sin_rad(DEG_TO_RAD(player->state.angle)) * 16.0f;
+        partner->curPos.z -= sin_rad(DEG_TO_RAD(player->state.angle)) * 16.0f;
         partner->yaw = clamp_angle(-player->state.angle);
         player->state.angle += 90.0f;
 
         if (player->state.moveTime != 0) {
             player->state.moveTime--;
         } else {
-            player->currentPos.x = player->state.goalPos.x;
-            player->currentPos.z = player->state.goalPos.z;
-            partner->currentPos.x = player->state.currentPos.x;
-            partner->currentPos.z = player->state.currentPos.z;
-            player->homePos.x = player->currentPos.x;
-            player->homePos.z = player->currentPos.z;
-            partner->homePos.x = partner->currentPos.x;
-            partner->homePos.z = partner->currentPos.z;
+            player->curPos.x = player->state.goalPos.x;
+            player->curPos.z = player->state.goalPos.z;
+            partner->curPos.x = player->state.curPos.x;
+            partner->curPos.z = player->state.curPos.z;
+            player->homePos.x = player->curPos.x;
+            player->homePos.z = player->curPos.z;
+            partner->homePos.x = partner->curPos.x;
+            partner->homePos.z = partner->curPos.z;
             gBattleStatus.flags1 |= BS_FLAGS1_PLAYER_IN_BACK;
             gBattleSubState = BTL_SUBSTATE_END_PLAYER_TURN_DONE;
         }
@@ -3155,9 +3155,9 @@ void btl_state_update_partner_move(void) {
                 break;
             }
             battleStatus->stateFreezeCount = 0;
-            battleStatus->unk_86 = 127;
-            battleStatus->blockResult = 127;
-            battleStatus->currentDamageSource = DMG_SRC_DEFAULT;
+            battleStatus->actionResult = ACTION_RESULT_NONE;
+            battleStatus->blockResult = BLOCK_RESULT_NONE;
+            battleStatus->curDamageSource = DMG_SRC_DEFAULT;
             gBattleStatus.flags1 &= ~BS_FLAGS1_AUTO_SUCCEED_ACTION;
             gBattleStatus.flags1 &= ~BS_FLAGS1_MENU_OPEN;
             reset_actor_turn_info();
@@ -3258,15 +3258,15 @@ void btl_state_update_partner_move(void) {
                 break;
             }
 
-            if (gGameStatusPtr->demoFlags & 1) {
+            if (gGameStatusPtr->demoBattleFlags & DEMO_BTL_FLAG_ENABLED) {
                 btl_set_state(BATTLE_STATE_END_DEMO_BATTLE);
                 break;
             }
             decrement_status_bar_disabled();
-            if (playerData->currentPartner == PARTNER_GOOMBARIO
+            if (playerData->curPartner == PARTNER_GOOMBARIO
                     && battleStatus->moveCategory == BTL_MENU_TYPE_CHANGE_PARTNER
                     && battleStatus->selectedMoveID != MOVE_CHARGE) {
-                partner->isGlowing = 0;
+                partner->isGlowing = FALSE;
                 gBattleStatus.flags1 &= ~BS_FLAGS1_GOOMBARIO_CHARGED;
             }
             if (btl_check_player_defeated()) {
@@ -3362,7 +3362,7 @@ void btl_state_update_partner_move(void) {
                         break;
                 }
 
-                sfx_play_sound(SOUND_2107);
+                sfx_play_sound(SOUND_INFLICT_KO);
                 btl_show_battle_message(messageIndex, 60);
 
                 for (i = 0; i < ARRAY_COUNT(battleStatus->enemyActors); i++) {
@@ -3469,7 +3469,7 @@ void btl_state_update_next_enemy(void) {
             }
 
             battleStatus->activeEnemyActorID = battleStatus->enemyIDs[i++];
-            battleStatus->currentTurnEnemy = enemy;
+            battleStatus->curTurnEnemy = enemy;
             battleStatus->nextEnemyIndex = i;
 
             skipEnemy = FALSE;
@@ -3582,9 +3582,9 @@ void btl_state_update_enemy_move(void) {
             battleStatus->stateFreezeCount = 0;
             battleStatus->lastAttackDamage = 0;
             battleStatus->actionSuccess = 0;
-            battleStatus->unk_86 = 127;
-            battleStatus->blockResult = 127;
-            battleStatus->currentDamageSource = DMG_SRC_DEFAULT;
+            battleStatus->actionResult = ACTION_RESULT_NONE;
+            battleStatus->blockResult = BLOCK_RESULT_NONE;
+            battleStatus->curDamageSource = DMG_SRC_DEFAULT;
             reset_actor_turn_info();
             gBattleStatus.flags1 |= BS_FLAGS1_100;
             player->statusAfflicted = 0;
@@ -3609,7 +3609,7 @@ void btl_state_update_enemy_move(void) {
                 }
             }
 
-            enemy = battleStatus->currentTurnEnemy;
+            enemy = battleStatus->curTurnEnemy;
             if (!(enemy->flags & ACTOR_FLAG_NO_ATTACK)) {
                 reset_all_actor_sounds(enemy);
                 battleStatus->battlePhase = PHASE_EXECUTE_ACTION;
@@ -3677,7 +3677,7 @@ void btl_state_update_enemy_move(void) {
                 }
 
                 if (battleStatus->stateFreezeCount == 0) {
-                    if (gGameStatusPtr->demoFlags & 1) {
+                    if (gGameStatusPtr->demoBattleFlags & DEMO_BTL_FLAG_ENABLED) {
                         btl_set_state(BATTLE_STATE_END_DEMO_BATTLE);
                     } else {
                         btl_update_ko_status();
@@ -3825,15 +3825,15 @@ void btl_state_update_first_strike(void) {
             switch (encounterStatus->hitType) {
                 case ENCOUNTER_TRIGGER_JUMP:
                     battleStatus->moveCategory = BTL_MENU_TYPE_JUMP;
-                    battleStatus->selectedMoveID = MOVE_UNUSED_JUMP4;
+                    battleStatus->selectedMoveID = MOVE_FIRST_STRIKE_JUMP;
                     battleStatus->moveArgument = encounterStatus->hitTier;
-                    battleStatus->currentTargetListFlags = gMoveTable[MOVE_UNUSED_JUMP4].flags;
+                    battleStatus->curTargetListFlags = gMoveTable[MOVE_FIRST_STRIKE_JUMP].flags;
                     break;
                 case ENCOUNTER_TRIGGER_HAMMER:
                     battleStatus->moveCategory = BTL_MENU_TYPE_SMASH;
-                    battleStatus->selectedMoveID = MOVE_UNUSED_HAMMER4;
+                    battleStatus->selectedMoveID = MOVE_FIRST_STRIKE_HAMMER;
                     battleStatus->moveArgument = encounterStatus->hitTier;
-                    battleStatus->currentTargetListFlags = gMoveTable[MOVE_UNUSED_HAMMER4].flags;
+                    battleStatus->curTargetListFlags = gMoveTable[MOVE_FIRST_STRIKE_HAMMER].flags;
                     break;
                 case ENCOUNTER_TRIGGER_PARTNER:
                     btl_set_state(BATTLE_STATE_PARTNER_FIRST_STRIKE);
@@ -3863,7 +3863,7 @@ void btl_state_update_first_strike(void) {
             func_80263230(player, enemy);
             battleStatus->stateFreezeCount = 0;
             battleStatus->lastAttackDamage = 0;
-            battleStatus->currentDamageSource = DMG_SRC_DEFAULT;
+            battleStatus->curDamageSource = DMG_SRC_DEFAULT;
             gBattleStatus.flags1 &= ~BS_FLAGS1_MENU_OPEN;
             gBattleStatus.flags2 |= BS_FLAGS2_1000000;
             gBattleStatus.flags1 &= ~BS_FLAGS1_PARTNER_ACTING;
@@ -3952,7 +3952,7 @@ void btl_state_update_first_strike(void) {
 
             if (battleStatus->stateFreezeCount == 0) {
                 decrement_status_bar_disabled();
-                if (!(gGameStatusPtr->demoFlags & 1)) {
+                if (!(gGameStatusPtr->demoBattleFlags & DEMO_BTL_FLAG_ENABLED)) {
                     Actor* target;
 
                     if (btl_check_player_defeated() || btl_check_enemies_defeated()) {
@@ -4003,7 +4003,7 @@ void btl_state_draw_first_stike(void) {
         if (BattleScreenFadeAmt == 0) {
             set_screen_overlay_params_front(OVERLAY_NONE, -1.0f);
         } else {
-            if (!(gGameStatusPtr->demoFlags & 1)) {
+            if (!(gGameStatusPtr->demoBattleFlags & DEMO_BTL_FLAG_ENABLED)) {
                 BattleScreenFadeAmt -= 20;
             } else {
                 BattleScreenFadeAmt -= 50;
@@ -4034,18 +4034,18 @@ void btl_state_update_partner_striking_first(void) {
             D_8029F254 = 0;
             // setup dummy 'menu selection' for partner move
             level = partner->actorBlueprint->level;
-            switch (playerData->currentPartner) {
+            switch (playerData->curPartner) {
                 case PARTNER_KOOPER:
                     battleStatus->moveCategory = BTL_MENU_TYPE_CHANGE_PARTNER;
                     battleStatus->moveArgument = 0;
                     battleStatus->selectedMoveID = level + MOVE_SHELL_TOSS1;
-                    battleStatus->currentTargetListFlags = gMoveTable[battleStatus->selectedMoveID].flags;
+                    battleStatus->curTargetListFlags = gMoveTable[battleStatus->selectedMoveID].flags;
                     break;
                 case PARTNER_BOMBETTE:
                     battleStatus->moveCategory = BTL_MENU_TYPE_CHANGE_PARTNER;
                     battleStatus->moveArgument = 0;
                     battleStatus->selectedMoveID = level + MOVE_BODY_SLAM1;
-                    battleStatus->currentTargetListFlags = gMoveTable[battleStatus->selectedMoveID].flags;
+                    battleStatus->curTargetListFlags = gMoveTable[battleStatus->selectedMoveID].flags;
                     break;
             }
             // let the enemy know a first strike is coming
@@ -4066,7 +4066,7 @@ void btl_state_update_partner_striking_first(void) {
             partner->targetPartIndex = target->partID;
             battleStatus->stateFreezeCount = 0;
             battleStatus->lastAttackDamage = 0;
-            battleStatus->currentDamageSource = DMG_SRC_DEFAULT;
+            battleStatus->curDamageSource = DMG_SRC_DEFAULT;
             gBattleStatus.flags1 &= ~BS_FLAGS1_MENU_OPEN;
             gBattleStatus.flags2 |= BS_FLAGS2_1000000;
             gBattleStatus.flags1 |= BS_FLAGS1_PARTNER_ACTING;
@@ -4217,7 +4217,7 @@ void btl_state_update_enemy_striking_first(void) {
         case BTL_SUBSTATE_ENEMY_FIRST_STRIKE_INIT:
             battleStatus->stateFreezeCount = 0;
             battleStatus->lastAttackDamage = 0;
-            battleStatus->currentDamageSource = DMG_SRC_DEFAULT;
+            battleStatus->curDamageSource = DMG_SRC_DEFAULT;
             playerData->enemyFirstStrikes++;
             battleStatus->flags1 &= ~BS_FLAGS1_MENU_OPEN;
             D_8029F254 = 0;
@@ -4272,14 +4272,14 @@ void btl_state_update_enemy_striking_first(void) {
 
             activeEnemyActorID = battleStatus->enemyIDs[nextEnemyIdx];
             nextEnemyIdx++;
-            battleStatus->currentTurnEnemy = actor;
+            battleStatus->curTurnEnemy = actor;
             battleStatus->activeEnemyActorID = activeEnemyActorID;
             if (nextEnemyIdx >= battleStatus->numEnemyActors) {
                 nextEnemyIdx = 0;
             }
             battleStatus->nextEnemyIndex = nextEnemyIdx;
             btl_cam_target_actor(battleStatus->activeEnemyActorID);
-            actor = battleStatus->currentTurnEnemy;
+            actor = battleStatus->curTurnEnemy;
             reset_actor_turn_info();
             battleStatus->battlePhase = PHASE_FIRST_STRIKE;
             script = start_script(actor->takeTurnSource, EVT_PRIORITY_A, 0);
@@ -4296,7 +4296,7 @@ void btl_state_update_enemy_striking_first(void) {
                 D_8029F254 = 1;
             }
 
-            actor = battleStatus->currentTurnEnemy;
+            actor = battleStatus->curTurnEnemy;
             if (actor->takeTurnScript == NULL || !does_script_exist(actor->takeTurnScriptID)) {
                 actor->takeTurnScript = NULL;
 

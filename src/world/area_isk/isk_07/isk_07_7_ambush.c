@@ -1,4 +1,5 @@
 #include "isk_07.h"
+#include "sprite/player.h"
 
 extern EvtScript N(EVS_OpenSarcophagus1);
 extern EvtScript N(EVS_OpenSarcophagus2);
@@ -17,7 +18,7 @@ EvtScript N(EVS_SetupSarcophagi) = {
                 EVT_WAIT(1)
                 EVT_GOTO(10)
             EVT_END_IF
-        EVT_CALL(PlaySound, SOUND_A)
+        EVT_CALL(PlaySound, SOUND_CHIME_BEGIN_AMBUSH)
         EVT_CALL(DisablePlayerInput, TRUE)
         EVT_CALL(ShakeCam, CAM_DEFAULT, 0, 30, EVT_FLOAT(1.0))
         EVT_CALL(SetNpcYaw, NPC_Pokey_01, 105)
@@ -86,7 +87,7 @@ EvtScript N(EVS_SetupSarcophagi) = {
 };
 
 EvtScript N(EVS_OpenSarcophagusAnim) = {
-    EVT_CALL(PlaySoundAtModel, LVar3, SOUND_1D1, SOUND_SPACE_MODE_0)
+    EVT_CALL(PlaySoundAtModel, LVar3, SOUND_SARCOPHAGUS_OPEN, SOUND_SPACE_DEFAULT)
     EVT_CALL(TranslateModel, LVar3, 0, 0, 13)
     EVT_WAIT(3)
     EVT_CALL(MakeLerp, 0, 35, 9, EASING_COS_IN_OUT)

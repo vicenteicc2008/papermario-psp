@@ -4,11 +4,16 @@
 #include "hud_element.h"
 #include "camera.h"
 
-//extern f32 D_8009A5EC; TODO BSS
-
 void render_models(void);
 void execute_render_tasks(void);
 void render_item_entities(void);
+
+SHIFT_BSS f32 D_8009A5EC;
+SHIFT_BSS s16 gCurrentCamID;
+SHIFT_BSS u16* nuGfxCfb_ptr;
+SHIFT_BSS Gfx* gMainGfxPos;
+SHIFT_BSS DisplayContext* gDisplayContext;
+SHIFT_BSS Camera gCameras[4];
 
 void update_cameras(void) {
     s32 i;
@@ -89,7 +94,7 @@ void render_frame(s32 isSecondPass) {
 
     if (!isSecondPass) {
         gCurrentCamID = CAM_DEFAULT;
-        func_80116698();
+        mdl_update_transform_matrices();
     }
 
     if (isSecondPass) {
@@ -186,9 +191,9 @@ void render_frame(s32 isSecondPass) {
 
         camera->unkMatrix = &gDisplayContext->matrixStack[gMatrixListPos];
         matrixListPos = gMatrixListPos++;
-        guRotate(&gDisplayContext->matrixStack[matrixListPos], -camera->trueRotation.x, 0.0f, 1.0f, 0.0f);
-        camera->vpAlt.vp.vtrans[0] = camera->vp.vp.vtrans[0] + gGameStatusPtr->unk_82;
-        camera->vpAlt.vp.vtrans[1] = camera->vp.vp.vtrans[1] + gGameStatusPtr->unk_83;
+        guRotate(&gDisplayContext->matrixStack[matrixListPos], -camera->trueRot.x, 0.0f, 1.0f, 0.0f);
+        camera->vpAlt.vp.vtrans[0] = camera->vp.vp.vtrans[0] + gGameStatusPtr->unk_82.x;
+        camera->vpAlt.vp.vtrans[1] = camera->vp.vp.vtrans[1] + gGameStatusPtr->unk_82.y;
 
         if (!(camera->flags & CAMERA_FLAG_ORTHO)) {
             if (gCurrentCamID != CAM_3) {
@@ -361,12 +366,12 @@ Camera* initialize_next_camera(CameraInitData* initData) {
     camera->lookAt_obj.x = 0;
     camera->lookAt_obj.y = 0;
     camera->lookAt_obj.z = -100.0f;
-    camera->currentYaw = 0;
-    camera->currentBoomLength = 0;
-    camera->currentYOffset = 0;
-    camera->trueRotation.x = 0.0f;
-    camera->trueRotation.y = 0.0f;
-    camera->trueRotation.z = 0.0f;
+    camera->curYaw = 0;
+    camera->curBoomLength = 0;
+    camera->curYOffset = 0;
+    camera->trueRot.x = 0.0f;
+    camera->trueRot.y = 0.0f;
+    camera->trueRot.z = 0.0f;
     camera->updateMode = initData->updateMode;
     camera->needsInit = TRUE;
     camera->nearClip = initData->nearClip;
@@ -431,8 +436,8 @@ void set_cam_viewport(s16 id, s16 x, s16 y, s16 width, s16 height) {
     camera->vpAlt.vp.vscale[2] = 0x1FF;
     camera->vpAlt.vp.vscale[3] = 0;
 
-    camera->vpAlt.vp.vtrans[0] = gGameStatusPtr->unk_82 + 4 * (s16) ((u16) camera->viewportStartX + (camera->viewportW / 2));
-    camera->vpAlt.vp.vtrans[1] = gGameStatusPtr->unk_83 + 4 * (s16) ((u16) camera->viewportStartY + (camera->viewportH / 2));
+    camera->vpAlt.vp.vtrans[0] = gGameStatusPtr->unk_82.x + 4 * (s16) ((u16) camera->viewportStartX + (camera->viewportW / 2));
+    camera->vpAlt.vp.vtrans[1] = gGameStatusPtr->unk_82.y + 4 * (s16) ((u16) camera->viewportStartY + (camera->viewportH / 2));
     camera->vpAlt.vp.vtrans[2] = 0x200;
     camera->vpAlt.vp.vtrans[3] = 0;
 }

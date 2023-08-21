@@ -2,6 +2,7 @@
 #include "entity.h"
 #include "effects.h"
 #include "model.h"
+#include "sprite/player.h"
 
 s32 N(TargetBackgroundColR) = 0;
 s32 N(TargetBackgroundColG) = 0;
@@ -79,16 +80,16 @@ API_CALLABLE(N(MovePlayerAlongRoofSlide)) {
     script->functionTemp[1] += 4;
     xComp = (script->functionTemp[1] / 10) * sin_deg(playerStatus->targetYaw);
     zComp = (script->functionTemp[1] / 10) * -cos_deg(playerStatus->targetYaw);
-    x = playerStatus->position.x + xComp;
-    y = playerStatus->position.y + playerStatus->colliderHeight * 0.5f;
-    z = playerStatus->position.z + zComp;
+    x = playerStatus->pos.x + xComp;
+    y = playerStatus->pos.y + playerStatus->colliderHeight * 0.5f;
+    z = playerStatus->pos.z + zComp;
     hitDepth = 500.0f;
 
     if (npc_raycast_down_sides(0, &x, &y, &z, &hitDepth)) {
         if (hitDepth < 100.0f) {
-            playerStatus->position.x = x;
-            playerStatus->position.y = y;
-            playerStatus->position.z = z;
+            playerStatus->pos.x = x;
+            playerStatus->pos.y = y;
+            playerStatus->pos.z = z;
             return ApiStatus_BLOCK;
         }
     }
@@ -107,10 +108,10 @@ API_CALLABLE(N(IsPlayerInputDisabled)) {
 API_CALLABLE(N(MonitorCurrenFloor)) {
     PlayerStatus* playerStatus = &gPlayerStatus;
 
-    if (playerStatus->lastGoodPosition.y == 385) {
+    if (playerStatus->lastGoodPos.y == 385) {
         evt_set_variable(script, MV_CurrentFloor, 0);
     }
-    if (playerStatus->lastGoodPosition.y == 150) {
+    if (playerStatus->lastGoodPos.y == 150) {
         evt_set_variable(script, MV_CurrentFloor, 1);
     }
     return ApiStatus_BLOCK;
@@ -196,9 +197,9 @@ EvtScript N(EVS_TouchFloor_RightRoof) = {
     EVT_CALL(N(UnsetCamera0MoveFlag1))
     EVT_SET(LVar3, 500)
     EVT_EXEC_GET_TID(N(EVS_TetherCamToPlayerCappedY), LVarA)
-    EVT_CALL(PlaySoundAtPlayer, SOUND_167, 0)
+    EVT_CALL(PlaySoundAtPlayer, SOUND_SLIDE, SOUND_SPACE_DEFAULT)
     EVT_CALL(N(MovePlayerAlongRoofSlide))
-    EVT_CALL(StopSound, SOUND_167)
+    EVT_CALL(StopSound, SOUND_SLIDE)
     EVT_CALL(SetPlayerJumpscale, EVT_FLOAT(0.5))
     EVT_CALL(PlayerJump, -150, 325, -300, 40)
     EVT_CALL(ShakeCam, CAM_DEFAULT, 1, 5, EVT_FLOAT(1.0))
@@ -215,7 +216,7 @@ EvtScript N(EVS_TouchFloor_RightRoof) = {
 };
 
 EvtScript N(EVS_SpawnChimneySmokeAtPlayer) = {
-    EVT_CALL(PlaySoundAtPlayer, SOUND_F5, 0)
+    EVT_CALL(PlaySoundAtPlayer, SOUND_FIREPLACE_BURST, SOUND_SPACE_DEFAULT)
     EVT_THREAD
         EVT_CALL(GetPlayerPos, LVar1, LVar2, LVar3)
         EVT_PLAY_EFFECT(EFFECT_LANDING_DUST, 4, LVar1, LVar2, LVar3, 0)
@@ -281,7 +282,7 @@ EvtScript N(EVS_TouchFloor_LeftRoof) = {
     EVT_CALL(SetPlayerPos, NPC_DISPOSE_LOCATION)
     EVT_CALL(SetNpcPos, NPC_PARTNER, NPC_DISPOSE_LOCATION)
     EVT_WAIT(20)
-    EVT_CALL(PlaySoundAtPlayer, SOUND_162, 0)
+    EVT_CALL(PlaySoundAtPlayer, SOUND_TRIP, SOUND_SPACE_DEFAULT)
     EVT_CALL(ShakeCam, CAM_DEFAULT, 1, 10, EVT_FLOAT(1.0))
     EVT_WAIT(10)
     EVT_CALL(SetNpcPos, NPC_PARTNER, -214, 150, -375)

@@ -25,7 +25,7 @@ EvtScript N(EVS_BindExitTriggers) = {
 };
 
 EvtScript N(EVS_Scene_RuinsRising) = {
-    EVT_CALL(PlaySound, SOUND_80000060)
+    EVT_CALL(PlaySound, SOUND_LOOP_SBK_RUINS_RISING_DISTANT)
     EVT_CALL(UseSettingsFrom, CAM_DEFAULT, 175, 0, -201)
     EVT_CALL(SetPanTarget, CAM_DEFAULT, 175, 0, -201)
     EVT_CALL(SetCamSpeed, CAM_DEFAULT, EVT_FLOAT(90.0))
@@ -68,7 +68,7 @@ EvtScript N(EVS_EnterMap) = {
                 EVT_CALL(SetNpcPos, NPC_PARTNER, LVar0, LVar1, LVar2)
                 EVT_CALL(SetPlayerPos, LVar0, NPC_DISPOSE_POS_Y, LVar2)
                 EVT_WAIT(30)
-                EVT_CALL(PlaySound, SOUND_208E)
+                EVT_CALL(PlaySound, SOUND_GROW)
                 EVT_SET(GF_DRO01_WarpPipe, TRUE)
                 EVT_WAIT(30)
                 EVT_CALL(SetPlayerActionState, ACTION_STATE_IDLE)

@@ -65,7 +65,7 @@ void N(worker_render_sticker)(void) {
     renderTaskPtr->renderMode = RENDER_MODE_ALPHATEST;
     renderTaskPtr->appendGfxArg = 0;
     renderTaskPtr->appendGfx = &N(appendGfx_sticker);
-    renderTaskPtr->distance = 0;
+    renderTaskPtr->dist = 0;
     queue_render_task(renderTaskPtr);
 }
 
@@ -77,7 +77,7 @@ API_CALLABLE(N(CreateSticker)) {
     IMG_PTR iconImg = heap_malloc(0x200);
     PAL_PTR iconPal = heap_malloc(0x20);
 
-    s32 iconBase = (s32) icon_present_ROM_START;
+    s32 iconBase = (s32) icon_ROM_START;
     s32 iconImgEnd = iconBase + 0x200;
     s32 iconPalEnd = iconBase + 0x20;
 

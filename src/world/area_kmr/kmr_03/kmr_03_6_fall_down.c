@@ -1,4 +1,5 @@
 #include "kmr_03.h"
+#include "sprite/player.h"
 
 EvtScript N(EVS_Scene_FallingDown) = {
     EVT_CALL(UseSettingsFrom, CAM_DEFAULT, -270, 20, -80)
@@ -33,11 +34,11 @@ EvtScript N(EVS_Scene_FallingDown) = {
     EVT_CALL(WaitForCam, CAM_DEFAULT, EVT_FLOAT(1.0))
     EVT_THREAD
         EVT_WAIT(18 * DT)
-        EVT_CALL(PlaySoundAtPlayer, SOUND_175, SOUND_SPACE_MODE_0)
+        EVT_CALL(PlaySoundAtPlayer, SOUND_0175, SOUND_SPACE_DEFAULT)
         EVT_WAIT(30 * DT)
-        EVT_CALL(PlaySoundAtPlayer, SOUND_176, SOUND_SPACE_MODE_0)
+        EVT_CALL(PlaySoundAtPlayer, SOUND_0176, SOUND_SPACE_DEFAULT)
         EVT_WAIT(28 * DT)
-        EVT_CALL(PlaySoundAtPlayer, SOUND_175, SOUND_SPACE_MODE_0)
+        EVT_CALL(PlaySoundAtPlayer, SOUND_0175, SOUND_SPACE_DEFAULT)
     EVT_END_THREAD
     EVT_CALL(HidePlayerShadow, TRUE)
     EVT_CALL(SetPlayerAnimation, ANIM_Mario1_Idle)

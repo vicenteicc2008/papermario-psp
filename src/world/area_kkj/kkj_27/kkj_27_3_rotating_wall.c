@@ -1,4 +1,5 @@
 #include "kkj_27.h"
+#include "sprite/player.h"
 
 s32 N(SpillLightAmount) = 0;
 
@@ -10,8 +11,8 @@ API_CALLABLE(N(UpdateRotatingPlayerPosition)) {
     mag = dist2D(-250.0f, 0.0f, script->varTable[9], script->varTable[10]);
     angle = atan2(-250.0f, 0.0f, script->varTable[9], script->varTable[10]);
     angle = clamp_angle(angle - var);
-    gPlayerStatus.position.x = -250.0f + mag * sin_deg(angle);
-    gPlayerStatus.position.z = 0.0f - mag * cos_deg(angle);
+    gPlayerStatus.pos.x = -250.0f + mag * sin_deg(angle);
+    gPlayerStatus.pos.z = 0.0f - mag * cos_deg(angle);
 
     return ApiStatus_DONE2;
 }
@@ -34,7 +35,7 @@ EvtScript N(EVS_Scene_RotatingWall) = {
     EVT_CALL(ModifyColliderFlags, MODIFY_COLLIDER_FLAGS_SET_BITS, COLLIDER_g29, COLLIDER_FLAGS_UPPER_MASK)
     EVT_CALL(ModifyColliderFlags, MODIFY_COLLIDER_FLAGS_CLEAR_BITS, COLLIDER_o124, COLLIDER_FLAGS_UPPER_MASK)
     EVT_THREAD
-        EVT_CALL(PlaySoundAt, SOUND_93, 0, -250, 5, 0)
+        EVT_CALL(PlaySoundAt, SOUND_KKJ_ROTATING_WALL, SOUND_SPACE_DEFAULT, -250, 5, 0)
         EVT_CALL(GetPlayerPos, LVar9, LVar0, LVarA)
         EVT_CALL(MakeLerp, 0, -450, 120 * DT, EASING_LINEAR)
         EVT_LOOP(0)
@@ -79,7 +80,7 @@ EvtScript N(EVS_UseRotatingWall) = {
     EVT_WAIT(10 * DT)
     EVT_CALL(SetPlayerAnimation, ANIM_Peach3_ReachForButton)
     EVT_WAIT(10 * DT)
-    EVT_CALL(PlaySoundAtCollider, COLLIDER_o193, SOUND_FA, 0)
+    EVT_CALL(PlaySoundAtCollider, COLLIDER_o193, SOUND_KKJ_PRESS_BUTTON, 0)
     EVT_CALL(SetPlayerAnimation, ANIM_Peach3_PressButton)
     EVT_WAIT(10 * DT)
     EVT_CALL(SetPlayerAnimation, ANIM_Peach3_AfterPressButton)
@@ -98,7 +99,7 @@ EvtScript N(EVS_UseRotatingWall_FirstTime) = {
     EVT_WAIT(10 * DT)
     EVT_CALL(SetPlayerAnimation, ANIM_Peach3_ReachForButton)
     EVT_WAIT(10 * DT)
-    EVT_CALL(PlaySoundAtCollider, COLLIDER_o193, SOUND_FA, 0)
+    EVT_CALL(PlaySoundAtCollider, COLLIDER_o193, SOUND_KKJ_PRESS_BUTTON, 0)
     EVT_CALL(SetPlayerAnimation, ANIM_Peach3_PressButton)
     EVT_WAIT(10 * DT)
     EVT_CALL(SetPlayerAnimation, ANIM_Peach3_AfterPressButton)

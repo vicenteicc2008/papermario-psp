@@ -2,6 +2,7 @@
 #include "sprite/npc/Tutankoopa.h"
 #include "sprite/npc/ChainChomp.h"
 #include "sprite/npc/BuzzyBeetle.h"
+#include "sprite/player.h"
 
 #define NAMESPACE A(tutankoopa)
 
@@ -236,9 +237,9 @@ ActorPartBlueprint N(ActorParts)[] = {
 ActorBlueprint NAMESPACE = {
     .flags = 0,
     .type = ACTOR_TYPE_TUTANKOOPA,
-    .level = 55,
+    .level = ACTOR_LEVEL_TUTANKOOPA,
     .maxHP = 30,
-    .partCount = ARRAY_COUNT( N(ActorParts)),
+    .partCount = ARRAY_COUNT(N(ActorParts)),
     .partsData = N(ActorParts),
     .initScript = &N(EVS_Init),
     .statusTable = N(StatusTable),
@@ -275,7 +276,7 @@ EvtScript N(EVS_Init) = {
     EVT_CALL(BindTakeTurn, ACTOR_SELF, EVT_PTR(N(EVS_TakeTurn)))
     EVT_CALL(BindIdle, ACTOR_SELF, EVT_PTR(N(EVS_Idle)))
     EVT_CALL(BindHandleEvent, ACTOR_SELF, EVT_PTR(N(EVS_HandleEvent)))
-    EVT_CALL(BindNextTurn, ACTOR_SELF, EVT_PTR(N(EVS_HandlePhase)))
+    EVT_CALL(BindHandlePhase, ACTOR_SELF, EVT_PTR(N(EVS_HandlePhase)))
     EVT_CALL(HPBarToHome, ACTOR_SELF)
     EVT_CALL(ForceHomePos, ACTOR_SELF, 97, 70, 15)
     EVT_CALL(SetPartPos, ACTOR_SELF, PRT_SHELL_1, 70, 70, 3)
@@ -325,7 +326,7 @@ EvtScript N(EVS_Idle) = {
 
 EvtScript N(EVS_HandleEvent) = {
     EVT_CALL(UseIdleAnimation, ACTOR_SELF, FALSE)
-    EVT_CALL(EnableIdleScript, ACTOR_SELF, 0)
+    EVT_CALL(EnableIdleScript, ACTOR_SELF, IDLE_SCRIPT_DISABLE)
     EVT_CALL(SetActorScale, ACTOR_SELF, EVT_FLOAT(1.0), EVT_FLOAT(1.0), EVT_FLOAT(1.0))
     EVT_CALL(GetLastElement, LVarE)
     EVT_CALL(GetLastEvent, ACTOR_SELF, LVar0)
@@ -447,7 +448,7 @@ EvtScript N(EVS_HandleEvent) = {
             EVT_EXEC_WAIT(EVS_Enemy_Recover)
         EVT_CASE_DEFAULT
     EVT_END_SWITCH
-    EVT_CALL(EnableIdleScript, ACTOR_SELF, 1)
+    EVT_CALL(EnableIdleScript, ACTOR_SELF, IDLE_SCRIPT_ENABLE)
     EVT_CALL(UseIdleAnimation, ACTOR_SELF, TRUE)
     EVT_RETURN
     EVT_END
@@ -527,7 +528,7 @@ EvtScript N(EVS_TemporaryKnockout) = {
 
 EvtScript N(EVS_TakeTurn) = {
     EVT_CALL(UseIdleAnimation, ACTOR_SELF, FALSE)
-    EVT_CALL(EnableIdleScript, ACTOR_SELF, 0)
+    EVT_CALL(EnableIdleScript, ACTOR_SELF, IDLE_SCRIPT_DISABLE)
     EVT_LABEL(0)
         EVT_CALL(GetActorVar, ACTOR_SELF, AVAR_Stunned, LVar0)
         EVT_IF_EQ(LVar0, FALSE)
@@ -536,7 +537,7 @@ EvtScript N(EVS_TakeTurn) = {
                 EVT_CALL(GetActorVar, ACTOR_SELF, AVAR_NextSummonTime, LVar0)
                 EVT_IF_EQ(LVar0, 0)
                     EVT_EXEC_WAIT(N(EVS_Move_SummonChomp))
-                    EVT_CALL(EnableIdleScript, ACTOR_SELF, 1)
+                    EVT_CALL(EnableIdleScript, ACTOR_SELF, IDLE_SCRIPT_ENABLE)
                     EVT_CALL(UseIdleAnimation, ACTOR_SELF, TRUE)
                     EVT_RETURN
                 EVT_ELSE
@@ -573,7 +574,7 @@ EvtScript N(EVS_TakeTurn) = {
                     EVT_CALL(SetActorVar, ACTOR_SELF, AVAR_NextAttack, AVAL_TRY_TOSS_NEXT)
                     EVT_EXEC_WAIT(N(EVS_Attack_DropDebris))
             EVT_END_SWITCH
-            EVT_CALL(EnableIdleScript, ACTOR_SELF, 1)
+            EVT_CALL(EnableIdleScript, ACTOR_SELF, IDLE_SCRIPT_ENABLE)
             EVT_CALL(UseIdleAnimation, ACTOR_SELF, TRUE)
             EVT_RETURN
         EVT_ELSE
@@ -583,7 +584,7 @@ EvtScript N(EVS_TakeTurn) = {
             EVT_EXEC_WAIT(N(EVS_LevitateToHomePos))
             EVT_GOTO(0)
         EVT_END_IF
-    EVT_CALL(EnableIdleScript, ACTOR_SELF, 1)
+    EVT_CALL(EnableIdleScript, ACTOR_SELF, IDLE_SCRIPT_ENABLE)
     EVT_CALL(UseIdleAnimation, ACTOR_SELF, TRUE)
     EVT_RETURN
     EVT_RETURN
@@ -628,7 +629,7 @@ EvtScript N(EVS_Attack_ThrowShell) = {
     EVT_CALL(JumpPartTo, ACTOR_SELF, LVar9, LVar0, LVar1, LVar2, 5, TRUE)
     EVT_WAIT(8)
     EVT_CALL(SetAnimation, ACTOR_SELF, LVar9, ANIM_BuzzyBeetle_Anim05)
-    EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_2F9)
+    EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_02F9)
     EVT_CALL(UseBattleCamPreset, BTL_CAM_DEFAULT)
     EVT_CALL(EnemyTestTarget, ACTOR_SELF, LVarA, 0, 0, 1, BS_FLAGS1_10)
     EVT_SWITCH(LVarA)
@@ -720,7 +721,7 @@ EvtScript N(EVS_Attack_DropDebris) = {
     EVT_WAIT(30)
     EVT_CALL(UseBattleCamPreset, BTL_CAM_DEFAULT)
     EVT_CALL(MoveBattleCamOver, 70)
-    EVT_CALL(PlaySound, SOUND_20E7)
+    EVT_CALL(PlaySound, SOUND_LEVITATE)
     EVT_PLAY_EFFECT(EFFECT_CHOMP_DROP, 0, 0, 60, 0, EVT_FLOAT(0.2), 0, EVT_FLOAT(1.4), 255, EVT_FLOAT(0.1), 150, 0)
     EVT_WAIT(15)
     EVT_CALL(GetStatusFlags, ACTOR_PLAYER, LVar0)
@@ -742,7 +743,7 @@ EvtScript N(EVS_Attack_DropDebris) = {
         EVT_CALL(GetActorPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)
         EVT_ADD(LVar1, 20)
         EVT_PLAY_EFFECT(EFFECT_EMOTE, 2, 0, LVar0, LVar1, LVar2, 20, 315, 30, 0, 0)
-        EVT_CALL(PlaySound, SOUND_20E8)
+        EVT_CALL(PlaySound, SOUND_ILLUSION_DISSOLVE)
     EVT_ELSE
         EVT_WAIT(50)
         EVT_CALL(PlaySound, SOUND_20E9)
@@ -750,7 +751,7 @@ EvtScript N(EVS_Attack_DropDebris) = {
         EVT_CALL(StartRumble, 10)
         EVT_CALL(PlaySound, SOUND_20EA)
         EVT_WAIT(20)
-        EVT_CALL(PlaySound, SOUND_20E8)
+        EVT_CALL(PlaySound, SOUND_ILLUSION_DISSOLVE)
     EVT_END_IF
     EVT_CALL(GetActorVar, ACTOR_SELF, AVAR_DebrisDropState, LVar0)
     EVT_SWITCH(LVar0)
@@ -1001,7 +1002,7 @@ EvtScript N(EVS_Move_SummonChomp) = {
                 EVT_GOTO(0)
             EVT_END_IF
     EVT_END_THREAD
-    EVT_CALL(PlaySound, SOUND_26B)
+    EVT_CALL(PlaySound, SOUND_026B)
     EVT_LABEL(10)
         EVT_CALL(GetActorVar, ACTOR_SELF, AVAR_GateOpenAmount, LVarD)
         EVT_CALL(TranslateModel, 31, 0, LVarD, 0)
@@ -1011,7 +1012,7 @@ EvtScript N(EVS_Move_SummonChomp) = {
         EVT_IF_LT(LVarD, 60)
             EVT_GOTO(10)
         EVT_END_IF
-    EVT_CALL(StopSound, SOUND_26B)
+    EVT_CALL(StopSound, SOUND_026B)
     EVT_WAIT(10)
     // create the chomp and have him exit the gate
     EVT_CALL(SummonEnemy, EVT_PTR(N(SummonedChomp)), FALSE)
@@ -1022,7 +1023,7 @@ EvtScript N(EVS_Move_SummonChomp) = {
     EVT_CALL(SetActorPos, LVarB, LVar0, LVar1, LVar2)
     EVT_CALL(SetActorDispOffset, LVarB, 0, 0, 0)
     EVT_CALL(UseIdleAnimation, LVarB, FALSE)
-    EVT_CALL(EnableIdleScript, LVarB, 0)
+    EVT_CALL(EnableIdleScript, LVarB, IDLE_SCRIPT_DISABLE)
     EVT_CALL(SetAnimation, LVarB, 1, ANIM_ChainChomp_SlowBite)
     EVT_CALL(SetActorSpeed, LVarB, EVT_FLOAT(6.0))
     EVT_CALL(SetActorJumpGravity, LVarB, EVT_FLOAT(0.8))
@@ -1046,7 +1047,7 @@ EvtScript N(EVS_Move_SummonChomp) = {
             EVT_CALL(SetBattleCamTarget, LVar0, LVar1, LVar2)
             EVT_CALL(MoveBattleCamOver, 5)
             EVT_WAIT(4)
-            EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_2061)
+            EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_CHAIN_CHOMP_BITE)
             EVT_CALL(UseBattleCamPreset, BTL_CAM_PRESET_19)
             EVT_CALL(SetBattleCamZoom, 200)
             EVT_CALL(SetBattleCamTarget, LVar0, LVar1, LVar2)
@@ -1083,7 +1084,7 @@ EvtScript N(EVS_Move_SummonChomp) = {
     EVT_CALL(HPBarToHome, LVarB)
     EVT_CALL(SetActorSpeed, LVarB, EVT_FLOAT(6.0))
     EVT_CALL(SetActorJumpGravity, LVarB, EVT_FLOAT(0.8))
-    EVT_CALL(EnableIdleScript, LVarB, 1)
+    EVT_CALL(EnableIdleScript, LVarB, IDLE_SCRIPT_ENABLE)
     EVT_CALL(UseIdleAnimation, LVarB, TRUE)
     // close the gate
     EVT_CALL(SetActorVar, ACTOR_SELF, AVAR_GateOpenAmount, 60)
@@ -1098,7 +1099,7 @@ EvtScript N(EVS_Move_SummonChomp) = {
                 EVT_GOTO(40)
             EVT_END_IF
         EVT_END_THREAD
-    EVT_CALL(PlaySound, SOUND_26B)
+    EVT_CALL(PlaySound, SOUND_026B)
     EVT_LABEL(50)
         EVT_CALL(GetActorVar, ACTOR_SELF, AVAR_GateOpenAmount, LVarD)
         EVT_CALL(TranslateModel, 31, 0, LVarD, 0)
@@ -1108,8 +1109,8 @@ EvtScript N(EVS_Move_SummonChomp) = {
         EVT_IF_GT(LVarD, 0)
             EVT_GOTO(50)
     EVT_END_IF
-    EVT_CALL(StopSound, SOUND_26B)
-    EVT_CALL(PlaySound, SOUND_26C)
+    EVT_CALL(StopSound, SOUND_026B)
+    EVT_CALL(PlaySound, SOUND_026C)
     EVT_CALL(ShakeCam, CAM_BATTLE, 0, 4, EVT_FLOAT(0.5))
     EVT_CALL(SetActorVar, ACTOR_SELF, AVAR_HasSummoned, TRUE)
     EVT_RETURN
@@ -1127,7 +1128,7 @@ EvtScript N(EVS_SummonedChompHop) = {
     EVT_IF_LT(LVar6, LVar4)
         EVT_CALL(SetGoalPos, LVarB, LVar0, LVar1, LVar2)
         EVT_CALL(JumpToGoal, LVarB, LVar3, FALSE, TRUE, FALSE)
-        EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_2062)
+        EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_CHAIN_CHOMP_THUD)
         EVT_THREAD
             EVT_CALL(ShakeCam, CAM_BATTLE, 0, 1, EVT_FLOAT(0.5))
         EVT_END_THREAD
@@ -1135,7 +1136,7 @@ EvtScript N(EVS_SummonedChompHop) = {
         EVT_SUB(LVar5, LVar4)
         EVT_CALL(SetGoalPos, LVarB, LVar5, LVar1, LVar2)
         EVT_CALL(JumpToGoal, LVarB, LVar3, FALSE, TRUE, FALSE)
-        EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_2062)
+        EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_CHAIN_CHOMP_THUD)
         EVT_THREAD
             EVT_CALL(ShakeCam, CAM_BATTLE, 0, 1, EVT_FLOAT(0.5))
         EVT_END_THREAD
@@ -1162,10 +1163,10 @@ EvtScript N(EVS_LevitateToHomePos) = {
     EVT_CALL(SetActorJumpGravity, ACTOR_SELF, EVT_FLOAT(0.1))
     EVT_CALL(SetGoalPos, ACTOR_SELF, 97, 70, 15)
     EVT_CALL(JumpToGoal, ACTOR_SELF, 45, FALSE, TRUE, FALSE)
-    EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_20BA)
+    EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_ACTOR_STEP_A)
     EVT_THREAD
         EVT_WAIT(1)
-        EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_3B4)
+        EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_ACTOR_STEP_B)
     EVT_END_THREAD
     EVT_WAIT(5)
     EVT_CALL(SetActorVar, ACTOR_SELF, AVAR_Stunned, FALSE)
@@ -1182,10 +1183,10 @@ EvtScript N(EVS_GetBackUp) = {
     EVT_CALL(GetActorPos, ACTOR_SELF, LVar0, LVar1, LVar2)
     EVT_CALL(SetGoalPos, ACTOR_SELF, LVar0, LVar1, LVar2)
     EVT_CALL(JumpToGoal, ACTOR_SELF, 8, FALSE, TRUE, FALSE)
-    EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_20BA)
+    EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_ACTOR_STEP_A)
     EVT_THREAD
         EVT_WAIT(1)
-        EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_3B4)
+        EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_ACTOR_STEP_B)
     EVT_END_THREAD
     EVT_CALL(SetAnimation, ACTOR_SELF, PRT_MAIN, ANIM_Tutankoopa_Idle)
     EVT_CALL(SetIdleAnimations, ACTOR_SELF, PRT_MAIN, EVT_PTR(N(TutankoopaAnims)))
@@ -1225,7 +1226,7 @@ EvtScript N(EVS_Tutankoopa_Death) = {
         EVT_IF_NE(LVar2, 0)
             EVT_THREAD
                 EVT_CALL(HideHealthBar, ACTOR_ENEMY1)
-                EVT_CALL(EnableIdleScript, ACTOR_ENEMY1, 0)
+                EVT_CALL(EnableIdleScript, ACTOR_ENEMY1, IDLE_SCRIPT_DISABLE)
                 EVT_CALL(UseIdleAnimation, ACTOR_ENEMY1, FALSE)
                 EVT_CALL(SetAnimation, ACTOR_ENEMY1, PRT_MAIN, ANIM_ChainChomp_Hurt)
                 EVT_WAIT(10)
@@ -1239,7 +1240,7 @@ EvtScript N(EVS_Tutankoopa_Death) = {
                 EVT_CALL(GetActorPos, ACTOR_ENEMY1, LVar0, LVar1, LVar2)
                 EVT_ADD(LVar1, 10)
                 EVT_PLAY_EFFECT(EFFECT_BIG_SMOKE_PUFF, LVar0, LVar1, LVar2, 0, 0, 0, 0, 0)
-                EVT_CALL(PlaySoundAtActor, ACTOR_ENEMY1, SOUND_DEATH)
+                EVT_CALL(PlaySoundAtActor, ACTOR_ENEMY1, SOUND_ACTOR_DEATH)
                 EVT_SET(LVar3, 0)
                 EVT_LOOP(12)
                     EVT_CALL(SetActorRotation, ACTOR_ENEMY1, LVar3, 0, 0)

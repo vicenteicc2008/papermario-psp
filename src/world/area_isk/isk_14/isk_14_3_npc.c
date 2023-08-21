@@ -1,5 +1,6 @@
 #include "isk_14.h"
 #include "sprite.h"
+#include "sprite/player.h"
 
 #include "world/common/enemy/StoneChomp.inc.c"
 
@@ -49,7 +50,7 @@ void N(func_80241610_993D40)(void) {
     gDPSetAlphaCompare(gMainGfxPos++, G_AC_NONE);
 
     guTranslateF(transformMtx, ambush->pos.x, ambush->pos.y, ambush->pos.z);
-    guRotateF(tempMtx, ambush->rot.y + gCameras[gCurrentCameraID].currentYaw + ambush->renderYaw, 0.0f, 1.0f, 0.0f);
+    guRotateF(tempMtx, ambush->rot.y + gCameras[gCurrentCameraID].curYaw + ambush->renderYaw, 0.0f, 1.0f, 0.0f);
     guMtxCatF(tempMtx, transformMtx, transformMtx);
     guRotateF(tempMtx, ambush->rot.z, 0.0f, 0.0f, 1.0f);
     guMtxCatF(tempMtx, transformMtx, transformMtx);
@@ -235,7 +236,7 @@ NpcData N(NpcData_StoneChomp) = {
     .initVarCount = 1,
     .initVar = { .value = -780 },
     .settings = &N(NpcSettings_StoneChomp),
-    .flags = ENEMY_FLAG_IGNORE_WORLD_COLLISION | ENEMY_FLAG_800 | ENEMY_FLAG_40000,
+    .flags = ENEMY_FLAG_IGNORE_WORLD_COLLISION | ENEMY_FLAG_FLYING | ENEMY_FLAG_40000,
     .drops = STONE_CHOMP_DROPS,
     .animations = STONE_CHOMP_ANIMS,
 };

@@ -1,5 +1,6 @@
 #include "jan_16.h"
 #include "effects.h"
+#include "sprite/player.h"
 
 EvtScript N(EVS_NpcAuxAI_RaphaelRaven) = {
     EVT_CALL(SetNpcScale, NPC_SELF, EVT_FLOAT(1.5), EVT_FLOAT(1.5), EVT_FLOAT(1.5))
@@ -10,14 +11,14 @@ EvtScript N(EVS_NpcAuxAI_RaphaelRaven) = {
 NpcSettings N(NpcSettings_RaphaelRaven) = {
     .height = 98,
     .radius = 80,
-    .level = 99,
+    .level = ACTOR_LEVEL_NONE,
     .otherAI = &N(EVS_NpcAuxAI_RaphaelRaven),
 };
 
 NpcSettings N(NpcSettings_Raven) = {
     .height = 26,
     .radius = 24,
-    .level = 99,
+    .level = ACTOR_LEVEL_NONE,
 };
 
 EvtScript N(D_802412D4_B812D4) = {
@@ -113,7 +114,7 @@ EvtScript N(EVS_NpcInteract_RaphaelRaven) = {
     EVT_END_THREAD
     EVT_CALL(SetNpcJumpscale, NPC_SELF, 2)
     EVT_CALL(NpcJump1, NPC_SELF, LVar0, LVar1, LVar2, 30)
-    EVT_CALL(PlaySoundAtNpc, NPC_SELF, SOUND_18A, 0)
+    EVT_CALL(PlaySoundAtNpc, NPC_SELF, SOUND_018A, SOUND_SPACE_DEFAULT)
     EVT_THREAD
         EVT_CALL(ShakeCam, CAM_DEFAULT, 0, 50, EVT_FLOAT(1.0))
         EVT_CALL(SetPlayerAnimation, ANIM_Mario1_Idle)
@@ -155,11 +156,11 @@ EvtScript N(EVS_NpcInteract_RaphaelRaven) = {
         EVT_LOOP(6)
             EVT_SWITCH(LVar0)
                 EVT_CASE_RANGE(1, 4)
-                    EVT_CALL(PlaySoundAtCollider, COLLIDER_o97, SOUND_18C, 0)
+                    EVT_CALL(PlaySoundAtCollider, COLLIDER_o97, SOUND_018C, 0)
                 EVT_CASE_EQ(5)
-                    EVT_CALL(PlaySoundAtCollider, COLLIDER_o97, SOUND_18D, 0)
+                    EVT_CALL(PlaySoundAtCollider, COLLIDER_o97, SOUND_018D, 0)
                 EVT_CASE_EQ(6)
-                    EVT_CALL(PlaySoundAtCollider, COLLIDER_o97, SOUND_18E, 0)
+                    EVT_CALL(PlaySoundAtCollider, COLLIDER_o97, SOUND_018E, 0)
             EVT_END_SWITCH
             EVT_ADD(LVar0, 1)
             EVT_WAIT(20)

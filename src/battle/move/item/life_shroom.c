@@ -2,6 +2,7 @@
 #include "script_api/battle.h"
 #include "effects.h"
 #include "entity.h"
+#include "sprite/player.h"
 
 #define NAMESPACE battle_item_life_shroom
 
@@ -16,9 +17,9 @@ API_CALLABLE(N(func_802A123C_72E76C)) {
     s32 c = evt_get_variable(script, *args++);
     ItemEntity* item = get_item_entity(script->varTable[14]);
 
-    item->position.x = a;
-    item->position.y = b;
-    item->position.z = c;
+    item->pos.x = a;
+    item->pos.y = b;
+    item->pos.z = c;
 
     return ApiStatus_DONE2;
 }
@@ -47,7 +48,7 @@ API_CALLABLE(N(func_802A12EC_72E81C)) {
     return ApiStatus_DONE2;
 }
 
-API_CALLABLE(N(ShowHeartRecoveryFX)) {
+API_CALLABLE(N(SpawnHeartRecoveryFX)) {
     Bytecode* args = script->ptrReadPos;
     s32 a = evt_get_variable(script, *args++);
     s32 b = evt_get_variable(script, *args++);
@@ -187,7 +188,7 @@ EvtScript N(EVS_UseItem) = {
     EVT_CALL(GetActorPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)
     EVT_ADD(LVar0, 0)
     EVT_ADD(LVar1, 35)
-    EVT_CALL(N(ShowHeartRecoveryFX), LVar0, LVar1, LVar2, LVar3)
+    EVT_CALL(N(SpawnHeartRecoveryFX), LVar0, LVar1, LVar2, LVar3)
     EVT_CALL(GetActorPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)
     EVT_ADD(LVar1, 25)
     EVT_CALL(ShowStartRecoveryShimmer, LVar0, LVar1, LVar2, LVar3)

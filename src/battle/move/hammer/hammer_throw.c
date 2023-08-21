@@ -1,6 +1,7 @@
 #include "common.h"
 #include "effects.h"
 #include "entity.h"
+#include "sprite/player.h"
 
 #define NAMESPACE battle_move_hammer_throw
 
@@ -175,7 +176,7 @@ EvtScript N(EVS_UseMove_Impl) = {
     EVT_CALL(UseBattleCamPreset, BTL_CAM_PLAYER_ATTACK_APPROACH)
     EVT_CALL(AddBattleCamZoom, 50)
     EVT_CALL(MoveBattleCamOver, 20)
-    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_10B)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HAMMER_WINDUP)
     EVT_CALL(GetMenuSelection, LVar0, LVar1, LVar2)
     EVT_SWITCH(LVar1)
         EVT_CASE_EQ(0)
@@ -205,11 +206,11 @@ EvtScript N(EVS_UseMove_Impl) = {
         EVT_END_IF
         EVT_ADD(LVarD, 6)
         EVT_CALL(action_command_hammer_start, 0, LVarD, 3)
-        EVT_CALL(SetActionResult, 0)
+        EVT_CALL(SetActionQuality, 0)
         EVT_SET(LVar1, 0)
         EVT_LOOP(30)
             EVT_WAIT(1)
-            EVT_CALL(GetActionResult, LVar0)
+            EVT_CALL(GetActionQuality, LVar0)
             EVT_IF_NE(LVar0, 0)
                 EVT_IF_NE(LVar1, 1)
                     EVT_CALL(GetMenuSelection, LVar3, LVar4, LVar5)
@@ -256,13 +257,13 @@ EvtScript N(EVS_UseMove_Impl) = {
     EVT_SWITCH(LVar1)
         EVT_CASE_EQ(0)
             EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB2_HammerThrow1_Throw)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_2115)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HAMMER_SWING_1)
         EVT_CASE_EQ(1)
             EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB2_HammerThrow2_Throw)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_2116)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HAMMER_SWING_2)
         EVT_CASE_EQ(2)
             EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB2_HammerThrow3_Throw)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_2117)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HAMMER_SWING_3)
     EVT_END_SWITCH
     EVT_WAIT(3)
     EVT_CALL(GetMenuSelection, LVar0, LVar1, LVar2)
@@ -381,11 +382,11 @@ EvtScript N(EVS_UseMove_Impl) = {
     EVT_CALL(GetMenuSelection, LVar0, LVar1, LVar2)
     EVT_SWITCH(LVar1)
         EVT_CASE_EQ(0)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_210A)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_D_DOWN_HIT_1)
         EVT_CASE_EQ(1)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_210B)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_D_DOWN_HIT_2)
         EVT_CASE_EQ(2)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_210C)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_D_DOWN_HIT_3)
     EVT_END_SWITCH
     EVT_CALL(DidActionSucceed, LVar0)
     EVT_SWITCH(LVar0)
@@ -395,9 +396,9 @@ EvtScript N(EVS_UseMove_Impl) = {
                 EVT_CASE_EQ(0)
                     EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HIT_NORMAL)
                 EVT_CASE_EQ(1)
-                    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_10E)
+                    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HIT_SILENT)
                 EVT_CASE_EQ(2)
-                    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_10E)
+                    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HIT_SILENT)
             EVT_END_SWITCH
             EVT_CALL(PlayerDamageEnemy, LVar0, DAMAGE_TYPE_THROW | DAMAGE_TYPE_NO_CONTACT, 25, 0, LVarF, 112)
         EVT_CASE_DEFAULT
@@ -406,9 +407,9 @@ EvtScript N(EVS_UseMove_Impl) = {
                 EVT_CASE_EQ(0)
                     EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HIT_NORMAL)
                 EVT_CASE_EQ(1)
-                    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_10E)
+                    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HIT_SILENT)
                 EVT_CASE_EQ(2)
-                    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_10E)
+                    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HIT_SILENT)
             EVT_END_SWITCH
             EVT_CALL(PlayerDamageEnemy, LVar0, DAMAGE_TYPE_THROW | DAMAGE_TYPE_NO_CONTACT, 25, 0, LVarE, 48)
     EVT_END_SWITCH

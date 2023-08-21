@@ -1,6 +1,7 @@
 #include "common.h"
 #include "script_api/battle.h"
 #include "effects.h"
+#include "sprite/player.h"
 
 #define NAMESPACE battle_item_volt_shroom
 
@@ -29,7 +30,7 @@ EvtScript N(EVS_UseItem) = {
     EVT_SETF(LVar3, EVT_FLOAT(1.0))
     EVT_CALL(MultiplyByActorScale, LVar3)
     EVT_PLAY_EFFECT(EFFECT_SNAKING_STATIC, 0, LVar0, LVar1, LVar2, LVar3, 30, 0)
-    EVT_CALL(PlaySound, SOUND_379)
+    EVT_CALL(PlaySound, SOUND_0379)
     EVT_CALL(GetItemPower, ITEM_VOLT_SHROOM, LVar0, LVar1)
     EVT_CALL(N(func_802A123C_71AA2C))
     EVT_WAIT(20)

@@ -7,14 +7,15 @@
 #include "battle/action_cmd/water_block.h"
 #include "battle/action_cmd/mega_shock.h"
 #include "sprite/npc/BattleWatt.h"
+#include "sprite/player.h"
 
 #define NAMESPACE battle_partner_watt
 
-extern EvtScript N(handleEvent);
-extern EvtScript N(idle);
-extern EvtScript N(nextTurn);
-extern EvtScript N(takeTurn);
-extern EvtScript N(init);
+extern EvtScript N(EVS_HandleEvent);
+extern EvtScript N(EVS_Idle);
+extern EvtScript N(EVS_HandlePhase);
+extern EvtScript N(EVS_TakeTurn);
+extern EvtScript N(EVS_Init);
 extern EvtScript N(executeAction);
 extern EvtScript N(celebrate);
 extern EvtScript N(runAway);
@@ -53,12 +54,12 @@ API_CALLABLE(N(WattFXUpdate)) {
         sWattEffectData_bouncePhase = 0;
         sWattEffectData_isActive = TRUE;
         sWattEffectData_currentEffectIndex = 0;
-        sWattEffectData_effect1 = fx_static_status(0, partner->currentPos.x, partner->currentPos.y, partner->currentPos.z, 1.0f, 5, 0);
-        sWattEffectData_effect2 = fx_static_status(1, partner->currentPos.x, NPC_DISPOSE_POS_Y, partner->currentPos.z, 1.0f, 5, 0);
+        sWattEffectData_effect1 = fx_static_status(0, partner->curPos.x, partner->curPos.y, partner->curPos.z, 1.0f, 5, 0);
+        sWattEffectData_effect2 = fx_static_status(1, partner->curPos.x, NPC_DISPOSE_POS_Y, partner->curPos.z, 1.0f, 5, 0);
         sWattEffectData_initialized = TRUE;
     }
 
-    if (sWattEffectData_initialized == 0) {
+    if (!sWattEffectData_initialized) {
         return ApiStatus_DONE2;
     }
 
@@ -68,9 +69,9 @@ API_CALLABLE(N(WattFXUpdate)) {
     }
 
     partner->verticalRenderOffset = sin_rad(DEG_TO_RAD(sWattEffectData_bouncePhase)) * 3.0f;
-    x = partner->currentPos.x + partner->headOffset.x;
-    y = partner->currentPos.y + partner->headOffset.y + partner->verticalRenderOffset + 12.0f;
-    z = partner->currentPos.z + partner->headOffset.z;
+    x = partner->curPos.x + partner->headOffset.x;
+    y = partner->curPos.y + partner->headOffset.y + partner->verticalRenderOffset + 12.0f;
+    z = partner->curPos.z + partner->headOffset.z;
     if ((gBattleStatus.flags2 & (BS_FLAGS2_10 | BS_FLAGS2_4)) == BS_FLAGS2_4) {
         y = NPC_DISPOSE_POS_Y;
     }
@@ -117,7 +118,7 @@ API_CALLABLE(N(WattFXUpdate)) {
 }
 
 API_CALLABLE(N(WattFXRemove)) {
-    sWattEffectData_initialized = 0;
+    sWattEffectData_initialized = FALSE;
     if (sWattEffectData_effect1 != NULL) {
         remove_effect(sWattEffectData_effect1);
     }
@@ -196,9 +197,9 @@ API_CALLABLE(N(PowerShockFX)) {
 API_CALLABLE(N(PowerShockDischargeFX)) {
     Bytecode* args = script->ptrReadPos;
     Actor* partner = gBattleStatus.partnerActor;
-    f32 x = partner->currentPos.x + partner->headOffset.x;
-    f32 y = partner->currentPos.y + partner->headOffset.y + partner->verticalRenderOffset + 12.0f;
-    f32 z = partner->currentPos.z + partner->headOffset.z;
+    f32 x = partner->curPos.x + partner->headOffset.x;
+    f32 y = partner->curPos.y + partner->headOffset.y + partner->verticalRenderOffset + 12.0f;
+    f32 z = partner->curPos.z + partner->headOffset.z;
 
     if (isInitialCall) {
         script->functionTemp[0] = evt_get_variable(script, *args++);
@@ -253,18 +254,18 @@ API_CALLABLE(N(TurboChargeUnwindWatt)) {
     switch (script->functionTemp[0]) {
         case 0:
             script->functionTemp[2] = evt_get_variable(script, *args++);
-            partner->state.distance = dist2D(player->currentPos.x, player->currentPos.y, partner->currentPos.x, partner->currentPos.y);
+            partner->state.dist = dist2D(player->curPos.x, player->curPos.y, partner->curPos.x, partner->curPos.y);
 
-            partner->state.goalPos.x = player->currentPos.x;
-            partner->state.goalPos.y = player->currentPos.y + 36.0f;
-            partner->state.goalPos.z = player->currentPos.z;
+            partner->state.goalPos.x = player->curPos.x;
+            partner->state.goalPos.y = player->curPos.y + 36.0f;
+            partner->state.goalPos.z = player->curPos.z;
 
-            partner->state.currentPos.x = partner->currentPos.x;
-            partner->state.currentPos.y = partner->currentPos.y;
-            partner->state.currentPos.z = partner->currentPos.z;
+            partner->state.curPos.x = partner->curPos.x;
+            partner->state.curPos.y = partner->curPos.y;
+            partner->state.curPos.z = partner->curPos.z;
 
             partner->state.angle = 90.0f;
-            partner->state.velocity = 5.0f;
+            partner->state.vel = 5.0f;
             partner->state.acceleration = 0.5f;
             partner->state.moveTime = 90;
             script->functionTemp[1] = 10;
@@ -274,13 +275,13 @@ API_CALLABLE(N(TurboChargeUnwindWatt)) {
             theta = DEG_TO_RAD(partner->state.angle);
             sinTheta = sin_rad(theta);
             cosTheta = cos_rad(theta);
-            partner->state.velocity += partner->state.acceleration;
+            partner->state.vel += partner->state.acceleration;
             angle = partner->state.angle;
-            angle += partner->state.velocity;
-            deltaX = partner->state.distance * sinTheta;
-            deltaY = -partner->state.distance * cosTheta;
-            partner->state.currentPos.x = partner->state.goalPos.x + deltaX;
-            partner->state.currentPos.y = partner->state.goalPos.y + deltaY;
+            angle += partner->state.vel;
+            deltaX = partner->state.dist * sinTheta;
+            deltaY = -partner->state.dist * cosTheta;
+            partner->state.curPos.x = partner->state.goalPos.x + deltaX;
+            partner->state.curPos.y = partner->state.goalPos.y + deltaY;
             partner->state.angle = angle;
             partner->state.angle = clamp_angle(angle);
 
@@ -293,13 +294,13 @@ API_CALLABLE(N(TurboChargeUnwindWatt)) {
             theta = DEG_TO_RAD(partner->state.angle);
             sinTheta = sin_rad(theta);
             cosTheta = cos_rad(theta);
-            distance = partner->state.distance;
+            distance = partner->state.dist;
             angle = partner->state.angle;
-            angle += partner->state.velocity;
-            deltaX = partner->state.distance * sinTheta;
-            deltaY = -partner->state.distance * cosTheta;
-            partner->state.currentPos.x = partner->state.goalPos.x + deltaX;
-            partner->state.currentPos.y = partner->state.goalPos.y + deltaY;
+            angle += partner->state.vel;
+            deltaX = partner->state.dist * sinTheta;
+            deltaY = -partner->state.dist * cosTheta;
+            partner->state.curPos.x = partner->state.goalPos.x + deltaX;
+            partner->state.curPos.y = partner->state.goalPos.y + deltaY;
             partner->state.angle = angle;
             partner->state.angle = clamp_angle(angle);
             if (partner->state.angle < 45.0f) {
@@ -318,9 +319,9 @@ API_CALLABLE(N(TurboChargeUnwindWatt)) {
         partner->yaw = 180.0f;
     }
 
-    partner->currentPos.x = partnerState->currentPos.x;
-    partner->currentPos.y = partnerState->currentPos.y;
-    partner->currentPos.z = partnerState->currentPos.z;
+    partner->curPos.x = partnerState->curPos.x;
+    partner->curPos.y = partnerState->curPos.y;
+    partner->curPos.z = partnerState->curPos.z;
     if (script->functionTemp[2] == 0) {
         player->yaw += script->functionTemp[1];
         script->functionTemp[1]++;
@@ -504,11 +505,11 @@ ActorPartBlueprint N(ActorParts)[] = {
 ActorBlueprint NAMESPACE = {
     .flags = ACTOR_FLAG_FLYING,
     .type = ACTOR_TYPE_WATT,
-    .level = 0,
+    .level = ACTOR_LEVEL_WATT,
     .maxHP = 99,
     .partCount = ARRAY_COUNT(N(ActorParts)),
     .partsData = N(ActorParts),
-    .initScript = &N(init),
+    .initScript = &N(EVS_Init),
     .statusTable = N(StatusTable),
     .escapeChance = 0,
     .airLiftChance = 0,
@@ -524,23 +525,23 @@ ActorBlueprint NAMESPACE = {
     .statusTextOffset = { 10, 20 },
 };
 
-EvtScript N(init) = {
-    EVT_CALL(BindTakeTurn, ACTOR_SELF, EVT_PTR(N(takeTurn)))
-    EVT_CALL(BindIdle, ACTOR_SELF, EVT_PTR(N(idle)))
-    EVT_CALL(BindHandleEvent, ACTOR_SELF, EVT_PTR(N(handleEvent)))
-    EVT_CALL(BindNextTurn, ACTOR_SELF, EVT_PTR(N(nextTurn)))
+EvtScript N(EVS_Init) = {
+    EVT_CALL(BindTakeTurn, ACTOR_SELF, EVT_PTR(N(EVS_TakeTurn)))
+    EVT_CALL(BindIdle, ACTOR_SELF, EVT_PTR(N(EVS_Idle)))
+    EVT_CALL(BindHandleEvent, ACTOR_SELF, EVT_PTR(N(EVS_HandleEvent)))
+    EVT_CALL(BindHandlePhase, ACTOR_SELF, EVT_PTR(N(EVS_HandlePhase)))
     EVT_RETURN
     EVT_END
 };
 
-EvtScript N(idle) = {
+EvtScript N(EVS_Idle) = {
     EVT_SET_PRIORITY(99)
     EVT_CALL(N(WattFXUpdate))
     EVT_RETURN
     EVT_END
 };
 
-EvtScript N(handleEvent) = {
+EvtScript N(EVS_HandleEvent) = {
     EVT_CALL(UseIdleAnimation, ACTOR_PARTNER, FALSE)
     EVT_CALL(CloseActionCommandInfo)
     EVT_CALL(N(WattFXDisableBounce))
@@ -558,7 +559,7 @@ EvtScript N(handleEvent) = {
         EVT_END_CASE_GROUP
         EVT_CASE_OR_EQ(EVENT_ZERO_DAMAGE)
         EVT_CASE_OR_EQ(EVENT_IMMUNE)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_208C)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_NO_DAMGE)
             EVT_SET_CONST(LVar0, PRT_MAIN)
             EVT_SET_CONST(LVar1,  ANIM_BattleWatt_Hurt)
             EVT_EXEC_WAIT(EVS_Partner_NoDamageHit)
@@ -600,11 +601,11 @@ EvtScript N(handleEvent) = {
             EVT_SET(LVar3, 20)
             EVT_EXEC_WAIT(EVS_Partner_Recover)
             EVT_CALL(N(WattFXBounce))
-        EVT_CASE_EQ(EVENT_62)
+        EVT_CASE_EQ(EVENT_PUT_PARTNER_AWAY)
             EVT_CALL(N(WattFXRemove))
         EVT_CASE_OR_EQ(EVENT_18)
         EVT_CASE_OR_EQ(EVENT_BLOCK)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_208C)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_NO_DAMGE)
             EVT_SET_CONST(LVar0, PRT_MAIN)
             EVT_SET_CONST(LVar1, ANIM_BattleWatt_Block)
             EVT_EXEC_WAIT(EVS_Partner_NoDamageHit)
@@ -621,7 +622,7 @@ EvtScript N(handleEvent) = {
     EVT_END
 };
 
-EvtScript N(takeTurn) = {
+EvtScript N(EVS_TakeTurn) = {
     EVT_CALL(GetBattlePhase, LVar0)
     EVT_SWITCH(LVar0)
         EVT_CASE_EQ(PHASE_EXECUTE_ACTION)
@@ -675,7 +676,7 @@ EvtScript N(runAwayFail) = {
     EVT_END
 };
 
-EvtScript N(nextTurn) = {
+EvtScript N(EVS_HandlePhase) = {
     EVT_RETURN
     EVT_END
 };
@@ -685,7 +686,7 @@ EvtScript N(executeAction) = {
     EVT_CALL(SetBattleFlagBits, BS_FLAGS1_4000, FALSE)
     EVT_CALL(GetMenuSelection, LVar0, LVar1, LVar2)
     EVT_SWITCH(LVar0)
-        EVT_CASE_EQ(8)
+        EVT_CASE_EQ(BTL_MENU_TYPE_STAR_POWERS)
             EVT_CALL(LoadStarPowerScript)
             EVT_EXEC_WAIT(LVar0)
             EVT_RETURN
@@ -719,7 +720,7 @@ EvtScript N(returnHome2) = {
     EVT_END
 };
 
-EvtScript N(returnHome) = {
+EvtScript N(EVS_ReturnHome) = {
     EVT_CALL(UseBattleCamPreset, BTL_CAM_PRESET_51)
     EVT_CALL(SetGoalToHome, ACTOR_PARTNER)
     EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleWatt_Run)
@@ -741,7 +742,7 @@ EvtScript N(dashToTarget) = {
 EvtScript N(charge) = {
     EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleWatt_Strain)
     EVT_CALL(N(WattFXDisable))
-    EVT_CALL(PlayLoopingSoundAtActor, ACTOR_PARTNER, 0, SOUND_289)
+    EVT_CALL(PlayLoopingSoundAtActor, ACTOR_PARTNER, 0, SOUND_0289)
     EVT_CALL(GetActorPos, ACTOR_PARTNER, LVar0, LVar1, LVar2)
     EVT_ADD(LVar1, 12)
     EVT_CALL(N(ElectroDashFX), LVar0, LVar1, LVar2)
@@ -956,7 +957,7 @@ EvtScript N(electroDash) = {
         EVT_END_CASE_GROUP
         EVT_CASE_OR_EQ(HIT_RESULT_HIT)
         EVT_CASE_OR_EQ(HIT_RESULT_NO_DAMAGE)
-            EVT_EXEC_WAIT(N(returnHome))
+            EVT_EXEC_WAIT(N(EVS_ReturnHome))
         EVT_END_CASE_GROUP
     EVT_END_SWITCH
     EVT_RETURN
@@ -1006,7 +1007,7 @@ EvtScript N(powerShock) = {
     EVT_END_THREAD
     EVT_WAIT(75 * DT)
     EVT_CALL(SetActorPaletteEffect, ACTOR_SELF, PRT_MAIN, PAL_ADJUST_WATT_IDLE)
-    EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_28A)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_028A)
     EVT_THREAD
         EVT_SETF(LVar0, EVT_FLOAT(1.0))
         EVT_LOOP(3)
@@ -1052,10 +1053,10 @@ EvtScript N(powerShock) = {
     EVT_CALL(PartnerTestEnemy, LVar0, 0, SUPPRESS_EVENT_SPIKY_FRONT, 0, 1, BS_FLAGS1_10)
     EVT_IF_EQ(LVar0, HIT_RESULT_MISS)
         EVT_WAIT(15)
-        EVT_EXEC_WAIT(N(returnHome))
+        EVT_EXEC_WAIT(N(EVS_ReturnHome))
         EVT_RETURN
     EVT_END_IF
-    EVT_CALL(GetActionResult, LVarF)
+    EVT_CALL(GetActionQuality, LVarF)
     EVT_CALL(GetActionCommandResult, LVar0)
     EVT_SWITCH(LVar0)
         EVT_CASE_GT(0)
@@ -1079,7 +1080,7 @@ EvtScript N(powerShock) = {
         EVT_END_CASE_GROUP
         EVT_CASE_OR_EQ(HIT_RESULT_HIT)
         EVT_CASE_OR_EQ(HIT_RESULT_NO_DAMAGE)
-            EVT_EXEC_WAIT(N(returnHome))
+            EVT_EXEC_WAIT(N(EVS_ReturnHome))
         EVT_END_CASE_GROUP
     EVT_END_SWITCH
     EVT_RETURN
@@ -1116,7 +1117,7 @@ EvtScript N(8023AE8C) = {
     EVT_CALL(MoveBattleCamOver, 100 * DT)
     EVT_CALL(func_8024ECF8, BTL_CAM_MODEY_0, BTL_CAM_MODEX_0, TRUE)
     EVT_THREAD
-        EVT_CALL(EnableActorBlur, ACTOR_PARTNER, 1)
+        EVT_CALL(EnableActorBlur, ACTOR_PARTNER, ACTOR_BLUR_ENABLE)
         EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleWatt_Strain)
         EVT_CALL(N(TurboChargeUnwindWatt), 0)
         EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleWatt_Run)
@@ -1124,10 +1125,10 @@ EvtScript N(8023AE8C) = {
         EVT_CALL(FlyToGoal, ACTOR_PARTNER, 10, -10, EASING_CUBIC_OUT)
         EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleWatt_Idle)
         EVT_WAIT(10)
-        EVT_CALL(EnableActorBlur, ACTOR_PARTNER, 0)
+        EVT_CALL(EnableActorBlur, ACTOR_PARTNER, ACTOR_BLUR_DISABLE)
     EVT_END_THREAD
     EVT_WAIT(30)
-    EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_28B)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_028B)
     EVT_CALL(GetActorPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)
     EVT_ADD(LVar1, 42)
     EVT_CALL(N(TurboChargeFX), LVar0, LVar1, LVar2)
@@ -1135,7 +1136,7 @@ EvtScript N(8023AE8C) = {
     EVT_CALL(AddBattleCamZoom, 100)
     EVT_CALL(MoveBattleCamOver, 5)
     EVT_THREAD
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_160)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_PLAYER_JUMP)
         EVT_CALL(SetActorJumpGravity, ACTOR_PLAYER, EVT_FLOAT(1.0))
         EVT_CALL(SetActorSpeed, ACTOR_PLAYER, EVT_FLOAT(1.0))
         EVT_CALL(GetActorPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)
@@ -1149,7 +1150,7 @@ EvtScript N(8023AE8C) = {
     EVT_WAIT(30)
     EVT_CALL(UseBattleCamPreset, BTL_CAM_DEFAULT)
     EVT_CALL(MoveBattleCamOver, 10)
-    EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_208E)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_GROW)
     EVT_CALL(GetActionCommandResult, LVar0)
     EVT_CALL(N(ApplyTurboCharge))
     EVT_SET(LVarE, LVarF)
@@ -1199,7 +1200,7 @@ EvtScript N(8023B450) = {
     EVT_CALL(MoveBattleCamOver, 100 * DT)
     EVT_CALL(func_8024ECF8, BTL_CAM_MODEY_0, BTL_CAM_MODEX_0, TRUE)
     EVT_THREAD
-        EVT_CALL(EnableActorBlur, ACTOR_PARTNER, 1)
+        EVT_CALL(EnableActorBlur, ACTOR_PARTNER, ACTOR_BLUR_ENABLE)
         EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleWatt_Strain)
         EVT_CALL(N(TurboChargeUnwindWatt), 1)
         EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleWatt_Run)
@@ -1207,10 +1208,10 @@ EvtScript N(8023B450) = {
         EVT_CALL(FlyToGoal, ACTOR_PARTNER, 10, -10, EASING_CUBIC_OUT)
         EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleWatt_Idle)
         EVT_WAIT(10)
-        EVT_CALL(EnableActorBlur, ACTOR_PARTNER, 0)
+        EVT_CALL(EnableActorBlur, ACTOR_PARTNER, ACTOR_BLUR_DISABLE)
     EVT_END_THREAD
     EVT_WAIT(30)
-    EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_28B)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_028B)
     EVT_CALL(GetActorPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)
     EVT_ADD(LVar1, 42)
     EVT_CALL(N(TurboChargeFX), LVar0, LVar1, LVar2)
@@ -1220,7 +1221,7 @@ EvtScript N(8023B450) = {
     EVT_WAIT(30)
     EVT_CALL(UseBattleCamPreset, BTL_CAM_DEFAULT)
     EVT_CALL(MoveBattleCamOver, 10)
-    EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_208E)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_GROW)
     EVT_CALL(GetActionCommandResult, LVar0)
     EVT_CALL(N(ApplyTurboCharge))
     EVT_SET(LVarE, LVarF)
@@ -1296,7 +1297,7 @@ EvtScript N(megaShock) = {
     EVT_CALL(SetAnimation, ACTOR_PARTNER, -1, ANIM_BattleWatt_StrainBigger)
     EVT_CALL(SetActorPaletteEffect, ACTOR_SELF, PRT_MAIN, PAL_ADJUST_WATT_ATTACK)
     EVT_CALL(N(WattFXDisable))
-    EVT_CALL(GetActionResult, LVar1)
+    EVT_CALL(GetActionQuality, LVar1)
     EVT_WAIT(90 * DT)
     EVT_CALL(N(SetBackgroundAlpha), 0)
     EVT_THREAD
@@ -1312,7 +1313,7 @@ EvtScript N(megaShock) = {
     EVT_THREAD
         EVT_CALL(GetActorPos, ACTOR_PARTNER, LVar0, LVar1, LVar2)
         EVT_ADD(LVar1, 12)
-        EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_28C)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_028C)
         EVT_PLAY_EFFECT(EFFECT_FLASHING_BOX_SHOCKWAVE, 2, LVar0, LVar1, LVar2, 0, 0, 0)
         EVT_WAIT(10)
         EVT_CALL(PlaySoundAtActor, ACTOR_PARTNER, SOUND_2024)
@@ -1340,7 +1341,7 @@ EvtScript N(megaShock) = {
     EVT_THREAD
         EVT_CALL(N(PowerShockDischargeFX), 10)
     EVT_END_THREAD
-    EVT_CALL(GetActionResult, LVar0)
+    EVT_CALL(GetActionQuality, LVar0)
     EVT_CALL(GetActorPos, ACTOR_PARTNER, LVar1, LVar2, LVar3)
     EVT_ADD(LVar2, 12)
     EVT_CALL(N(MegaShockFX), LVar0, LVar1, LVar2, LVar3)
@@ -1371,7 +1372,7 @@ EvtScript N(megaShock) = {
         EVT_CASE_GT(99)
             EVT_EXEC_WAIT(N(returnHome2))
         EVT_CASE_DEFAULT
-            EVT_EXEC_WAIT(N(returnHome))
+            EVT_EXEC_WAIT(N(EVS_ReturnHome))
     EVT_END_SWITCH
     EVT_RETURN
     EVT_END

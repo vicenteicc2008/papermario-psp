@@ -59,7 +59,7 @@ API_CALLABLE(N(start)) {
     actionCommandStatus->barFillLevel = 0;
     actionCommandStatus->barFillWidth = 0;
     battleStatus->actionSuccess = 0;
-    battleStatus->unk_86 = 0;
+    battleStatus->actionResult = ACTION_RESULT_FAIL;
     actionCommandStatus->state = 10;
     battleStatus->flags1 &= ~BS_FLAGS1_8000;
 
@@ -110,15 +110,15 @@ void N(update)(void) {
         case 11:
             btl_set_popup_duration(99);
             if (!actionCommandStatus->berserkerEnabled) {
-                if (battleStatus->currentButtonsPressed & BUTTON_A) {
+                if (battleStatus->curButtonsPressed & BUTTON_A) {
                     actionCommandStatus->barFillLevel += battleStatus->actionCmdDifficultyTable[actionCommandStatus->difficulty];
                 }
             } else {
                 actionCommandStatus->barFillLevel += battleStatus->actionCmdDifficultyTable[actionCommandStatus->difficulty] / 6;
                 actionCommandStatus->barFillLevel += rand_int((battleStatus->actionCmdDifficultyTable[actionCommandStatus->difficulty]) / 6);
             }
-            battleStatus->actionResult = actionCommandStatus->barFillLevel / 100;
-            if (actionCommandStatus->mashMeterCutoffs[actionCommandStatus->mashMeterIntervals] <= battleStatus->actionResult) {
+            battleStatus->actionQuality = actionCommandStatus->barFillLevel / 100;
+            if (actionCommandStatus->mashMeterCutoffs[actionCommandStatus->mashMeterIntervals] <= battleStatus->actionQuality) {
                 actionCommandStatus->frameCounter = 0;
             }
 
@@ -136,7 +136,7 @@ void N(update)(void) {
                 break;
             }
             battleStatus->actionSuccess = 1;
-            battleStatus->unk_86 = 127;
+            battleStatus->actionResult = ACTION_RESULT_NONE;
             action_command_free();
         default:
             break;

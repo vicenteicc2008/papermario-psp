@@ -76,15 +76,15 @@ typedef struct TitleDataStruct {
 #define COPYRIGHT_WIDTH 144
 #endif
 
-extern s16 D_800A0970;
-extern TitleDataStruct* TitleScreen_ImgList;
-extern s32* TitleScreen_ImgList_Logo;
-extern u8 (*TitleScreen_ImgList_Copyright)[COPYRIGHT_WIDTH];
-extern s32* TitleScreen_ImgList_PressStart;
+SHIFT_BSS s16 D_800A0970;
+SHIFT_BSS TitleDataStruct* TitleScreen_ImgList;
+SHIFT_BSS s32* TitleScreen_ImgList_Logo;
+SHIFT_BSS u8 (*TitleScreen_ImgList_Copyright)[COPYRIGHT_WIDTH];
+SHIFT_BSS s32* TitleScreen_ImgList_PressStart;
 #if VERSION_JP
-extern s32* TitleScreen_ImgList_CopyrightPalette;
+SHIFT_BSS s32* TitleScreen_ImgList_CopyrightPalette;
 #endif
-extern s16 D_800A0988;
+SHIFT_BSS s16 D_800A0988;
 
 void appendGfx_title_screen(void);
 void draw_title_screen_NOP(void);
@@ -100,7 +100,7 @@ void state_init_title_screen(void) {
 
     gOverrideFlags = 0;
     timeFreezeMode = 0;
-    D_8014C248[0] = 1;
+    D_8014C248 = TRUE;
     general_heap_create();
     clear_printers();
     sfx_set_reverb_mode(0);
@@ -219,7 +219,7 @@ void state_step_title_screen(void) {
             if (pressedButtons & (BUTTON_A | BUTTON_START)) {
                 gGameStatusPtr->introState = INTRO_STATE_4;
                 *D_800779C0 = 5;
-                sfx_play_sound(SOUND_D5);
+                sfx_play_sound(SOUND_FILE_MENU_IN);
                 bgm_set_song(0, SONG_FILE_SELECT, 0, 500, 8);
                 return;
             }

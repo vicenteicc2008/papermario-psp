@@ -7,19 +7,19 @@ EntityModelScript D_8014C260 = {
 };
 Lights1 D_8014C268 = gdSPDefLights1(255, 255, 255, 0, 0, 0, 0, 0, 0);
 
-extern EntityModelList gWorldEntityModelList;
-extern EntityModelList gBattleEntityModelList;
-extern EntityModelList* gCurrentEntityModelList;
-extern s32 gEntityModelCount;
+SHIFT_BSS EntityModelList gWorldEntityModelList;
+SHIFT_BSS EntityModelList gBattleEntityModelList;
+SHIFT_BSS EntityModelList* gCurrentEntityModelList;
+SHIFT_BSS s32 gEntityModelCount;
 
-extern s32 D_80154374;
-extern s32 entity_fog_enabled;
-extern s32 entity_fog_red;
-extern s32 entity_fog_green;
-extern s32 entity_fog_blue;
-extern s32 entity_fog_alpha;
-extern s32 entity_fog_dist_min;
-extern s32 entity_fog_dist_max;
+SHIFT_BSS s32 D_80154374;
+SHIFT_BSS s32 entity_fog_enabled;
+SHIFT_BSS s32 entity_fog_red;
+SHIFT_BSS s32 entity_fog_green;
+SHIFT_BSS s32 entity_fog_blue;
+SHIFT_BSS s32 entity_fog_alpha;
+SHIFT_BSS s32 entity_fog_dist_min;
+SHIFT_BSS s32 entity_fog_dist_max;
 
 extern Gfx D_8014B7F8[];
 extern Gfx D_8014B820[];
@@ -418,7 +418,7 @@ void draw_entity_model_A(s32 modelIdx, Mtx* transformMtx) {
     f32 x, y, z, w;
     f32 inX, inY, inZ;
 
-    if ((gGameStatusPtr->isBattle == 0) || (modelIdx & 0x800)) {
+    if ((!gGameStatusPtr->isBattle) || (modelIdx & 0x800)) {
         modelIdx &= ~0x800;
         model = (*gCurrentEntityModelList)[modelIdx];
 
@@ -437,7 +437,7 @@ void draw_entity_model_A(s32 modelIdx, Mtx* transformMtx) {
                             rtPtr->renderMode = model->renderMode;
                             rtPtr->appendGfxArg = model;
                             rtPtr->appendGfx = (void(*)(void*))appendGfx_entity_model;
-                            rtPtr->distance = ((u32)(model->flags & 0xF000) >> 8) + inZ;
+                            rtPtr->dist = ((u32)(model->flags & 0xF000) >> 8) + inZ;
                             queue_render_task(rtPtr);
                         }
                     }
@@ -456,7 +456,7 @@ void draw_entity_model_B(s32 modelIdx, Mtx* transformMtx, s32 vertexSegment, Vec
     f32 x, y, z, w;
     f32 inX, inY, inZ;
 
-    if ((gGameStatusPtr->isBattle == 0) || (modelIdx & 0x800)) {
+    if ((!gGameStatusPtr->isBattle) || (modelIdx & 0x800)) {
         modelIdx &= ~0x800;
         model = (*gCurrentEntityModelList)[modelIdx];
 
@@ -476,7 +476,7 @@ void draw_entity_model_B(s32 modelIdx, Mtx* transformMtx, s32 vertexSegment, Vec
                             rtPtr->renderMode = model->renderMode;
                             rtPtr->appendGfxArg = model;
                             rtPtr->appendGfx = (void(*)(void*))appendGfx_entity_model;
-                            rtPtr->distance = ((u32)(model->flags & 0xF000) >> 8) + inZ;
+                            rtPtr->dist = ((u32)(model->flags & 0xF000) >> 8) + inZ;
                             queue_render_task(rtPtr);
                         }
                     }
@@ -491,7 +491,7 @@ void draw_entity_model_C(s32 modelIdx, Mtx* transformMtx) {
     RenderTask rt;
     RenderTask* rtPtr = &rt;
 
-    if ((gGameStatusPtr->isBattle == 0) || (modelIdx & 0x800)) {
+    if ((!gGameStatusPtr->isBattle) || (modelIdx & 0x800)) {
         modelIdx &= ~0x800;
         model = (*gCurrentEntityModelList)[modelIdx];
 
@@ -506,7 +506,7 @@ void draw_entity_model_C(s32 modelIdx, Mtx* transformMtx) {
                             rtPtr->renderMode = model->renderMode;
                             rtPtr->appendGfxArg = model;
                             rtPtr->appendGfx = (void(*)(void*))appendGfx_entity_model;
-                            rtPtr->distance = (u32)(model->flags & 0xF000) >> 8;
+                            rtPtr->dist = (u32)(model->flags & 0xF000) >> 8;
                             queue_render_task(rtPtr);
                         }
                     }
@@ -521,7 +521,7 @@ void draw_entity_model_D(s32 modelIdx, Mtx* transformMtx, s32 arg2, Vec3s* verte
     RenderTask rt;
     RenderTask* rtPtr = &rt;
 
-    if ((gGameStatusPtr->isBattle == 0) || (modelIdx & 0x800)) {
+    if ((!gGameStatusPtr->isBattle) || (modelIdx & 0x800)) {
         modelIdx &= ~0x800;
         model = (*gCurrentEntityModelList)[modelIdx];
 
@@ -537,7 +537,7 @@ void draw_entity_model_D(s32 modelIdx, Mtx* transformMtx, s32 arg2, Vec3s* verte
                             rtPtr->renderMode = model->renderMode;
                             rtPtr->appendGfxArg = model;
                             rtPtr->appendGfx = (void(*)(void*))appendGfx_entity_model;
-                            rtPtr->distance = (u32)(model->flags & 0xF000) >> 8;
+                            rtPtr->dist = (u32)(model->flags & 0xF000) >> 8;
                             queue_render_task(rtPtr);
                         }
                     }

@@ -1,6 +1,7 @@
 #include "hos_06.h"
 #include "effects.h"
 #include "model.h"
+#include "sprite/player.h"
 
 #include "world/common/complete/KeyItemChoice.inc.c"
 #include "world/common/complete/GiveReward.inc.c"
@@ -24,7 +25,7 @@ typedef struct BadgeHint {
 #define BADGE_REQ_MERLOW_SHOP 10002
 
 BadgeHint N(BadgeHintData)[] = {
-    { MSG_MerluvleeHint_JumpCharge,       ITEM_BOOTS_CHARGE,   STORY_CH3_STAR_SPRIT_DEPARTED },
+    { MSG_MerluvleeHint_JumpCharge,       ITEM_JUMP_CHARGE,   STORY_CH3_STAR_SPRIT_DEPARTED },
     { MSG_MerluvleeHint_SuperJumpCharge,  ITEM_S_JUMP_CHG,     STORY_CH6_ARRIVED_AT_FLOWER_FIELDS },
     { MSG_MerluvleeHint_ShrinkStomp,      ITEM_SHRINK_STOMP,   STORY_CH1_DEFEATED_JR_TROOPA },
     { MSG_MerluvleeHint_Multibounce,      ITEM_MULTIBOUNCE,    STORY_CH1_DEFEATED_JR_TROOPA },
@@ -527,7 +528,7 @@ API_CALLABLE(N(func_80241CCC_A3B1AC)) {
     temp_f24 = script->functionTemp[0] * 10;
 
     for (i = 0; i < ARRAY_COUNT(effects); i++) {
-        guRotateF(sp28, -gCameras[gCurrentCameraID].currentYaw, 0.0f, 1.0f, 0.0f);
+        guRotateF(sp28, -gCameras[gCurrentCameraID].curYaw, 0.0f, 1.0f, 0.0f);
         guRotateF(sp68, i * 120, 0.0f, 0.0f, 1.0f);
         guMtxCatF(sp68, sp28, sp28);
         tx = temp_f30 * sin_deg(temp_f24);
@@ -569,7 +570,7 @@ EvtScript N(EVS_PerformHintRitual) = {
     EVT_CALL(SetNpcAnimation, NPC_Merluvlee, ANIM_Merluvlee_Release)
     EVT_CALL(GetModelCenter, MODEL_o100)
     EVT_ADD(LVar1, 20)
-    EVT_CALL(PlaySoundAt, SOUND_207, 0, LVar0, LVar1, LVar2)
+    EVT_CALL(PlaySoundAt, SOUND_LRAW_CRYSTAL_BALL_GLOW, SOUND_SPACE_DEFAULT, LVar0, LVar1, LVar2)
     EVT_PLAY_EFFECT(EFFECT_ENERGY_ORB_WAVE, 1, LVar0, LVar1, LVar2, EVT_FLOAT(1.0), -1)
     EVT_SET(ArrayVar(1), LVarF)
     EVT_CALL(EnableModel, MODEL_o185, FALSE)
@@ -611,12 +612,12 @@ EvtScript N(EVS_PerformHintRitual) = {
     EVT_WAIT(50)
     EVT_CALL(GetModelCenter, MODEL_o100)
     EVT_ADD(LVar1, 20)
-    EVT_CALL(PlaySoundAt, SOUND_208, 0, LVar0, LVar1, LVar2)
+    EVT_CALL(PlaySoundAt, SOUND_CRYSTAL_BALL_WAVE, SOUND_SPACE_DEFAULT, LVar0, LVar1, LVar2)
     EVT_PLAY_EFFECT(EFFECT_ENERGY_ORB_WAVE, 5, LVar0, LVar1, LVar2, EVT_FLOAT(0.5), 20)
     EVT_WAIT(30)
     EVT_CALL(GetModelCenter, MODEL_o100)
     EVT_ADD(LVar1, 20)
-    EVT_CALL(PlaySoundAt, SOUND_208, 0, LVar0, LVar1, LVar2)
+    EVT_CALL(PlaySoundAt, SOUND_CRYSTAL_BALL_WAVE, SOUND_SPACE_DEFAULT, LVar0, LVar1, LVar2)
     EVT_PLAY_EFFECT(EFFECT_ENERGY_ORB_WAVE, 5, LVar0, LVar1, LVar2, EVT_FLOAT(0.5), 20)
     EVT_WAIT(30)
     EVT_THREAD
@@ -624,12 +625,12 @@ EvtScript N(EVS_PerformHintRitual) = {
     EVT_END_THREAD
     EVT_CALL(GetModelCenter, MODEL_o100)
     EVT_ADD(LVar1, 20)
-    EVT_CALL(PlaySoundAt, SOUND_208, 0, LVar0, LVar1, LVar2)
+    EVT_CALL(PlaySoundAt, SOUND_CRYSTAL_BALL_WAVE, SOUND_SPACE_DEFAULT, LVar0, LVar1, LVar2)
     EVT_PLAY_EFFECT(EFFECT_ENERGY_ORB_WAVE, 6, LVar0, LVar1, LVar2, EVT_FLOAT(0.5), 20)
     EVT_WAIT(70)
     EVT_CALL(DismissEffect, ArrayVar(2))
     EVT_WAIT(40)
-    EVT_CALL(PlaySoundAt, SOUND_207 | SOUND_ID_TRIGGER_CHANGE_SOUND, 0, LVar0, LVar1, LVar2)
+    EVT_CALL(PlaySoundAt, SOUND_LRAW_CRYSTAL_BALL_GLOW | SOUND_ID_TRIGGER_CHANGE_SOUND, 0, LVar0, LVar1, LVar2)
     EVT_CALL(N(func_80241F98_A3B478), ArrayVar(1))
     EVT_WAIT(15)
     EVT_CALL(EnableModel, MODEL_o185, TRUE)
@@ -688,7 +689,7 @@ EvtScript N(EVS_KootCheckBall_Merluvlee) = {
         EVT_CHOOSE_KEY_ITEM_FROM(N(CrystalBallItems))
         EVT_IF_NE(LVar0, -1)
             EVT_CALL(SpeakToPlayer, NPC_Merluvlee, ANIM_Merluvlee_Talk, ANIM_Merluvlee_Idle, 0, MSG_HOS_0049)
-            EVT_GIVE_KEY_REWARD(ITEM_KOOT_MERLUVLEES_AUTOGRAPH)
+            EVT_GIVE_KEY_REWARD(ITEM_KOOT_MERLUVLEE_AUTOGRAPH)
             EVT_SET(GF_HOS06_Gift_MerluvleesAutograph, TRUE)
         EVT_ELSE
             EVT_CALL(SpeakToPlayer, NPC_Merluvlee, ANIM_Merluvlee_Talk, ANIM_Merluvlee_Idle, 0, MSG_HOS_0048)

@@ -71,7 +71,7 @@ API_CALLABLE(N(start)) {
 
     actionCommandStatus->wrongButtonPressed = FALSE;
     battleStatus->actionSuccess = 0;
-    battleStatus->unk_86 = 0;
+    battleStatus->actionResult = ACTION_RESULT_FAIL;
 
     battleStatus->flags1 &= ~BS_FLAGS1_8000;
     func_8024FAFC();
@@ -139,7 +139,7 @@ void N(update)(void) {
         case 11:
             btl_set_popup_duration(99);
 
-            if (battleStatus->currentButtonsPressed & BUTTON_A) {
+            if (battleStatus->curButtonsPressed & BUTTON_A) {
                 s32 fillAmt = battleStatus->actionCmdDifficultyTable[actionCommandStatus->difficulty] * 6;
 
                 if (actionCommandStatus->unk_5D == 0) {
@@ -160,7 +160,7 @@ void N(update)(void) {
                 }
             }
 
-            battleStatus->actionResult = actionCommandStatus->barFillLevel / 100;
+            battleStatus->actionQuality = actionCommandStatus->barFillLevel / 100;
 
             if (actionCommandStatus->frameCounter != 0) {
                 actionCommandStatus->frameCounter--;

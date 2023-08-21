@@ -41,6 +41,10 @@ u8 D_800779B0 = 0;
 extern s32 D_80200000;
 extern ShapeFile gMapShapeData;
 
+SHIFT_BSS s8 D_800A0930;
+SHIFT_BSS s8 D_800A0931;
+SHIFT_BSS s16 D_800A0932[1];
+
 void state_init_language_select(void) {
     D_800A0931 = 0;
     D_800A0932[0] = 0;
@@ -57,7 +61,7 @@ void state_init_file_select(void) {
     general_heap_create();
     hud_element_set_aux_cache(0, 0);
     hud_element_clear_cache();
-    load_model_textures(0, 0, 0);
+    mdl_load_all_textures(NULL, 0, 0);
     gCameras[CAM_DEFAULT].updateMode = CAM_UPDATE_MODE_6;
     gCameras[CAM_DEFAULT].needsInit = TRUE;
     gCameras[CAM_DEFAULT].nearClip = 16;
@@ -154,7 +158,7 @@ void state_step_language_select(void) {
                     clear_entity_data(0);
                     clear_trigger_data();
                     nuPiReadRomOverlay(&D_8007798C);
-                    filemenu_init(TRUE);
+                    filemenu_init(1);
                     gOverrideFlags &= ~GLOBAL_OVERRIDES_8;
                     set_screen_overlay_params_front(OVERLAY_NONE, 255.0f);
                 }
@@ -193,7 +197,7 @@ void state_step_file_select(void) {
                     D_800A0930 = -1;
                     battle_heap_create();
                     nuPiReadRomOverlay(&D_8007798C);
-                    filemenu_init(FALSE);
+                    filemenu_init(0);
                 }
             }
 
@@ -323,7 +327,7 @@ void state_step_exit_language_select(void) {
                         set_background_size(296, 200, 12, 20);
                     }
 
-                    calculate_model_sizes();
+                    mdl_calculate_model_sizes();
                     npc_reload_all();
                     status_bar_respond_to_changes();
                     set_time_freeze_mode(TIME_FREEZE_PARTIAL);

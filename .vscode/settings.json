@@ -1,7 +1,9 @@
 {
     "files.eol": "\n",
     "files.insertFinalNewline": true,
-    "editor.rulers": [120],
+    "editor.rulers": [
+        120
+    ],
     "clang-tidy.compilerArgs": [
         "-std=gnu89",
         "-Iinclude",
@@ -23,15 +25,19 @@
         "docs/doxygen": true,
         "expected": true,
         "ver/jp/expected": true,
-        "ver/us/expected": true
+        "ver/us/expected": true,
+        "ver/pal/expected": true,
+        "ver/ique/expected": true
     },
     "python.autoComplete.extraPaths": [
         "./tools"
     ],
     "python.analysis.extraPaths": [
         "./tools",
+        "./tools/build",
         "./tools/build/sprite",
-        "./tools/splat"
+        "./tools/splat",
+        "./tools/build/imgfx"
     ],
     "[c]": {
         "editor.wordSeparators": "`~!@#%^&*()-=+[{]}\\|;:'\",.<>/?", // no $, for scripts
@@ -43,6 +49,7 @@
         "*.h": "c",
     },
     "C_Cpp.autoAddFileAssociations": false,
+    "C_Cpp.default.cStandard": "c89",
     "files.exclude": {
         "**/.git": true,
         "**/.splat_cache": true,
@@ -52,5 +59,14 @@
         "**/*.i": true,
         "docs/doxygen": true
     },
-    "C_Cpp.default.cStandard": "c89",
+    "[python]": {
+        "editor.formatOnType": true,
+        "editor.wordBasedSuggestions": false,
+        "editor.formatOnSave": true,
+        "editor.formatOnSaveMode": "modifications",
+        "editor.defaultFormatter": "ms-python.black-formatter",
+    },
+    "black-formatter.args": [
+        "-l 120"
+    ],
 }

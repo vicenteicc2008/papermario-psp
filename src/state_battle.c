@@ -18,9 +18,9 @@ s32 D_800778AC[] = {
     0x00000000, 0xFFFFFF00, 0xFFFFFF00, 0x00000000, 0x00000000
 };
 
-// BSS
-extern s32 D_800A0904;
-extern s32 D_800A0908;
+SHIFT_BSS s8 D_800A0900;
+SHIFT_BSS s32 D_800A0904;
+SHIFT_BSS s32 D_800A0908;
 
 #ifdef SHIFT
 #define shim_battle_heap_create_obfuscated battle_heap_create
@@ -92,7 +92,7 @@ void state_step_battle(void) {
             clear_npcs();
             clear_entity_data(1);
             clear_trigger_data();
-            dma_copy(battle_code_ROM_START, battle_code_ROM_END, battle_code_VRAM);
+            DMA_COPY_SEGMENT(battle_code);
             initialize_battle();
             btl_save_world_cameras();
             load_battle_section();
@@ -168,7 +168,7 @@ void state_step_end_battle(void) {
             init_entity_data();
             init_trigger_list();
 
-            if (gGameStatusPtr->demoFlags & 1) {
+            if (gGameStatusPtr->demoBattleFlags & DEMO_BTL_FLAG_ENABLED) {
                 npc_reload_all();
                 playerStatus->animFlags = D_800A0904;
                 set_game_mode(GAME_MODE_DEMO);
@@ -176,7 +176,7 @@ void state_step_end_battle(void) {
                 void* mapShape;
                 u32 sizeTemp;
 
-                partner_init_after_battle(playerData->currentPartner);
+                partner_init_after_battle(playerData->curPartner);
                 load_map_script_lib();
                 mapShape = load_asset_by_name(wMapShapeName, &sizeTemp);
                 decode_yay0(mapShape, &gMapShapeData);
@@ -195,8 +195,8 @@ void state_step_end_battle(void) {
                     set_background_size(296, 200, 12, 20);
                 }
 
-                load_model_textures(mapSettings->modelTreeRoot, get_asset_offset(wMapTexName, &sizeTemp), sizeTemp);
-                calculate_model_sizes();
+                mdl_load_all_textures(mapSettings->modelTreeRoot, get_asset_offset(wMapTexName, &sizeTemp), sizeTemp);
+                mdl_calculate_model_sizes();
                 npc_reload_all();
 
                 playerStatus->animFlags = D_800A0904;

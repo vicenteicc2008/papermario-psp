@@ -8,19 +8,19 @@
 NpcSettings N(NpcSettings_Whale) = {
     .height = 24,
     .radius = 48,
-    .level = 99,
+    .level = ACTOR_LEVEL_NONE,
 };
 
 NpcSettings N(NpcSettings_Kolorado) = {
     .height = 40,
     .radius = 24,
-    .level = 99,
+    .level = ACTOR_LEVEL_NONE,
 };
 
 NpcSettings N(NpcSettings_JrTroopa) = {
     .height = 32,
     .radius = 24,
-    .level = 99,
+    .level = ACTOR_LEVEL_NONE,
 };
 
 f32 D_80243434_867F74 = 0.0f;
@@ -59,9 +59,9 @@ API_CALLABLE(N(func_80240E80_8659C0)) {
 
     switch (script->functionTemp[0]) {
         case 0:
-            gPlayerStatus.position.x = x;
-            gPlayerStatus.position.y = y + D_80243434_867F74;
-            gPlayerStatus.position.z = z;
+            gPlayerStatus.pos.x = x;
+            gPlayerStatus.pos.y = y + D_80243434_867F74;
+            gPlayerStatus.pos.z = z;
             whale->colliderPos.x = whale->pos.x;
             whale->colliderPos.y = whale->pos.y;
             whale->colliderPos.z = whale->pos.z;
@@ -112,7 +112,7 @@ API_CALLABLE(N(func_80241098_865BD8)) {
             break;
 
         case 10:
-            npc->currentAnim = ANIM_Kolorado_Shout;
+            npc->curAnim = ANIM_Kolorado_Shout;
             D_80243434_867F74 = 0.0f;
             D_80243438_867F78 = 5.0f;
             D_8024343C_867F7C = 11;
@@ -128,7 +128,7 @@ API_CALLABLE(N(func_80241098_865BD8)) {
             } else {
                 D_80243438_867F78 -= 2.0f;
             }
-            if (npc->currentAnim == ANIM_Kolorado_Idle) {
+            if (npc->curAnim == ANIM_Kolorado_Idle) {
                 D_80243438_867F78 = 4.0f;
                 D_8024343C_867F7C++;
             }
@@ -164,11 +164,11 @@ API_CALLABLE(N(func_802412AC_865DEC)) {
     Model* model = get_model_from_list_index(modelIndex);
     f32 x, y, z;
 
-    if (model->flags & MODEL_FLAG_HAS_TRANSFORM_APPLIED) {
+    if (model->flags & MODEL_FLAG_HAS_TRANSFORM) {
         // get model translation from transform matrix
-        x = model->transformMatrix[3][0];
-        y = model->transformMatrix[3][1];
-        z = model->transformMatrix[3][2];
+        x = model->userTransformMtx[3][0];
+        y = model->userTransformMtx[3][1];
+        z = model->userTransformMtx[3][2];
     } else {
         z = 0.0f;
         y = 0.0f;
@@ -272,7 +272,7 @@ API_CALLABLE(N(MakeJrTroopaBubbles)) {
 
     if (y < 0.0f) {
         fx_rising_bubble(0, x, y, z, 0.0f);
-        sfx_adjust_env_sound_pos(SOUND_JR_TROOPA_SWIM, SOUND_SPACE_MODE_0, x, y, z);
+        sfx_adjust_env_sound_pos(SOUND_LRAW_JR_TROOPA_SWIM, SOUND_SPACE_DEFAULT, x, y, z);
     }
     return ApiStatus_DONE2;
 }
@@ -299,7 +299,7 @@ EvtScript N(EVS_NpcInit_Whale) = {
     EVT_CALL(DisablePlayerPhysics, TRUE)
     EVT_CALL(DisablePlayerInput, TRUE)
     EVT_CALL(DisablePartnerAI, 0)
-    EVT_CALL(SetNpcFlagBits, NPC_PARTNER, NPC_FLAG_8 | NPC_FLAG_IGNORE_WORLD_COLLISION | NPC_FLAG_IGNORE_ENTITY_COLLISION, TRUE)
+    EVT_CALL(SetNpcFlagBits, NPC_PARTNER, NPC_FLAG_FLYING | NPC_FLAG_IGNORE_WORLD_COLLISION | NPC_FLAG_IGNORE_ENTITY_COLLISION, TRUE)
     EVT_CALL(SetNpcFlagBits, NPC_PARTNER, NPC_FLAG_GRAVITY, FALSE)
     EVT_CALL(SetNpcAnimation, NPC_PARTNER, PARTNER_ANIM_IDLE)
     EVT_THREAD
@@ -479,7 +479,7 @@ EvtScript N(EVS_NpcIdle_JrTroopa) = {
     EVT_END_LOOP
     EVT_WAIT(60)
     EVT_CALL(SetMusicTrack, 0, SONG_JR_TROOPA_THEME, 0, 8)
-    EVT_CALL(PlaySound, SOUND_80000055)
+    EVT_CALL(PlaySound, SOUND_LOOP_JR_TROOPA_SWIM)
     EVT_CALL(SetNpcAnimation, NPC_SELF, ANIM_JrTroopa_ChargeTripped)
     EVT_CALL(SetNpcPos, NPC_SELF, 250, -30, 500)
     EVT_WAIT(5)
@@ -515,7 +515,7 @@ NpcData N(NpcData_Whale) = {
     .yaw = 270,
     .init = &N(EVS_NpcInit_Whale),
     .settings = &N(NpcSettings_Whale),
-    .flags = ENEMY_FLAG_PASSIVE | ENEMY_FLAG_ENABLE_HIT_SCRIPT | ENEMY_FLAG_IGNORE_WORLD_COLLISION | ENEMY_FLAG_IGNORE_PLAYER_COLLISION | ENEMY_FLAG_IGNORE_ENTITY_COLLISION | ENEMY_FLAG_800,
+    .flags = ENEMY_FLAG_PASSIVE | ENEMY_FLAG_ENABLE_HIT_SCRIPT | ENEMY_FLAG_IGNORE_WORLD_COLLISION | ENEMY_FLAG_IGNORE_PLAYER_COLLISION | ENEMY_FLAG_IGNORE_ENTITY_COLLISION | ENEMY_FLAG_FLYING,
     .drops = NO_DROPS,
     .animations = {
         .idle   = ANIM_Kolorado_Idle,
@@ -578,7 +578,7 @@ NpcData N(NpcData_JrTroopa) = {
     .yaw = 270,
     .init = &N(EVS_NpcInit_JrTroopa),
     .settings = &N(NpcSettings_JrTroopa),
-    .flags = ENEMY_FLAG_PASSIVE | ENEMY_FLAG_4 | ENEMY_FLAG_ENABLE_HIT_SCRIPT | ENEMY_FLAG_IGNORE_WORLD_COLLISION | ENEMY_FLAG_IGNORE_ENTITY_COLLISION | ENEMY_FLAG_800 | ENEMY_FLAG_40000 | ENEMY_FLAG_400000,
+    .flags = ENEMY_FLAG_PASSIVE | ENEMY_FLAG_4 | ENEMY_FLAG_ENABLE_HIT_SCRIPT | ENEMY_FLAG_IGNORE_WORLD_COLLISION | ENEMY_FLAG_IGNORE_ENTITY_COLLISION | ENEMY_FLAG_FLYING | ENEMY_FLAG_40000 | ENEMY_FLAG_400000,
     .drops = NO_DROPS,
     .animations = {
         .idle   = ANIM_JrTroopa_Idle,

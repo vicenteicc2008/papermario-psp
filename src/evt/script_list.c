@@ -65,6 +65,10 @@ BSS s32 RunningMusicEventIDs[10];
 BSS s32 D_802DB828[2]; // unused?
 BSS PopupMenu D_802DB830;
 
+#if VERSION_PAL
+BSS s32 D_PAL_BSS_802E1E34[0x3]; // TODO: probably just alignment
+#endif
+
 // demo_api
 BSS s32 gSpriteShadingHeader;
 BSS s32 D_802DBB64; // unused?
@@ -164,7 +168,7 @@ void find_script_labels(Evt* script) {
 void clear_script_list(void) {
     s32 i;
 
-    if (gGameStatusPtr->isBattle == 0) {
+    if (!gGameStatusPtr->isBattle) {
         gCurrentScriptListPtr = &gWorldScriptList;
         gMapVars = gWorldMapVars;
         gMapFlags = gWorldMapFlags;
@@ -195,7 +199,7 @@ void clear_script_list(void) {
 }
 
 void init_script_list(void) {
-    if (gGameStatusPtr->isBattle == 0) {
+    if (!gGameStatusPtr->isBattle) {
         gCurrentScriptListPtr = &gWorldScriptList;
         gMapVars = gWorldMapVars;
         gMapFlags = gWorldMapFlags;
@@ -251,11 +255,11 @@ Evt* start_script(EvtScript* source, s32 priority, s32 flags) {
     ASSERT(newScript != NULL);
 
     newScript->stateFlags = flags | EVT_FLAG_ACTIVE;
-    newScript->currentOpcode = EVT_OP_INTERNAL_FETCH;
+    newScript->curOpcode = EVT_OP_INTERNAL_FETCH;
     newScript->priority = priority;
     newScript->ptrNextLine = (Bytecode*)source;
     newScript->ptrFirstLine = (Bytecode*)source;
-    newScript->ptrCurrentLine = (Bytecode*)source;
+    newScript->ptrCurLine = (Bytecode*)source;
     newScript->userData = NULL;
     newScript->blockingParent = NULL;
     newScript->childScript = NULL;
@@ -323,12 +327,12 @@ Evt* start_script_in_group(EvtScript* source, u8 priority, u8 flags, u8 groupFla
     // Some of this function is surely macros. I think we'll learn more as we do others in this file. -Ethan
     do {
         newScript->stateFlags = flags | EVT_FLAG_ACTIVE;
-        newScript->currentOpcode = EVT_OP_INTERNAL_FETCH;
+        newScript->curOpcode = EVT_OP_INTERNAL_FETCH;
         newScript->priority = priority;
         newScript->id = gStaticScriptCounter++;
         newScript->ptrNextLine = (Bytecode*)source;
         newScript->ptrFirstLine = (Bytecode*)source;
-        newScript->ptrCurrentLine = (Bytecode*)source;
+        newScript->ptrCurLine = (Bytecode*)source;
         newScript->userData = 0;
         newScript->blockingParent = 0;
         newScript->childScript = 0;
@@ -392,10 +396,10 @@ Evt* start_child_script(Evt* parentScript, EvtScript* source, s32 flags) {
     parentScript->childScript = child;
     parentScript->stateFlags |= EVT_FLAG_BLOCKED_BY_CHILD;
     child->stateFlags = flags | EVT_FLAG_ACTIVE;
-    child->ptrCurrentLine = child->ptrFirstLine = child->ptrNextLine = (Bytecode*)source;
+    child->ptrCurLine = child->ptrFirstLine = child->ptrNextLine = (Bytecode*)source;
 
 
-    child->currentOpcode = EVT_OP_INTERNAL_FETCH;
+    child->curOpcode = EVT_OP_INTERNAL_FETCH;
     child->userData = NULL;
     child->blockingParent = parentScript;
     child->childScript = NULL;
@@ -462,8 +466,8 @@ Evt* func_802C39F8(Evt* parentScript, Bytecode* nextLine, s32 newState) {
     child->stateFlags = newState | EVT_FLAG_ACTIVE;
     child->ptrNextLine = nextLine;
     child->ptrFirstLine = nextLine;
-    child->ptrCurrentLine = nextLine;
-    child->currentOpcode = EVT_OP_INTERNAL_FETCH;
+    child->ptrCurLine = nextLine;
+    child->curOpcode = EVT_OP_INTERNAL_FETCH;
     child->userData = NULL;
     child->blockingParent = NULL;
     child->parentScript = parentScript;
@@ -513,8 +517,8 @@ Evt* func_802C3C10(Evt* script, Bytecode* line, s32 arg2) {
 
     script->ptrNextLine = line;
     script->ptrFirstLine = line;
-    script->ptrCurrentLine = line;
-    script->currentOpcode = EVT_OP_INTERNAL_FETCH;
+    script->ptrCurLine = line;
+    script->curOpcode = EVT_OP_INTERNAL_FETCH;
     script->frameCounter = 0;
     script->stateFlags |= arg2;
     script->timeScale = 1.0f;
@@ -555,10 +559,10 @@ Evt* restart_script(Evt* script) {
     script->loopDepth = -1;
     script->switchDepth = -1;
     script->frameCounter = 0;
-    script->currentOpcode = EVT_OP_INTERNAL_FETCH;
+    script->curOpcode = EVT_OP_INTERNAL_FETCH;
 
     script->ptrNextLine = ptrFirstLine;
-    script->ptrCurrentLine = ptrFirstLine;
+    script->ptrCurLine = ptrFirstLine;
     script->timeScale = 1.0f;
     script->frameCounter = 0;
     script->unk_158 = 0;

@@ -13,14 +13,15 @@
 #define PLAYER_ACTION_VRAM_DEF (void*) 0x802B6000
 #endif
 
-extern void* D_8010C924;
-extern s32 D_8010C964;
-extern s32 gSpinHistoryBufferPos;
-extern s16 D_8010C9B0;
-extern s32 gSpinHistoryPosY[5];
-extern s32 gSpinHistoryPosX[5];
-extern s32 gSpinHistoryPosZ[5];
-extern s16 gSpinHistoryPosAngle[5];
+SHIFT_BSS void* D_8010C924;
+SHIFT_BSS s32 D_8010C92C;
+SHIFT_BSS s32 D_8010C964;
+SHIFT_BSS s32 gSpinHistoryBufferPos;
+SHIFT_BSS s16 D_8010C9B0;
+SHIFT_BSS s32 gSpinHistoryPosY[5];
+SHIFT_BSS s32 gSpinHistoryPosX[5];
+SHIFT_BSS s32 gSpinHistoryPosZ[5];
+SHIFT_BSS s16 gSpinHistoryPosAngle[5];
 
 void func_800E5520(void) {
     D_8010C9B0 = 0;
@@ -44,42 +45,42 @@ s32 phys_adjust_cam_on_landing(void) {
                     break;
                 case 1:
                     if (D_8010C9B0 == 0) {
-                        if (playerStatus->position.y <= 0.0f) {
+                        if (playerStatus->pos.y <= 0.0f) {
                             D_8010C9B0 = 1;
                         }
                         ret = 2;
-                    } else if (playerStatus->position.y > 0.0f) {
+                    } else if (playerStatus->pos.y > 0.0f) {
                         ret = 0;
                     }
                     break;
                 case 3:
-                    if (playerStatus->position.y > 25.0f) {
+                    if (playerStatus->pos.y > 25.0f) {
                         ret = 0;
                     }
                     break;
                 case 4:
-                    if (playerStatus->position.y > 50.0f) {
+                    if (playerStatus->pos.y > 50.0f) {
                         ret = 0;
                     }
                     break;
                 case 7:
-                    if (playerStatus->position.y > -390.0f) {
+                    if (playerStatus->pos.y > -390.0f) {
                         ret = 0;
-                    } else if (playerStatus->position.y < -495.0f) {
+                    } else if (playerStatus->pos.y < -495.0f) {
                         ret = 0;
                     }
                     break;
                 case 8:
-                    if (playerStatus->position.y > -90.0f) {
+                    if (playerStatus->pos.y > -90.0f) {
                         ret = 0;
-                    } else if (playerStatus->position.y < -370.0f) {
+                    } else if (playerStatus->pos.y < -370.0f) {
                         ret = 0;
                     }
                     break;
                 case 2:
                     if (gGameStatusPtr->entryID == 0) {
                         if (D_8010C9B0 == 0) {
-                            if (!(playerStatus->position.y > 0.0f)) {
+                            if (!(playerStatus->pos.y > 0.0f)) {
                                 D_8010C9B0 = 1;
                             } else {
                                 ret = 2;
@@ -87,7 +88,7 @@ s32 phys_adjust_cam_on_landing(void) {
                             }
                         }
 
-                        if (playerStatus->position.y > 0.0f) {
+                        if (playerStatus->pos.y > 0.0f) {
                             ret = 0;
                         }
                     } else {
@@ -97,7 +98,7 @@ s32 phys_adjust_cam_on_landing(void) {
                 case 5:
                     if (gGameStatusPtr->entryID == 0) {
                         if (D_8010C9B0 == 0) {
-                            if (!(playerStatus->position.y > -130.0f)) {
+                            if (!(playerStatus->pos.y > -130.0f)) {
                                 D_8010C9B0 = 1;
                             } else {
                                 ret = 2;
@@ -106,7 +107,7 @@ s32 phys_adjust_cam_on_landing(void) {
 
                         }
 
-                        if (playerStatus->position.y > -130.0f) {
+                        if (playerStatus->pos.y > -130.0f) {
                             ret = 0;
                         }
                     } else {
@@ -115,7 +116,7 @@ s32 phys_adjust_cam_on_landing(void) {
                     break;
                 case 10:
                     if (D_8010C9B0 == 0) {
-                        if (!(playerStatus->position.y > -520.0f)) {
+                        if (!(playerStatus->pos.y > -520.0f)) {
                             D_8010C9B0 = 1;
                         } else {
                             ret = 2;
@@ -123,14 +124,14 @@ s32 phys_adjust_cam_on_landing(void) {
                         }
                     }
 
-                    if (playerStatus->position.y > -520.0f) {
+                    if (playerStatus->pos.y > -520.0f) {
                         ret = 0;
                     }
                     break;
                 case 11:
                     if (gGameStatusPtr->entryID == 0) {
                         if (D_8010C9B0 == 0) {
-                            if (!(playerStatus->position.y > -520.0f)) {
+                            if (!(playerStatus->pos.y > -520.0f)) {
                                 D_8010C9B0 = 1;
                             } else {
                                 ret = 2;
@@ -139,7 +140,7 @@ s32 phys_adjust_cam_on_landing(void) {
 
                         }
 
-                        if (playerStatus->position.y > -520.0f) {
+                        if (playerStatus->pos.y > -520.0f) {
                             ret = 0;
                         }
                     }
@@ -153,7 +154,7 @@ s32 phys_adjust_cam_on_landing(void) {
     }
 
     if (ret == 1) {
-        s32 surfaceType = get_collider_flags(gCollisionStatus.currentFloor) & COLLIDER_FLAGS_SURFACE_TYPE_MASK;
+        s32 surfaceType = get_collider_flags(gCollisionStatus.curFloor) & COLLIDER_FLAGS_SURFACE_TYPE_MASK;
 
         if (surfaceType == SURFACE_TYPE_LAVA) {
             gCameras[CAM_DEFAULT].moveFlags |= CAMERA_MOVE_IGNORE_PLAYER_Y;
@@ -362,7 +363,7 @@ void set_action_state(s32 actionState) {
         }
 
         // Whilst Sushie, Lakilester, or Parakarry's ability is active, hazards have no effect.
-        partner = playerData->currentPartner;
+        partner = playerData->curPartner;
 
         if (partner == PARTNER_SUSHIE || partner == PARTNER_LAKILESTER || partner == PARTNER_PARAKARRY) {
             if (gPartnerStatus.partnerActionState != PARTNER_ACTION_NONE) {
@@ -456,7 +457,7 @@ s32 check_input_hammer(void) {
             return FALSE;
         }
 
-        if (gPartnerStatus.partnerActionState == PARTNER_ACTION_USE && playerData->currentPartner == PARTNER_WATT) {
+        if (gPartnerStatus.partnerActionState == PARTNER_ACTION_USE && playerData->curPartner == PARTNER_WATT) {
             return FALSE;
         }
 
@@ -480,7 +481,7 @@ s32 check_input_jump(void) {
     }
 
     // @bug? collider flags not properly masked with COLLIDER_FLAG_SURFACE_TYPE
-    surfaceType = get_collider_flags((u16)gCollisionStatus.currentFloor);
+    surfaceType = get_collider_flags((u16)gCollisionStatus.curFloor);
     if ((surfaceType == SURFACE_TYPE_SLIDE) && phys_should_player_be_sliding()) {
         return FALSE;
     }
@@ -492,8 +493,8 @@ s32 check_input_jump(void) {
         return FALSE;
     }
 
-    if ((collisionStatus->currentInspect != -1) && (collisionStatus->currentInspect & COLLISION_WITH_ENTITY_BIT)) {
-        Entity* entity = get_entity_by_index(collisionStatus->currentInspect);
+    if ((collisionStatus->curInspect != -1) && (collisionStatus->curInspect & COLLISION_WITH_ENTITY_BIT)) {
+        Entity* entity = get_entity_by_index(collisionStatus->curInspect);
 
         if (entity->flags & ENTITY_FLAG_SHOWS_INSPECT_PROMPT) {
             if ((entity->boundScriptBytecode == 0) || (entity->flags & ENTITY_FLAG_4000)) {
@@ -520,7 +521,7 @@ void check_input_spin(void) {
 
     if (!((playerStatus->flags & (PS_FLAG_NO_STATIC_COLLISION | PS_FLAG_CUTSCENE_MOVEMENT)) ||
           (playerStatus->animFlags & PA_FLAG_USING_WATT) ||
-          (playerStatus->currentButtons & BUTTON_C_DOWN) ||
+          (playerStatus->curButtons & BUTTON_C_DOWN) ||
           is_ability_active(ABILITY_SLOW_GO))) {
 
         s32 actionState = playerStatus->actionState;
@@ -552,7 +553,7 @@ void peach_set_disguise_anim(AnimID anim) {
     s32 listIndex = PeachDisguiseNpcIndex;
 
     if (listIndex >= 0) {
-        get_npc_by_index(listIndex)->currentAnim = anim;
+        get_npc_by_index(listIndex)->curAnim = anim;
     }
 }
 
@@ -609,9 +610,9 @@ void peach_sync_disguise_npc(void) {
             npc->yaw = playerStatus->targetYaw;
         }
 
-        npc->pos.x = playerStatus->position.x;
-        npc->pos.y = playerStatus->position.y;
-        npc->pos.z = playerStatus->position.z;
+        npc->pos.x = playerStatus->pos.x;
+        npc->pos.y = playerStatus->pos.y;
+        npc->pos.z = playerStatus->pos.z;
     }
 }
 
@@ -631,7 +632,7 @@ Npc* peach_make_disguise_npc(s32 peachDisguise) {
     playerStatus->peachDisguise = peachDisguise;
     gGameStatusPtr->peachDisguise = peachDisguise;
 
-    bpPtr->flags = NPC_FLAG_8 | NPC_FLAG_IGNORE_WORLD_COLLISION | NPC_FLAG_IGNORE_PLAYER_COLLISION | NPC_FLAG_IGNORE_CAMERA_FOR_YAW;
+    bpPtr->flags = NPC_FLAG_FLYING | NPC_FLAG_IGNORE_WORLD_COLLISION | NPC_FLAG_IGNORE_PLAYER_COLLISION | NPC_FLAG_IGNORE_CAMERA_FOR_YAW;
     bpPtr->initialAnim = BasicPeachDisguiseAnims[playerStatus->peachDisguise].idle;
     bpPtr->onUpdate = NULL;
     bpPtr->onRender = NULL;
@@ -649,9 +650,9 @@ Npc* peach_make_disguise_npc(s32 peachDisguise) {
 
     set_npc_yaw(npc, yaw);
 
-    npc->pos.x = playerStatus->position.x;
-    npc->pos.y = playerStatus->position.y;
-    npc->pos.z = playerStatus->position.z;
+    npc->pos.x = playerStatus->pos.x;
+    npc->pos.y = playerStatus->pos.y;
+    npc->pos.z = playerStatus->pos.z;
 
     return npc;
 }
@@ -665,16 +666,16 @@ s32 peach_disguise_check_overlaps(void) {
     s32 i;
 
     if (playerStatus->spriteFacingAngle >= 90.0f && playerStatus->spriteFacingAngle < 270.0f) {
-        yaw = camera->currentYaw - 270.0f;
+        yaw = camera->curYaw - 270.0f;
     } else {
-        yaw = camera->currentYaw - 90.0f;
+        yaw = camera->curYaw - 90.0f;
     }
     sin_cos_rad(DEG_TO_RAD(clamp_angle(yaw)), &dx, &dy);
 
     for (radius = 2, i = 2; i > 0; radius += 18, i--) {
-        f32 x = playerStatus->position.x + (dx * radius);
-        f32 y = playerStatus->position.y + 4.0f;
-        f32 z = playerStatus->position.z - (dy * radius);
+        f32 x = playerStatus->pos.x + (dx * radius);
+        f32 y = playerStatus->pos.y + 4.0f;
+        f32 z = playerStatus->pos.z - (dy * radius);
         hitID = player_test_lateral_overlap(3, playerStatus, &x, &y, &z, 4.0f, yaw);
         if (hitID >= 0) {
             break;

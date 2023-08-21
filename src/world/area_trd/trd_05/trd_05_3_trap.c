@@ -1,5 +1,6 @@
 #include "trd_05.h"
 #include "sprite.h"
+#include "sprite/player.h"
 
 typedef struct FallingSprite {
     /* 0x00 */ s32 imgfxIdx;
@@ -77,9 +78,9 @@ void N(appendGfx_FallingSprite)(void) {
 
 API_CALLABLE(N(InitializeFallingSprite)) {
     FallingSprite* falling = &N(Falling);
-    falling->pos.x = gPlayerStatus.position.x;
-    falling->pos.y = gPlayerStatus.position.y + (gPlayerStatus.colliderHeight * SPRITE_WORLD_SCALE_D * 0.5);
-    falling->pos.z = gPlayerStatus.position.z;
+    falling->pos.x = gPlayerStatus.pos.x;
+    falling->pos.y = gPlayerStatus.pos.y + (gPlayerStatus.colliderHeight * SPRITE_WORLD_SCALE_D * 0.5);
+    falling->pos.z = gPlayerStatus.pos.z;
     falling->rot.x = 0.0f;
     falling->rot.y = 0.0f;
     falling->rot.z = 0.0f;
@@ -147,7 +148,7 @@ Vec3f N(UnusedPath)[] = {
 EvtScript N(EVS_PlayerFalling) = {
     EVT_THREAD
         EVT_WAIT(5)
-        EVT_CALL(PlaySound, SOUND_175)
+        EVT_CALL(PlaySound, SOUND_0175)
     EVT_END_THREAD
     EVT_THREAD
         EVT_CALL(MakeLerp, 0, 150, 45, EASING_COS_IN_OUT)
@@ -178,7 +179,7 @@ EvtScript N(EVS_PlayerFalling) = {
     EVT_SETF(LVar6, LVar3)
     EVT_THREAD
         EVT_WAIT(5)
-        EVT_CALL(PlaySound, SOUND_175)
+        EVT_CALL(PlaySound, SOUND_0175)
     EVT_END_THREAD
     EVT_CALL(MakeLerp, 0, 100, 30, EASING_QUADRATIC_IN)
     EVT_LABEL(1)
@@ -206,7 +207,7 @@ EvtScript N(EVS_PartnerFalling) = {
     EVT_CALL(SetNpcFlagBits, NPC_PARTNER, NPC_FLAG_GRAVITY, FALSE)
     EVT_THREAD
         EVT_WAIT(5)
-        EVT_CALL(PlaySound, SOUND_176)
+        EVT_CALL(PlaySound, SOUND_0176)
     EVT_END_THREAD
     EVT_THREAD
         EVT_CALL(MakeLerp, 0, -135, 45, EASING_COS_IN_OUT)
@@ -235,7 +236,7 @@ EvtScript N(EVS_PartnerFalling) = {
     EVT_CALL(SetNpcPos, NPC_PARTNER, LVar1, LVar2, LVar3)
     EVT_THREAD
         EVT_WAIT(5)
-        EVT_CALL(PlaySound, SOUND_176)
+        EVT_CALL(PlaySound, SOUND_0176)
     EVT_END_THREAD
     EVT_CALL(GetNpcPos, NPC_PARTNER, LVar4, LVar5, LVar6)
     EVT_CALL(MakeLerp, 0, 100, 30, EASING_QUADRATIC_IN)
@@ -292,7 +293,7 @@ EvtScript N(EVS_OnHitTrapTrigger) = {
     EVT_CALL(EnableModel, MODEL_o95, TRUE)
     EVT_CALL(EnableModel, MODEL_o96, TRUE)
     EVT_CALL(SetGroupVisibility, MODEL_kesu, MODEL_GROUP_VISIBLE)
-    EVT_CALL(PlaySound, SOUND_2091)
+    EVT_CALL(PlaySound, SOUND_OPEN_TRAPDOOR)
     EVT_CALL(MakeLerp, 0, 90, 30, EASING_COS_SLOW_OVERSHOOT)
     EVT_LABEL(0)
     EVT_CALL(UpdateLerp)

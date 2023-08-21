@@ -1,5 +1,6 @@
 #include "common.h"
 #include "effects.h"
+#include "sprite/player.h"
 
 #define NAMESPACE battle_move_hammer_charge_0
 
@@ -81,17 +82,17 @@ EvtScript N(EVS_802A3348) = {
         EVT_CASE_GT(FALSE)
             EVT_CALL(GetMenuSelection, LVar0, LVar1, LVar2)
             EVT_SWITCH(LVar1)
-                EVT_CASE_EQ(ITEM_NONE)
+                EVT_CASE_EQ(0)
                     EVT_CALL(StartRumble, 7)
                     EVT_THREAD
                         EVT_CALL(ShakeCam, CAM_BATTLE, 0, 10, EVT_FLOAT(1.3))
                     EVT_END_THREAD
-                EVT_CASE_EQ(ITEM_BOOTS)
+                EVT_CASE_EQ(1)
                     EVT_CALL(StartRumble, 8)
                     EVT_THREAD
                         EVT_CALL(ShakeCam, CAM_BATTLE, 0, 10, EVT_FLOAT(1.6))
                     EVT_END_THREAD
-                EVT_CASE_EQ(ITEM_SUPER_BOOTS)
+                EVT_CASE_EQ(2)
                     EVT_CALL(StartRumble, 9)
                     EVT_THREAD
                         EVT_CALL(ShakeCam, CAM_BATTLE, 0, 10, EVT_FLOAT(1.9))
@@ -100,17 +101,17 @@ EvtScript N(EVS_802A3348) = {
         EVT_CASE_DEFAULT
             EVT_CALL(GetMenuSelection, LVar0, LVar1, LVar2)
             EVT_SWITCH(LVar1)
-                EVT_CASE_EQ(ITEM_NONE)
+                EVT_CASE_EQ(0)
                     EVT_CALL(StartRumble, 7)
                     EVT_THREAD
                         EVT_CALL(ShakeCam, CAM_BATTLE, 0, 2, EVT_FLOAT(1.3))
                     EVT_END_THREAD
-                EVT_CASE_EQ(ITEM_BOOTS)
+                EVT_CASE_EQ(1)
                     EVT_CALL(StartRumble, 8)
                     EVT_THREAD
                         EVT_CALL(ShakeCam, CAM_BATTLE, 0, 2, EVT_FLOAT(1.6))
                     EVT_END_THREAD
-                EVT_CASE_EQ(ITEM_SUPER_BOOTS)
+                EVT_CASE_EQ(2)
                     EVT_CALL(StartRumble, 9)
                     EVT_THREAD
                         EVT_CALL(ShakeCam, CAM_BATTLE, 0, 2, EVT_FLOAT(1.9))
@@ -129,24 +130,24 @@ EvtScript N(EVS_802A3348) = {
         EVT_CASE_GT(FALSE)
             EVT_CALL(GetMenuSelection, LVar0, LVar1, LVar2)
             EVT_SWITCH(LVar1)
-                EVT_CASE_EQ(ITEM_NONE)
+                EVT_CASE_EQ(0)
                     EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HIT_NORMAL)
-                EVT_CASE_EQ(ITEM_BOOTS)
-                    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_10E)
-                EVT_CASE_EQ(ITEM_SUPER_BOOTS)
-                    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_10E)
+                EVT_CASE_EQ(1)
+                    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HIT_SILENT)
+                EVT_CASE_EQ(2)
+                    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HIT_SILENT)
             EVT_END_SWITCH
             EVT_CALL(PlayerDamageEnemy, LVar0, DAMAGE_TYPE_SMASH, 25, 0, LVarF, 48)
             EVT_SET(LFlag0, TRUE)
         EVT_CASE_DEFAULT
             EVT_CALL(GetMenuSelection, LVar0, LVar1, LVar2)
             EVT_SWITCH(LVar1)
-                EVT_CASE_EQ(ITEM_NONE)
+                EVT_CASE_EQ(0)
                     EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HIT_NORMAL)
-                EVT_CASE_EQ(ITEM_BOOTS)
-                    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_10E)
-                EVT_CASE_EQ(ITEM_SUPER_BOOTS)
-                    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_10E)
+                EVT_CASE_EQ(1)
+                    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HIT_SILENT)
+                EVT_CASE_EQ(2)
+                    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HIT_SILENT)
             EVT_END_SWITCH
             EVT_CALL(PlayerDamageEnemy, LVar0, DAMAGE_TYPE_SMASH, 25, 0, LVarE, 32)
             EVT_SET(LFlag0, FALSE)
@@ -172,11 +173,11 @@ extern EvtScript N(EVS_802A3FD8);
 EvtScript N(EVS_UseMove0) = {
     EVT_CALL(GetMenuSelection, LVar0, LVar1, LVar2)
     EVT_SWITCH(LVar1)
-        EVT_CASE_EQ(ITEM_NONE)
+        EVT_CASE_EQ(0)
             EVT_EXEC_WAIT(N(EVS_802A3948))
-        EVT_CASE_EQ(ITEM_BOOTS)
+        EVT_CASE_EQ(1)
             EVT_EXEC_WAIT(N(EVS_802A3C90))
-        EVT_CASE_EQ(ITEM_SUPER_BOOTS)
+        EVT_CASE_EQ(2)
             EVT_EXEC_WAIT(N(EVS_802A3FD8))
     EVT_END_SWITCH
     EVT_RETURN
@@ -187,9 +188,9 @@ EvtScript N(EVS_802A3948) = {
     EVT_CALL(UseBattleCamPreset, BTL_CAM_PLAYER_CHARGE_UP)
     EVT_WAIT(10)
     EVT_THREAD
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_156)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_PLAYER_CHARGE)
         EVT_WAIT(8)
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_156)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_PLAYER_CHARGE)
         EVT_WAIT(8)
     EVT_END_THREAD
     EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB3_Hammer1_Charging)
@@ -206,9 +207,9 @@ EvtScript N(EVS_802A3948) = {
         EVT_ADD(LVar0, 15)
         EVT_ADD(LVar1, 35)
         EVT_CALL(func_802A10C8_74F1F8, LVar0, LVar1, LVar2)
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_208F)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_CHARGE_UP)
         EVT_WAIT(4)
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_160)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_PLAYER_JUMP)
         EVT_CALL(SetActorJumpGravity, ACTOR_PLAYER, EVT_FLOAT(1.0))
         EVT_CALL(SetActorSpeed, ACTOR_PLAYER, EVT_FLOAT(1.0))
         EVT_CALL(GetActorPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)
@@ -238,9 +239,9 @@ EvtScript N(EVS_802A3C90) = {
     EVT_CALL(UseBattleCamPreset, BTL_CAM_PLAYER_CHARGE_UP)
     EVT_WAIT(10)
     EVT_THREAD
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_156)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_PLAYER_CHARGE)
         EVT_WAIT(8)
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_156)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_PLAYER_CHARGE)
         EVT_WAIT(8)
     EVT_END_THREAD
     EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB3_Hammer2_Charging)
@@ -257,9 +258,9 @@ EvtScript N(EVS_802A3C90) = {
         EVT_ADD(LVar0, 15)
         EVT_ADD(LVar1, 35)
         EVT_CALL(func_802A10C8_74F1F8, LVar0, LVar1, LVar2)
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_208F)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_CHARGE_UP)
         EVT_WAIT(4)
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_160)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_PLAYER_JUMP)
         EVT_CALL(SetActorJumpGravity, ACTOR_PLAYER, EVT_FLOAT(1.0))
         EVT_CALL(SetActorSpeed, ACTOR_PLAYER, EVT_FLOAT(1.0))
         EVT_CALL(GetActorPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)
@@ -289,9 +290,9 @@ EvtScript N(EVS_802A3FD8) = {
     EVT_CALL(UseBattleCamPreset, BTL_CAM_PLAYER_CHARGE_UP)
     EVT_WAIT(10)
     EVT_THREAD
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_156)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_PLAYER_CHARGE)
         EVT_WAIT(8)
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_156)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_PLAYER_CHARGE)
         EVT_WAIT(8)
     EVT_END_THREAD
     EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB3_Hammer3_Charging)
@@ -308,9 +309,9 @@ EvtScript N(EVS_802A3FD8) = {
         EVT_ADD(LVar0, 15)
         EVT_ADD(LVar1, 35)
         EVT_CALL(func_802A10C8_74F1F8, LVar0, LVar1, LVar2)
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_208F)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_CHARGE_UP)
         EVT_WAIT(4)
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_160)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_PLAYER_JUMP)
         EVT_CALL(SetActorJumpGravity, ACTOR_PLAYER, EVT_FLOAT(1.0))
         EVT_CALL(SetActorSpeed, ACTOR_PLAYER, EVT_FLOAT(1.0))
         EVT_CALL(GetActorPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)

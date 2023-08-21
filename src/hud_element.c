@@ -5,7 +5,7 @@
 
 #if VERSION_IQUE
 // TODO: remove if section is split in iQue release
-extern Addr icon_present_ROM_START;
+extern Addr icon_ROM_START;
 #endif
 
 #define MAX_HUD_CACHE_ENTRIES 192
@@ -105,23 +105,23 @@ Vtx D_8014F0C8[] = {
 
 Lights1 D_8014F108 = gdSPDefLights1(255, 255, 255, 0, 0, 0, 0, 0, 0);
 
-extern s32 gHudElementsNumber;
-extern s32 D_80159180;
-extern HudElementList* gHudElements;
-extern HudElementList gHudElementsWorld;
-extern HudElementList gHudElementsBattle;
-extern s32* gHudElementCacheSize;
-extern s32 gHudElementCacheSizeWorld;
-extern s32 gHudElementCacheSizeBattle;
-extern HudCacheEntry* gHudElementCacheTableRaster;
-extern HudCacheEntry* gHudElementCacheTablePalette;
-extern HudCacheEntry gHudElementCacheTableRasterWorld[];
-extern HudCacheEntry gHudElementCacheTablePaletteWorld[];
-extern HudCacheEntry gHudElementCacheTableRasterBattle[];
-extern HudCacheEntry gHudElementCacheTablePaletteBattle[];
-extern u8* gHudElementCacheBufferWorld;
-extern u8* gHudElementCacheBufferBattle;
-extern u8* gHudElementCacheBuffer;
+SHIFT_BSS s32 gHudElementsNumber;
+SHIFT_BSS s32 D_80159180;
+SHIFT_BSS HudElementList* gHudElements;
+SHIFT_BSS HudElementList gHudElementsWorld;
+SHIFT_BSS HudElementList gHudElementsBattle;
+SHIFT_BSS s32* gHudElementCacheSize;
+SHIFT_BSS s32 gHudElementCacheSizeWorld;
+SHIFT_BSS s32 gHudElementCacheSizeBattle;
+SHIFT_BSS HudCacheEntry* gHudElementCacheTableRaster;
+SHIFT_BSS HudCacheEntry* gHudElementCacheTablePalette;
+SHIFT_BSS HudCacheEntry gHudElementCacheTableRasterWorld[192];
+SHIFT_BSS HudCacheEntry gHudElementCacheTablePaletteWorld[192];
+SHIFT_BSS HudCacheEntry gHudElementCacheTableRasterBattle[192];
+SHIFT_BSS HudCacheEntry gHudElementCacheTablePaletteBattle[192];
+SHIFT_BSS u8* gHudElementCacheBufferWorld;
+SHIFT_BSS u8* gHudElementCacheBufferBattle;
+SHIFT_BSS u8* gHudElementCacheBuffer;
 
 void func_801413F8(void);
 
@@ -198,7 +198,7 @@ void hud_element_load_script(HudElement* hudElement, HudScript* anim) {
                             capacity = gHudElementCacheCapacity / 2;
                         }
                         ASSERT(capacity > *gHudElementCacheSize + gHudElementSizes[preset].size);
-                        nuPiReadRom((s32)icon_present_ROM_START + raster, entry->data, gHudElementSizes[preset].size);
+                        nuPiReadRom((s32)icon_ROM_START + raster, entry->data, gHudElementSizes[preset].size);
                         *gHudElementCacheSize += gHudElementSizes[preset].size;
                         if (!gGameStatusPtr->isBattle) {
                             *pos = i;
@@ -234,7 +234,7 @@ void hud_element_load_script(HudElement* hudElement, HudScript* anim) {
                             capacity = gHudElementCacheCapacity / 2;
                         }
                         ASSERT(capacity > *gHudElementCacheSize + 32);
-                        nuPiReadRom((s32)icon_present_ROM_START + palette, entry->data, 32);
+                        nuPiReadRom((s32)icon_ROM_START + palette, entry->data, 32);
                         *gHudElementCacheSize += 32;
                         if (!gGameStatusPtr->isBattle) {
                             *pos = i;
@@ -661,10 +661,20 @@ void hud_element_clear_cache(void) {
     func_801413F8();
 }
 
+#if VERSION_PAL
+extern Addr D_80200000;
+#endif
+
 void init_hud_element_list(void) {
     if (!gGameStatusPtr->isBattle) {
         if (gHudElementCacheBufferBattle != NULL) {
+#if VERSION_PAL
+            if (gHudElementCacheBufferBattle != D_80200000) {
+                general_heap_free(gHudElementCacheBufferBattle);
+            }
+#else
             general_heap_free(gHudElementCacheBufferBattle);
+#endif
             gHudElementCacheBufferBattle = NULL;
         }
 
@@ -1467,16 +1477,16 @@ void render_hud_element(HudElement* hudElement) {
     guTranslateF(sp220, -transform->pivot.x, transform->pivot.y, 0.0f);
     guTranslateF(
         sp1A0,
-        hudElement->renderPosX + hudElement->screenPosOffset.x + hudElement->worldPosOffset.x + transform->position.x,
-        -hudElement->renderPosY - hudElement->screenPosOffset.y + hudElement->worldPosOffset.y + transform->position.y,
-        - (hudElement->worldPosOffset.z / 10.0) + transform->position.z
+        hudElement->renderPosX + hudElement->screenPosOffset.x + hudElement->worldPosOffset.x + transform->pos.x,
+        -hudElement->renderPosY - hudElement->screenPosOffset.y + hudElement->worldPosOffset.y + transform->pos.y,
+        - (hudElement->worldPosOffset.z / 10.0) + transform->pos.z
     );
     guScaleF(sp260, hudElement->uniformScale * xScaleFactor * transform->scale.x,
                     hudElement->uniformScale * yScaleFactor * transform->scale.y,
                     transform->scale.z);
-    guRotateF(sp120, transform->rotation.y, 0.0f, 1.0f, 0.0f);
-    guRotateF(sp160, transform->rotation.z, 0.0f, 0.0f, 1.0f);
-    guRotateF(spE0, transform->rotation.x, 1.0f, 0.0f, 0.0f);
+    guRotateF(sp120, transform->rot.y, 0.0f, 1.0f, 0.0f);
+    guRotateF(sp160, transform->rot.z, 0.0f, 0.0f, 1.0f);
+    guRotateF(spE0, transform->rot.x, 1.0f, 0.0f, 0.0f);
     guMtxCatF(sp160, spE0, sp20);
     guMtxCatF(sp20, sp120, spA0);
     guMtxCatF(sp260, sp1E0, sp20);
@@ -2116,12 +2126,12 @@ void hud_element_create_transform_A(s32 id) {
     ASSERT(transform != NULL);
     element->flags |= HUD_ELEMENT_FLAG_TRANSFORM;
     transform->imgfxIdx = imgfx_get_free_instances(1);
-    transform->position.x = 0.0f;
-    transform->position.y = 0.0f;
-    transform->position.z = 0.0f;
-    transform->rotation.x = 0.0f;
-    transform->rotation.y = 0.0f;
-    transform->rotation.z = 0.0f;
+    transform->pos.x = 0.0f;
+    transform->pos.y = 0.0f;
+    transform->pos.z = 0.0f;
+    transform->rot.x = 0.0f;
+    transform->rot.y = 0.0f;
+    transform->rot.z = 0.0f;
     transform->scale.x = 1.0f;
     transform->scale.y = 1.0f;
     transform->scale.z = 1.0f;
@@ -2138,12 +2148,12 @@ void hud_element_create_transform_B(s32 id) {
     ASSERT(transform != NULL);
     element->flags |= HUD_ELEMENT_FLAG_TRANSFORM | HUD_ELEMENT_FLAG_NO_FOLD;
     transform->imgfxIdx = 0;
-    transform->position.x = 0.0f;
-    transform->position.y = 0.0f;
-    transform->position.z = 0.0f;
-    transform->rotation.x = 0.0f;
-    transform->rotation.y = 0.0f;
-    transform->rotation.z = 0.0f;
+    transform->pos.x = 0.0f;
+    transform->pos.y = 0.0f;
+    transform->pos.z = 0.0f;
+    transform->rot.x = 0.0f;
+    transform->rot.y = 0.0f;
+    transform->rot.z = 0.0f;
     transform->scale.x = 1.0f;
     transform->scale.y = 1.0f;
     transform->scale.z = 1.0f;
@@ -2158,12 +2168,12 @@ void hud_element_create_transform_C(s32 id) {
     ASSERT(transform != NULL);
     element->flags |= HUD_ELEMENT_FLAG_40000000 | HUD_ELEMENT_FLAG_NO_FOLD | HUD_ELEMENT_FLAG_TRANSFORM;
     transform->imgfxIdx = 0;
-    transform->position.x = 0.0f;
-    transform->position.y = 0.0f;
-    transform->position.z = 0.0f;
-    transform->rotation.x = 0.0f;
-    transform->rotation.y = 0.0f;
-    transform->rotation.z = 0.0f;
+    transform->pos.x = 0.0f;
+    transform->pos.y = 0.0f;
+    transform->pos.z = 0.0f;
+    transform->rot.x = 0.0f;
+    transform->rot.y = 0.0f;
+    transform->rot.z = 0.0f;
     transform->scale.x = 1.0f;
     transform->scale.y = 1.0f;
     transform->scale.z = 1.0f;
@@ -2188,9 +2198,9 @@ void hud_element_set_transform_pos(s32 id, f32 x, f32 y, f32 z) {
     HudTransform* transform = element->hudTransform;
 
     if (element->flags & HUD_ELEMENT_FLAG_TRANSFORM) {
-        transform->position.x = x;
-        transform->position.y = y;
-        transform->position.z = z;
+        transform->pos.x = x;
+        transform->pos.y = y;
+        transform->pos.z = z;
     }
 }
 
@@ -2210,9 +2220,9 @@ void hud_element_set_transform_rotation(s32 id, f32 x, f32 y, f32 z) {
     HudTransform* transform = element->hudTransform;
 
     if (element->flags & HUD_ELEMENT_FLAG_TRANSFORM) {
-        transform->rotation.x = x;
-        transform->rotation.y = y;
-        transform->rotation.z = z;
+        transform->rot.x = x;
+        transform->rot.y = y;
+        transform->rot.z = z;
     }
 }
 

@@ -7,6 +7,7 @@
 #include "sprite/npc/BattleMerlee.h"
 #include "battle/action_cmd/flee.h"
 #include "battle/battle.h"
+#include "sprite/player.h"
 
 extern HudScript HES_Happy;
 extern HudScript HES_HPDrain;
@@ -28,7 +29,7 @@ BSS s32 D_8029FBA8;
 BSS s32 D_8029FBAC;
 BSS s32 D_8029FBB0[3];
 
-API_CALLABLE(func_802749F8);
+API_CALLABLE(ForceDisablePlayerBlurImmediately);
 
 void btl_set_player_idle_anims(void) {
     BattleStatus* battleStatus = &gBattleStatus;
@@ -73,8 +74,8 @@ API_CALLABLE(ActivateDefend) {
 API_CALLABLE(DoesMarioStatusPreventHappyAnimation) {
     Actor* player = gBattleStatus.playerActor;
 
-    show_action_rating(ACTION_RATING_LUCKY, player, player->currentPos.x, player->currentPos.y + 20.0f, player->currentPos.z);
-    sfx_play_sound(SOUND_3FC);
+    show_action_rating(ACTION_RATING_LUCKY, player, player->curPos.x, player->curPos.y + 20.0f, player->curPos.z);
+    sfx_play_sound(SOUND_03FC);
     script->varTable[0] = FALSE;
     if (player->debuff == STATUS_KEY_FEAR || player->debuff == STATUS_KEY_DIZZY || player->debuff == STATUS_KEY_PARALYZE ||
         player->debuff == STATUS_KEY_SLEEP ||player->debuff == STATUS_KEY_FROZEN || player->debuff == STATUS_KEY_STOP) {
@@ -175,7 +176,7 @@ API_CALLABLE(GiveRefund) {
     f32 angle = 0.0f;
     s32 delayTime = 0;
     f32 posX, posY, posZ;
-    posY = player->currentPos.y + player->size.y;
+    posY = player->curPos.y + player->size.y;
 
     if (player_team_is_ability_active(player, ABILITY_REFUND) && sellValue > 0) {
         s32 i;
@@ -185,8 +186,8 @@ API_CALLABLE(GiveRefund) {
         sellValue = (sellValue * 75 + 99) / 100;
 
         for (i = 0; i < sellValue; i++) {
-            posX = player->currentPos.x;
-            posZ = player->currentPos.z;
+            posX = player->curPos.x;
+            posZ = player->curPos.z;
 
             make_item_entity(ITEM_COIN, posX, posY, posZ, ITEM_SPAWN_MODE_TOSS_FADE1, (i * 3) + 1, angle, 0);
             add_coins(1);
@@ -195,9 +196,9 @@ API_CALLABLE(GiveRefund) {
 
         delayTime = (i * 3) + 30;
 
-        posX = player->currentPos.x;
-        posY = player->currentPos.y;
-        posZ = player->currentPos.z;
+        posX = player->curPos.x;
+        posY = player->curPos.y;
+        posZ = player->curPos.z;
         get_screen_coords(gCurrentCameraID, posX, posY, posZ, &iconPosX, &iconPosY, &iconPosZ);
         RefundHudElem = hud_element_create(&HES_Refund);
         hud_element_set_render_pos(RefundHudElem, iconPosX + 36, iconPosY - 63);
@@ -229,8 +230,12 @@ API_CALLABLE(LifeShroomShroudWorld) {
     set_background_color_blend(0, 0, 0, ((20 - script->functionTemp[0]) * 12) & 0xFC);
 
     script->functionTemp[0] -= 1;
-    do {} while (0); // TODO required to match
-    return (script->functionTemp[0] == 0) * ApiStatus_DONE2;
+
+    if (script->functionTemp[0] == 0) {
+        return ApiStatus_DONE2;
+    }
+    
+    return ApiStatus_BLOCK;
 }
 
 API_CALLABLE(LifeShroomRevealWorld) {
@@ -246,7 +251,7 @@ API_CALLABLE(LifeShroomRevealWorld) {
         set_background_color_blend(0, 0, 0, 0);
         return ApiStatus_DONE2;
     }
-
+    
     return ApiStatus_BLOCK;
 }
 
@@ -337,7 +342,7 @@ API_CALLABLE(BattleMerleeFadeStageToBlack) {
         script->functionTemp[0] = 25;
     }
 
-    set_background_color_blend(0, 0, 0, ((25 - script->functionTemp[0]) * 10) & 0xFE);
+    set_background_color_blend(0, 0, 0, ((25 - script->functionTemp[0]) * 10) & 254);
     script->functionTemp[0]--;
 
     if (script->functionTemp[0] == 0) {
@@ -367,7 +372,7 @@ API_CALLABLE(BattleFadeInMerlee) {
     Npc* merlee = get_npc_unsafe(NPC_BTL_MERLEE);
 
     if (isInitialCall) {
-        sfx_play_sound(SOUND_24B);
+        sfx_play_sound(SOUND_MERLEE_APPEAR);
         merlee->alpha = 0;
     }
 
@@ -567,29 +572,29 @@ API_CALLABLE(func_80261DF4) {
     switch (script->functionTemp[1]) {
         case 0:
             script->functionTemp[0]--;
-            item->position.y += script->functionTemp[0];
-            if (item->position.y < 0.0f) {
-                item->position.y = 0.0f;
+            item->pos.y += script->functionTemp[0];
+            if (item->pos.y < 0.0f) {
+                item->pos.y = 0.0f;
                 script->functionTemp[0] = 8;
                 script->functionTemp[1] = 1;
             }
             break;
         case 1:
             script->functionTemp[0]--;
-            item->position.y += script->functionTemp[0];
-            item->position.x += 1.5;
-            if (item->position.y < 0.0f) {
-                item->position.y = 0.0f;
+            item->pos.y += script->functionTemp[0];
+            item->pos.x += 1.5;
+            if (item->pos.y < 0.0f) {
+                item->pos.y = 0.0f;
                 script->functionTemp[0] = 4;
                 script->functionTemp[1] = 2;
             }
             break;
         case 2:
             script->functionTemp[0]--;
-            item->position.y += script->functionTemp[0];
-            item->position.x += 1.2;
-            if (item->position.y < 0.0f) {
-                item->position.y = 0.0f;
+            item->pos.y += script->functionTemp[0];
+            item->pos.x += 1.2;
+            if (item->pos.y < 0.0f) {
+                item->pos.y = 0.0f;
                 script->functionTemp[1] = 3;
             }
             break;
@@ -618,16 +623,16 @@ API_CALLABLE(func_80261FB4) {
     switch (script->functionTemp[0]) {
         case 0:
             ft1 = script->functionTemp[1];
-            deltaX = player->currentPos.x - item->position.x;
-            deltaY = player->currentPos.y + 12.0f - item->position.y;
-            deltaZ = player->currentPos.z - 5.0f - item->position.z;
+            deltaX = player->curPos.x - item->pos.x;
+            deltaY = player->curPos.y + 12.0f - item->pos.y;
+            deltaZ = player->curPos.z - 5.0f - item->pos.z;
 
-            item->position.x += deltaX / ft1;
-            item->position.y += deltaY / ft1;
-            item->position.z += deltaZ / ft1;
+            item->pos.x += deltaX / ft1;
+            item->pos.y += deltaY / ft1;
+            item->pos.z += deltaZ / ft1;
 
-            item->position.y += dist2D(item->position.x, item->position.y, player->currentPos.x,
-                                       player->currentPos.y + 12.0f) / 5.0f;
+            item->pos.y += dist2D(item->pos.x, item->pos.y, player->curPos.x,
+                                       player->curPos.y + 12.0f) / 5.0f;
 
             if (script->functionTemp[1] == 1) {
                 script->functionTemp[0] = script->functionTemp[1];
@@ -694,7 +699,7 @@ EvtScript EVS_MarioEnterStage = {
             EVT_CHILD_THREAD
                 EVT_CALL(ShakeCam, 1, 0, 5, EVT_FLOAT(1.0))
             EVT_END_CHILD_THREAD
-            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_162)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_TRIP)
             EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_Mario1_GetUp)
             EVT_WAIT(10)
             EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_Mario1_DustOff)
@@ -776,23 +781,23 @@ EvtScript EVS_Peach_HandlePhase = {
 
 EvtScript EVS_ExecuteMarioAction = {
     EVT_CALL(UseIdleAnimation, ACTOR_PLAYER, FALSE)
-    EVT_CALL(SetBattleFlagBits, BS_FLAGS1_4000, 0)
+    EVT_CALL(SetBattleFlagBits, BS_FLAGS1_4000, FALSE)
     EVT_CALL(GetMenuSelection, LVar0, LVar1, LVar2)
     EVT_SWITCH(LVar0)
-        EVT_CASE_EQ(0)
+        EVT_CASE_EQ(BTL_MENU_TYPE_JUMP)
             EVT_CALL(LoadMoveScript)
             EVT_EXEC_WAIT(LVar0)
-        EVT_CASE_EQ(1)
+        EVT_CASE_EQ(BTL_MENU_TYPE_SMASH)
             EVT_CALL(LoadMoveScript)
             EVT_EXEC_WAIT(LVar0)
-        EVT_CASE_EQ(2)
+        EVT_CASE_EQ(BTL_MENU_TYPE_ITEMS)
             EVT_CALL(LoadItemScript)
             EVT_EXEC_WAIT(LVar0)
-        EVT_CASE_EQ(8)
+        EVT_CASE_EQ(BTL_MENU_TYPE_STAR_POWERS)
             EVT_CALL(LoadStarPowerScript)
             EVT_EXEC_WAIT(LVar0)
     EVT_END_SWITCH
-    EVT_CALL(EnablePlayerBlur, 0)
+    EVT_CALL(EnablePlayerBlur, ACTOR_BLUR_DISABLE)
     EVT_CALL(UseIdleAnimation, ACTOR_PLAYER, TRUE)
     EVT_RETURN
     EVT_END
@@ -802,7 +807,7 @@ EvtScript EVS_ExecutePeachAction = {
     EVT_CALL(UseIdleAnimation, ACTOR_PLAYER, FALSE)
     EVT_CALL(GetMenuSelection, LVar0, LVar1, LVar2)
     EVT_SWITCH(LVar0)
-        EVT_CASE_EQ(8)
+        EVT_CASE_EQ(BTL_MENU_TYPE_STAR_POWERS)
             EVT_CALL(LoadStarPowerScript)
             EVT_EXEC_WAIT(LVar0)
     EVT_END_SWITCH
@@ -822,7 +827,7 @@ EvtScript EVS_PlayerFirstStrike = {
             EVT_CALL(LoadMoveScript)
             EVT_EXEC_WAIT(LVar0)
     EVT_END_SWITCH
-    EVT_CALL(EnablePlayerBlur, 0)
+    EVT_CALL(EnablePlayerBlur, ACTOR_BLUR_DISABLE)
     EVT_CALL(UseIdleAnimation, ACTOR_PLAYER, TRUE)
     EVT_RETURN
     EVT_END
@@ -843,7 +848,7 @@ EvtScript EVS_Player_HandleEvent = {
     EVT_CALL(CloseActionCommandInfo)
     EVT_CALL(SetBattleFlagBits, BS_FLAGS1_100, FALSE)
     EVT_CALL(func_802693F0)
-    EVT_CALL(func_802749F8)
+    EVT_CALL(ForceDisablePlayerBlurImmediately)
     EVT_CALL(GetLastEvent, ACTOR_PLAYER, LVarF)
     EVT_SWITCH(LVarF)
         EVT_CASE_OR_EQ(EVENT_SPIKE_CONTACT)
@@ -1000,13 +1005,13 @@ EvtScript EVS_Player_HandleEvent = {
         EVT_END_CASE_GROUP
         EVT_CASE_OR_EQ(EVENT_ZERO_DAMAGE)
         EVT_CASE_OR_EQ(EVENT_IMMUNE)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_208C)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_NO_DAMGE)
             EVT_SET_CONST(LVar1, ANIM_Mario1_Idle)
             EVT_EXEC_WAIT(EVS_Player_NoDamageHit)
         EVT_END_CASE_GROUP
         EVT_CASE_OR_EQ(EVENT_18)
         EVT_CASE_OR_EQ(EVENT_BLOCK)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_208C)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_NO_DAMGE)
             EVT_SET_CONST(LVar0, 1)
             EVT_SET_CONST(LVar1, ANIM_Mario1_Crouch)
             EVT_EXEC_WAIT(EVS_Player_NoDamageHit)
@@ -1058,7 +1063,7 @@ EvtScript EVS_Player_Celebrate = {
 
 EvtScript EVS_RunAwayNoCommand = {
     EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB3_Hustled)
-    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_15D)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_PLAYER_RUN_IN_PLACE)
     EVT_CALL(SetActorYaw, ACTOR_PLAYER, 30)
     EVT_WAIT(1)
     EVT_CALL(SetActorYaw, ACTOR_PLAYER, 60)
@@ -1095,7 +1100,7 @@ EvtScript EVS_RunAwayNoCommand = {
     EVT_CALL(DetermineAutoRunAwaySuccess)
     EVT_IF_EQ(LVar0, 1)
         EVT_CALL(SetFledBattleFlag)
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_15E)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_PLAYER_RUN_AWAY)
         EVT_CALL(SetGoalPos, ACTOR_PLAYER, -240, 0, 10)
         EVT_CALL(SetActorSpeed, ACTOR_PLAYER, EVT_FLOAT(16.0))
         EVT_CALL(PlayerRunToGoal, 0)
@@ -1105,7 +1110,7 @@ EvtScript EVS_RunAwayNoCommand = {
             EVT_CALL(ShakeCam, 1, 0, 5, EVT_FLOAT(1.0))
         EVT_END_CHILD_THREAD
         EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB1_Trip)
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_162)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_TRIP)
         EVT_CALL(SetGoalPos, ACTOR_PLAYER, -100, 0, 10)
         EVT_CALL(SetActorSpeed, ACTOR_PLAYER, EVT_FLOAT(10.0))
         EVT_CALL(PlayerRunToGoal, 0)
@@ -1167,7 +1172,7 @@ EvtScript EVS_RunAwayStart = {
     EVT_CALL(SetupMashMeter, 1, 100, 0, 0, 0, 0)
     EVT_CALL(func_80260E38)
     EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB3_Hustled)
-    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_15D)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_PLAYER_RUN_IN_PLACE)
     EVT_CALL(SetActorYaw, ACTOR_PLAYER, 30)
     EVT_WAIT(1)
     EVT_CALL(SetActorYaw, ACTOR_PLAYER, 60)
@@ -1209,7 +1214,7 @@ EvtScript EVS_RunAwayStart = {
     EVT_CALL(DetermineAutoRunAwaySuccess)
     EVT_IF_EQ(LVar0, 1)
         EVT_CALL(SetFledBattleFlag)
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_15E)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_PLAYER_RUN_AWAY)
         EVT_CALL(SetGoalPos, ACTOR_PLAYER, -240, 0, 10)
         EVT_CALL(SetActorSpeed, ACTOR_PLAYER, EVT_FLOAT(16.0))
         EVT_CALL(PlayerRunToGoal, 0)
@@ -1219,7 +1224,7 @@ EvtScript EVS_RunAwayStart = {
             EVT_CALL(ShakeCam, 1, 0, 5, EVT_FLOAT(1.0))
         EVT_END_CHILD_THREAD
         EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB1_Trip)
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_162)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_TRIP)
         EVT_CALL(SetGoalPos, ACTOR_PLAYER, -100, 0, 10)
         EVT_CALL(SetActorSpeed, ACTOR_PLAYER, EVT_FLOAT(10.0))
         EVT_CALL(PlayerRunToGoal, 0)
@@ -1284,8 +1289,8 @@ EvtScript EVS_PlayerDies = {
     EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB1_Dying)
     EVT_CALL(UseBattleCamPreset, BTL_CAM_PRESET_24)
     EVT_WAIT(15)
-    EVT_CALL(EnablePlayerBlur, 1)
-    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_371)
+    EVT_CALL(EnablePlayerBlur, ACTOR_BLUR_ENABLE)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_0371)
     EVT_SET(LVar0, 0)
     EVT_LOOP(30)
         EVT_ADD(LVar0, 60)
@@ -1298,9 +1303,9 @@ EvtScript EVS_PlayerDies = {
         EVT_CALL(SetActorYaw, ACTOR_PLAYER, LVar0)
         EVT_WAIT(1)
     EVT_END_LOOP
-    EVT_CALL(EnablePlayerBlur, 0)
+    EVT_CALL(EnablePlayerBlur, ACTOR_BLUR_DISABLE)
     EVT_WAIT(30)
-    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_3FB)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_03FB)
     EVT_SET(LVar0, 0)
     EVT_SET(LVar1, 1)
     EVT_LOOP(0)
@@ -1330,7 +1335,7 @@ EvtScript D_80287404 = {
     EVT_IF_EQ(LVar1, 0)
         EVT_CALL(UseBattleCamPreset, BTL_CAM_PRESET_69)
         EVT_WAIT(10)
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_208D)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_USE_ITEM)
         EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_Mario1_UsePower)
         EVT_CALL(GetActorPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)
         EVT_ADD(LVar0, 18)
@@ -1351,7 +1356,7 @@ EvtScript D_80287404 = {
         EVT_CALL(RemoveItemEntity, LVarA)
     EVT_ELSE
         EVT_CALL(GetActorPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)
-        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_208D)
+        EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_USE_ITEM)
         EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_Mario1_UsePower)
         EVT_WAIT(4)
         EVT_ADD(LVar1, 45)
@@ -1404,7 +1409,7 @@ EvtScript D_80287834 = {
 EvtScript EVS_PlayEatFX = {
     EVT_THREAD
         EVT_LOOP(4)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_2095)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_EAT_OR_DRINK)
             EVT_WAIT(10)
         EVT_END_LOOP
     EVT_END_THREAD
@@ -1417,7 +1422,7 @@ EvtScript EVS_PlayEatFX = {
 EvtScript EVS_PlayDrinkFX = {
     EVT_THREAD
         EVT_LOOP(4)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_2095)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_EAT_OR_DRINK)
             EVT_WAIT(10)
         EVT_END_LOOP
     EVT_END_THREAD
@@ -1472,7 +1477,7 @@ EvtScript EVS_UseLifeShroom = {
         EVT_WAIT(15)
         EVT_CALL(GiveRefundCleanup)
     EVT_END_IF
-    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_372)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_0372)
     EVT_ADD(LVar4, 15)
     EVT_PLAY_EFFECT(EFFECT_ENERGY_IN_OUT, 3, LVar3, LVar4, LVar5, EVT_FLOAT(1.0))
     EVT_SET(LVar0, LVarF)
@@ -1484,10 +1489,10 @@ EvtScript EVS_UseLifeShroom = {
     EVT_END_LOOP
     EVT_CALL(RemoveEffect, LVar0)
     EVT_CALL(RemoveItemEntity, LVarA)
-    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_2055)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_START_RECOVERY)
     EVT_PLAY_EFFECT(EFFECT_STARS_SHIMMER, 1, LVar3, LVar4, LVar5, 70, 70, 10, 20)
     EVT_WAIT(20)
-    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_373)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_0373)
     EVT_CALL(GetActorPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)
     EVT_PLAY_EFFECT(EFFECT_STARS_SHIMMER, 2, LVar0, LVar1, LVar2, 50, 20, 32, 30)
     EVT_WAIT(40)
@@ -1516,7 +1521,7 @@ EvtScript EVS_UseLifeShroom = {
     EVT_CHILD_THREAD
         EVT_CALL(LifeShroomRevealWorld)
     EVT_END_CHILD_THREAD
-    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_374)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_0374)
     EVT_CALL(SetActorRotation, ACTOR_PLAYER, 0, 0, 0)
     EVT_CALL(SetActorYaw, ACTOR_SELF, 0)
     EVT_CALL(ConsumeLifeShroom)
@@ -1550,7 +1555,7 @@ EvtScript EVS_UseLifeShroom = {
             EVT_PLAY_EFFECT(EFFECT_MISC_PARTICLES, 2, LVar0, LVar1, LVar2, 20, 20, EVT_FLOAT(1.0), 10, 50)
         EVT_END_LOOP
     EVT_END_CHILD_THREAD
-    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_160)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_PLAYER_JUMP)
     EVT_CALL(SetActorJumpGravity, ACTOR_PLAYER, EVT_FLOAT(1.0))
     EVT_CALL(SetActorSpeed, ACTOR_PLAYER, EVT_FLOAT(1.0))
     EVT_CALL(GetActorPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)
@@ -1810,26 +1815,26 @@ EvtScript EVS_PlayerRegainAbility = {
     EVT_SWITCH(LVarA)
         EVT_CASE_EQ(2)
             EVT_SET(LVarE, 0)
-            EVT_SET(LVarA, ITEM_ITEMS_ICON)
+            EVT_SET(LVarA, ITEM_MENU_ITEMS)
         EVT_CASE_EQ(1)
             EVT_SET(LVarE, 1)
             EVT_SWITCH(LVarC)
                 EVT_CASE_EQ(0)
-                    EVT_SET(LVarA, ITEM_HAMMER1_ICON)
+                    EVT_SET(LVarA, ITEM_MENU_HAMMER1)
                 EVT_CASE_EQ(1)
-                    EVT_SET(LVarA, ITEM_HAMMER2_ICON)
+                    EVT_SET(LVarA, ITEM_MENU_HAMMER2)
                 EVT_CASE_EQ(2)
-                    EVT_SET(LVarA, ITEM_HAMMER3_ICON)
+                    EVT_SET(LVarA, ITEM_MENU_HAMMER3)
             EVT_END_SWITCH
         EVT_CASE_EQ(0)
             EVT_SET(LVarE, 2)
             EVT_SWITCH(LVarB)
                 EVT_CASE_EQ(0)
-                    EVT_SET(LVarA, ITEM_BOOTS1_ICON)
+                    EVT_SET(LVarA, ITEM_MENU_BOOTS1)
                 EVT_CASE_EQ(1)
-                    EVT_SET(LVarA, ITEM_BOOTS2_ICON)
+                    EVT_SET(LVarA, ITEM_MENU_BOOTS2)
                 EVT_CASE_EQ(2)
-                    EVT_SET(LVarA, ITEM_BOOTS3_ICON)
+                    EVT_SET(LVarA, ITEM_MENU_BOOTS3)
             EVT_END_SWITCH
     EVT_END_SWITCH
     EVT_CALL(GetActorPos, ACTOR_PLAYER, LVar0, LVar1, LVar2)

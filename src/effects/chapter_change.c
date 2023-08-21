@@ -101,40 +101,10 @@ UnkStruct D_E010E868[] = {
     {              NULL,   0,   0,  0,  0 }
 };
 
-#if VERSION_PAL
-u32 pal_data[] = {
-        0x00000000,
-        0x00000000,
-        0x00000000,
-        0xE010E61C,
-        0xE010E5E4,
-        0xE010E5E4,
-        0xE010E5E4,
-        0xE010E5E4,
-        0xE010E5E4,
-        0xE010E5E4,
-        0xE010E5E4,
-        0xE010E5E4,
-        0xE010E60C,
-        0xE010E61C,
-        0xE010E61C,
-        0xE010E61C,
-        0xE010E61C,
-        0xE010E61C,
-        0xE010E61C,
-        0xE010E61C,
-        0xE010E61C,
-        0xE010E61C,
-        0x00000000,
-};
-#endif
-
 void chapter_change_init(EffectInstance* effect);
 void chapter_change_update(EffectInstance* effect);
 void chapter_change_render(EffectInstance* effect);
 void chapter_change_appendGfx(void* effect);
-void shim_draw_msg(s32, s32, s32, s32, s32, s32);
-s32 shim_get_msg_width(s32, u16);
 
 void func_E010E000(ChapterChangeFXData* data, s32 arg1, UnkStruct* arg2) {
     s32 unk_1C = data->lifetime;
@@ -182,9 +152,9 @@ EffectInstance* chapter_change_main(s32 arg0, f32 posX, f32 posY, f32 arg3, f32 
     bp.renderUI = NULL;
     bp.effectID = EFFECT_CHAPTER_CHANGE;
 
-    effect = shim_create_effect_instance(&bp);
+    effect = create_effect_instance(&bp);
     effect->numParts = numParts;
-    data = effect->data.chapterChange = shim_general_heap_malloc(numParts * sizeof(*data));
+    data = effect->data.chapterChange = general_heap_malloc(numParts * sizeof(*data));
     ASSERT(effect->data.chapterChange != NULL);
 
     data->unk_00 = arg0;
@@ -214,7 +184,7 @@ EffectInstance* chapter_change_main(s32 arg0, f32 posX, f32 posY, f32 arg3, f32 
     if (data->unk_54 >= 0) {
         data->unk_40 = 160;
         data->unk_44 = 160;
-        data->unk_48 = shim_get_msg_width(data->unk_54, 0);
+        data->unk_48 = get_msg_width(data->unk_54, 0);
         data->unk_4C = 24;
     }
 
@@ -239,7 +209,7 @@ void chapter_change_update(EffectInstance* effect) {
     data->lifetime++;
 
     if (data->timeLeft < 0) {
-        shim_remove_effect(effect);
+        remove_effect(effect);
     }
 }
 
@@ -249,16 +219,13 @@ void chapter_change_render(EffectInstance* effect) {
 
     renderTask.appendGfx = chapter_change_appendGfx;
     renderTask.appendGfxArg = effect;
-    renderTask.distance = 10;
+    renderTask.dist = 10;
     renderTask.renderMode = RENDER_MODE_2D;
 
-    retTask = shim_queue_render_task(&renderTask);
+    retTask = queue_render_task(&renderTask);
     retTask->renderMode |= RENDER_TASK_FLAG_REFLECT_FLOOR;
 }
 
-#if VERSION_PAL
-INCLUDE_ASM(void, "effects/chapter_change", chapter_change_appendGfx);
-#else
 void chapter_change_appendGfx(void* effect) {
     ChapterChangeFXData* data = ((EffectInstance*)effect)->data.chapterChange;
     s32 unk_2C = data->unk_2C;
@@ -295,6 +262,13 @@ void chapter_change_appendGfx(void* effect) {
         case 16:
         case 17:
         case 18:
+#if VERSION_PAL
+            if (gCurrentLanguage == LANGUAGE_DE) {
+                ptr0 = D_E010E838_b;
+                ptr1 = D_E010E838_c;
+                break;
+            }
+#endif
             ptr0 = D_E010E79C;
             ptr1 = D_E010E838;
             break;
@@ -311,9 +285,8 @@ void chapter_change_appendGfx(void* effect) {
     func_E010E000(data, 1, ptr1);
 
     if (data->unk_54 >= 0) {
-        shim_draw_msg(data->unk_54, data->unk_40 - data->unk_48, data->unk_44, 255, 21, 0);
+        draw_msg(data->unk_54, data->unk_40 - data->unk_48, data->unk_44, 255, 21, 0);
     }
 
     gDPPipeSync(gMainGfxPos++);
 }
-#endif

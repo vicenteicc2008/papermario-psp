@@ -80,12 +80,11 @@ s32 D_80078168[] = {
     MSG_Menus_Merlee_Exhausted,
 };
 
+SHIFT_BSS PopupMessage D_800A0BC0[32];
+SHIFT_BSS s32 D_800A0F40;
+SHIFT_BSS HudStatusIcon* D_800A0F44;
+
 extern HudScript HES_Item_Present;
-
-extern PopupMessage D_800A0BC0[32];
-extern s32 D_800A0F40;
-extern HudStatusIcon* D_800A0F44;
-
 extern HudScript HES_AsleepBegin;
 extern HudScript HES_AsleepEnd;
 extern HudScript HES_ElectrifiedBegin;
@@ -623,7 +622,7 @@ void draw_all_status_icons(void* data) {
                 y = icon->worldPos.y + icon->status1OffsetY;
                 z = icon->worldPos.z;
 
-                add_vec2D_polar(&x, &z, icon->status1Radius, clamp_angle(camera->currentYaw + 90));
+                add_vec2D_polar(&x, &z, icon->status1Radius, clamp_angle(camera->curYaw + 90));
                 get_screen_coords(gCurrentCameraID, x, y, z, &screenX, &screenY, &screenZ);
                 elementId = icon->status1.activeElementID;
                 hud_element_set_render_pos(elementId, screenX - 8, screenY - 8);
@@ -644,7 +643,7 @@ void draw_all_status_icons(void* data) {
             y = icon->worldPos.y + icon->status1OffsetY;
             z = icon->worldPos.z;
 
-            add_vec2D_polar(&x, &z, icon->status1Radius, clamp_angle(camera->currentYaw + 90));
+            add_vec2D_polar(&x, &z, icon->status1Radius, clamp_angle(camera->curYaw + 90));
             get_screen_coords(gCurrentCameraID, x, y, z, &screenX, &screenY, &screenZ);
             elementId = icon->status1.removingElementID;
             hud_element_set_render_pos(elementId, screenX - 8, screenY - 8);
@@ -667,7 +666,7 @@ void draw_all_status_icons(void* data) {
                 y = icon->worldPos.y + icon->status2OffsetY + offsetY;
                 z = icon->worldPos.z;
 
-                add_vec2D_polar(&x, &z, icon->status2Radius, clamp_angle(camera->currentYaw + 90));
+                add_vec2D_polar(&x, &z, icon->status2Radius, clamp_angle(camera->curYaw + 90));
                 get_screen_coords(gCurrentCameraID, x, y, z, &screenX, &screenY, &screenZ);
                 elementId = icon->status2.activeElementID;
                 hud_element_set_render_pos(elementId, screenX - 8, screenY - 8);
@@ -693,7 +692,7 @@ void draw_all_status_icons(void* data) {
             y = icon->worldPos.y + icon->status2OffsetY + offsetY;
             z = icon->worldPos.z;
 
-            add_vec2D_polar(&x, &z, icon->status2Radius, clamp_angle(camera->currentYaw + 90));
+            add_vec2D_polar(&x, &z, icon->status2Radius, clamp_angle(camera->curYaw + 90));
             get_screen_coords(gCurrentCameraID, x, y, z, &screenX, &screenY, &screenZ);
             elementId = icon->status2.removingElementID;
             hud_element_set_render_pos(elementId, screenX - 8, screenY - 8);
@@ -718,7 +717,7 @@ void draw_all_status_icons(void* data) {
                 y = icon->worldPos.y + icon->status3OffsetY + offsetY;
                 z = icon->worldPos.z;
 
-                add_vec2D_polar(&x, &z, icon->status3Radius, clamp_angle(camera->currentYaw + 90));
+                add_vec2D_polar(&x, &z, icon->status3Radius, clamp_angle(camera->curYaw + 90));
                 get_screen_coords(gCurrentCameraID, x, y, z, &screenX, &screenY, &screenZ);
                 elementId = icon->status3.activeElementID;
                 hud_element_set_render_pos(elementId, screenX - 8, screenY - 8);
@@ -746,7 +745,7 @@ void draw_all_status_icons(void* data) {
             y = icon->worldPos.y + icon->status3OffsetY + offsetY;
             z = icon->worldPos.z;
 
-            add_vec2D_polar(&x, &z, icon->status3Radius, clamp_angle(camera->currentYaw + 90));
+            add_vec2D_polar(&x, &z, icon->status3Radius, clamp_angle(camera->curYaw + 90));
             get_screen_coords(gCurrentCameraID, x, y, z, &screenX, &screenY, &screenZ);
             elementId = icon->status3.removingElementID;
             hud_element_set_render_pos(elementId, screenX - 8, screenY - 8);
@@ -775,7 +774,7 @@ void draw_all_status_icons(void* data) {
                 y = icon->worldPos.y + icon->status4OffsetY + offsetY;
                 z = icon->worldPos.z;
 
-                add_vec2D_polar(&x, &z, icon->status4Radius, clamp_angle(camera->currentYaw + 90));
+                add_vec2D_polar(&x, &z, icon->status4Radius, clamp_angle(camera->curYaw + 90));
                 get_screen_coords(gCurrentCameraID, x, y, z, &screenX, &screenY, &screenZ);
                 elementId = icon->status4.activeElementID;
                 hud_element_set_render_pos(elementId, screenX - 8, screenY - 8);
@@ -806,7 +805,7 @@ void draw_all_status_icons(void* data) {
             y = icon->worldPos.y + icon->status4OffsetY + offsetY;
             z = icon->worldPos.z;
 
-            add_vec2D_polar(&x, &z, icon->status4Radius, clamp_angle(camera->currentYaw + 90));
+            add_vec2D_polar(&x, &z, icon->status4Radius, clamp_angle(camera->curYaw + 90));
             get_screen_coords(gCurrentCameraID, x, y, z, &screenX, &screenY, &screenZ);
             elementId = icon->status4.removingElementID;
             hud_element_set_render_pos(elementId, screenX - 8, screenY - 8);

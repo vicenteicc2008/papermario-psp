@@ -1,5 +1,6 @@
 #include "common.h"
 #include "effects.h"
+#include "sprite/player.h"
 
 #define NAMESPACE battle_move_quake_hammer
 
@@ -96,22 +97,22 @@ EvtScript N(EVS_802A3168) = {
     EVT_END_IF
     EVT_CALL(GetMenuSelection, LVar0, LVar1, LVar2)
     EVT_SWITCH(LVar1)
-        EVT_CASE_EQ(ITEM_NONE)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_211B)
-        EVT_CASE_EQ(ITEM_BOOTS)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_211C)
-        EVT_CASE_EQ(ITEM_SUPER_BOOTS)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_211D)
+        EVT_CASE_EQ(0)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HAMMER_QUAKE_1)
+        EVT_CASE_EQ(1)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HAMMER_QUAKE_2)
+        EVT_CASE_EQ(2)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HAMMER_QUAKE_3)
     EVT_END_SWITCH
     EVT_WAIT(10)
     EVT_CALL(GetMenuSelection, LVar0, LVar1, LVar2)
     EVT_SWITCH(LVar1)
-        EVT_CASE_EQ(ITEM_NONE)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_2118)
-        EVT_CASE_EQ(ITEM_BOOTS)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_2119)
-        EVT_CASE_EQ(ITEM_SUPER_BOOTS)
-            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_211A)
+        EVT_CASE_EQ(0)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HAMMER_STRIKE_1)
+        EVT_CASE_EQ(1)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HAMMER_STRIKE_2)
+        EVT_CASE_EQ(2)
+            EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HAMMER_STRIKE_3)
     EVT_END_SWITCH
     EVT_SET(LVar9, 0)
     EVT_CALL(InitTargetIterator)

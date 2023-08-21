@@ -1,5 +1,6 @@
 #include "obk_09.h"
 #include "effects.h"
+#include "sprite/player.h"
 
 typedef struct ImprisonedCard {
     /* 0x00 */ Vec3f pos;
@@ -41,9 +42,9 @@ API_CALLABLE(N(ImprisonedCardUpdate)) {
     card->rot.y = clamp_angle(card->rot.y + 6.6f);
     effect->data.spiritCard->yaw = card->rot.y;
 
-    shadow->position.x = card->pos.x;
-    shadow->position.y = card->pos.y - 40.0f;
-    shadow->position.z = card->pos.z;
+    shadow->pos.x = card->pos.x;
+    shadow->pos.y = card->pos.y - 40.0f;
+    shadow->pos.z = card->pos.z;
     return ApiStatus_BLOCK;
 }
 
@@ -137,7 +138,7 @@ NpcData N(NpcData_Default)[] = {
         .yaw = 0,
         .init = &N(EVS_NpcInit_Bow),
         .settings = &N(NpcSettings_Dummy),
-        .flags = ENEMY_FLAG_PASSIVE | ENEMY_FLAG_800,
+        .flags = ENEMY_FLAG_PASSIVE | ENEMY_FLAG_FLYING,
         .drops = NO_DROPS,
         .animations = BOW_ANIMS,
     },
@@ -147,7 +148,7 @@ NpcData N(NpcData_Default)[] = {
         .yaw = 0,
         .init = &N(EVS_NpcInit_Bootler),
         .settings = &N(NpcSettings_Dummy),
-        .flags = ENEMY_FLAG_PASSIVE | ENEMY_FLAG_800,
+        .flags = ENEMY_FLAG_PASSIVE | ENEMY_FLAG_FLYING,
         .drops = NO_DROPS,
         .animations = BOOTLER_ANIMS,
         .tattle = MSG_NpcTattle_Bootler,
@@ -158,7 +159,7 @@ NpcData N(NpcData_Default)[] = {
         .yaw = 0,
         .init = &N(EVS_NpcInit_Skolar),
         .settings = &N(NpcSettings_Dummy),
-        .flags = ENEMY_FLAG_PASSIVE | ENEMY_FLAG_800,
+        .flags = ENEMY_FLAG_PASSIVE | ENEMY_FLAG_FLYING,
         .drops = NO_DROPS,
         .animations = SKOLAR_ANIMS,
     },
@@ -171,7 +172,7 @@ NpcData N(NpcData_Epilogue)[] = {
         .yaw = 0,
         .init = &N(EVS_NpcInit_Bow_Epilogue),
         .settings = &N(NpcSettings_Dummy),
-        .flags = ENEMY_FLAG_PASSIVE | ENEMY_FLAG_800,
+        .flags = ENEMY_FLAG_PASSIVE | ENEMY_FLAG_FLYING,
         .drops = NO_DROPS,
         .animations = BOW_ANIMS,
     },
@@ -181,7 +182,7 @@ NpcData N(NpcData_Epilogue)[] = {
         .yaw = 0,
         .init = &N(EVS_NpcInit_Bootler_Epilogue),
         .settings = &N(NpcSettings_Dummy),
-        .flags = ENEMY_FLAG_PASSIVE | ENEMY_FLAG_800,
+        .flags = ENEMY_FLAG_PASSIVE | ENEMY_FLAG_FLYING,
         .drops = NO_DROPS,
         .animations = BOOTLER_ANIMS,
         .tattle = MSG_NpcTattle_Bootler,

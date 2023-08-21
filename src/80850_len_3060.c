@@ -1,19 +1,30 @@
 #include "common.h"
 #include "hud_element.h"
 
+BSS s16 D_8010CD10;
+BSS s16 D_8010CD12;
+BSS char D_8010CD14[0xA];
+BSS s32 D_8010CD20;
+BSS char D_8010CD24[0xC];
+
+SHIFT_BSS UiStatus gUIStatus;
+
 extern HudScript* TimesHudScript;
 extern HudScript* SPIncrementHudScripts[];
 extern HudScript* SPStarHudScripts[];
 extern s32 StatusBarSPIncrementOffsets[];
 
-extern s16 D_8010CD10;
-extern s16 D_8010CD12;
-
 extern HudScript* DigitHudScripts[10];
 
 extern HudScript HES_StatusHP;
+extern HudScript HES_StatusHP_de;
+extern HudScript HES_StatusHP_fr;
+extern HudScript HES_StatusHP_es;
 extern HudScript HES_StatusHeart;
 extern HudScript HES_StatusFP;
+extern HudScript HES_StatusFP_de;
+extern HudScript HES_StatusFP_fr;
+extern HudScript HES_StatusFP_es;
 extern HudScript HES_StatusFlower;
 extern HudScript HES_Item_CoinSparkleRandom;
 extern HudScript HES_StatusStarPoint;
@@ -58,11 +69,11 @@ void clear_player_data(void) {
     playerData->maxStarPower = 0;
     playerData->specialBarsFilled = 0;
     playerData->starBeamLevel = 0;
-    playerData->currentPartner = 0;
+    playerData->curPartner = 0;
 
     for (i = 0; i < ARRAY_COUNT(playerData->partners); i++) {
         playerData->partners[i].enabled = FALSE;
-        playerData->partners[i].level = 0;
+        playerData->partners[i].level = PARTNER_RANK_NORMAL;
         playerData->partners[i].unk_02[0] = 0;
         playerData->partners[i].unk_02[1] = 0;
         playerData->partners[i].unk_02[2] = 0;
@@ -301,7 +312,6 @@ void initialize_status_bar(void) {
     UiStatus* uiStatus = &gUIStatus;
     PlayerData* playerData = &gPlayerData;
     s32 iconIndex;
-    s32 newVar;
 
     uiStatus->drawPosX = 12;
     D_8010CD10 = 0;
@@ -344,69 +354,95 @@ void initialize_status_bar(void) {
 
     close_status_bar();
 
-    iconIndex = hud_element_create(&HES_StatusHP);
-    uiStatus->hpIconIndices[0] = iconIndex;
+#if VERSION_PAL
+    switch (gCurrentLanguage) {
+        case LANGUAGE_EN:
+            iconIndex = uiStatus->hpIconIndices[0] = hud_element_create(&HES_StatusHP);
+            break;
+        case LANGUAGE_DE:
+            iconIndex = uiStatus->hpIconIndices[0] = hud_element_create(&HES_StatusHP_de);
+            break;
+        case LANGUAGE_FR:
+            iconIndex = uiStatus->hpIconIndices[0] = hud_element_create(&HES_StatusHP_fr);
+            break;
+        case LANGUAGE_ES:
+            iconIndex = uiStatus->hpIconIndices[0] = hud_element_create(&HES_StatusHP_es);
+            break;
+    }
+
+    hud_element_set_flags(iconIndex, HUD_ELEMENT_FLAG_80);
+    hud_element_clear_flags(iconIndex, HUD_ELEMENT_FLAG_FILTER_TEX);
+#else
+    uiStatus->hpIconIndices[0] = iconIndex = hud_element_create(&HES_StatusHP);
+    hud_element_set_flags(iconIndex, HUD_ELEMENT_FLAG_80);
+    hud_element_clear_flags(iconIndex, HUD_ELEMENT_FLAG_FILTER_TEX);
+#endif
+
+    uiStatus->hpIconIndices[1] = iconIndex = hud_element_create(&HES_StatusHeart);
     hud_element_set_flags(iconIndex, HUD_ELEMENT_FLAG_80);
     hud_element_clear_flags(iconIndex, HUD_ELEMENT_FLAG_FILTER_TEX);
 
-    iconIndex = hud_element_create(&HES_StatusHeart);
-    uiStatus->hpIconIndices[1] = iconIndex;
+#if VERSION_PAL
+    switch (gCurrentLanguage) {
+        case LANGUAGE_EN:
+            iconIndex = uiStatus->fpIconIndices[0] = hud_element_create(&HES_StatusFP);
+            break;
+        case LANGUAGE_DE:
+            iconIndex = uiStatus->fpIconIndices[0] = hud_element_create(&HES_StatusFP_de);
+            break;
+        case LANGUAGE_FR:
+            iconIndex = uiStatus->fpIconIndices[0] = hud_element_create(&HES_StatusFP_fr);
+            break;
+        case LANGUAGE_ES:
+            iconIndex = uiStatus->fpIconIndices[0] = hud_element_create(&HES_StatusFP_es);
+            break;
+    }
+
+    hud_element_set_flags(iconIndex, HUD_ELEMENT_FLAG_80);
+    hud_element_clear_flags(iconIndex, HUD_ELEMENT_FLAG_FILTER_TEX);
+#else
+    uiStatus->fpIconIndices[0] = iconIndex = hud_element_create(&HES_StatusFP);
+    hud_element_set_flags(iconIndex, HUD_ELEMENT_FLAG_80);
+    hud_element_clear_flags(iconIndex, HUD_ELEMENT_FLAG_FILTER_TEX);
+#endif
+
+    uiStatus->fpIconIndices[1] = iconIndex = hud_element_create(&HES_StatusFlower);
     hud_element_set_flags(iconIndex, HUD_ELEMENT_FLAG_80);
     hud_element_clear_flags(iconIndex, HUD_ELEMENT_FLAG_FILTER_TEX);
 
-    iconIndex = hud_element_create(&HES_StatusFP);
-    uiStatus->fpIconIndices[0] = iconIndex;
+    uiStatus->coinIconIndex = iconIndex = hud_element_create(&HES_StatusCoin);
     hud_element_set_flags(iconIndex, HUD_ELEMENT_FLAG_80);
     hud_element_clear_flags(iconIndex, HUD_ELEMENT_FLAG_FILTER_TEX);
 
-    iconIndex = hud_element_create(&HES_StatusFlower);
-    uiStatus->fpIconIndices[1] = iconIndex;
+    uiStatus->coinSparkleIconIndex = iconIndex = hud_element_create(&HES_Item_CoinSparkleRandom);
     hud_element_set_flags(iconIndex, HUD_ELEMENT_FLAG_80);
     hud_element_clear_flags(iconIndex, HUD_ELEMENT_FLAG_FILTER_TEX);
 
-    iconIndex = hud_element_create(&HES_StatusCoin);
-    uiStatus->coinIconIndex = iconIndex;
+    uiStatus->starpointsIconIndex = iconIndex = hud_element_create(&HES_StatusStarPoint);
     hud_element_set_flags(iconIndex, HUD_ELEMENT_FLAG_80);
     hud_element_clear_flags(iconIndex, HUD_ELEMENT_FLAG_FILTER_TEX);
 
-    iconIndex = hud_element_create(&HES_Item_CoinSparkleRandom);
-    uiStatus->coinSparkleIconIndex = iconIndex;
+    uiStatus->starpointsShineIconIndex = iconIndex = hud_element_create(&HES_StatusSPShine);
     hud_element_set_flags(iconIndex, HUD_ELEMENT_FLAG_80);
     hud_element_clear_flags(iconIndex, HUD_ELEMENT_FLAG_FILTER_TEX);
 
-    iconIndex = hud_element_create(&HES_StatusStarPoint);
-    uiStatus->starpointsIconIndex = iconIndex;
-    hud_element_set_flags(iconIndex, HUD_ELEMENT_FLAG_80);
-    hud_element_clear_flags(iconIndex, HUD_ELEMENT_FLAG_FILTER_TEX);
-
-    iconIndex = hud_element_create(&HES_StatusSPShine);
-    uiStatus->starpointsShineIconIndex = iconIndex;
-    hud_element_set_flags(iconIndex, HUD_ELEMENT_FLAG_80);
-    hud_element_clear_flags(iconIndex, HUD_ELEMENT_FLAG_FILTER_TEX);
-
-    newVar = hud_element_create(&HES_StatusTimes);
-    iconIndex = newVar;
-    uiStatus->iconIndex8 = iconIndex;
+    uiStatus->iconIndex8 = iconIndex = hud_element_create(&HES_StatusTimes);
     hud_element_set_flags(iconIndex, HUD_ELEMENT_FLAG_80 | HUD_ELEMENT_FLAG_DISABLED);
     hud_element_clear_flags(iconIndex, HUD_ELEMENT_FLAG_FILTER_TEX);
 
-    iconIndex = hud_element_create(&HES_StatusTimes);
-    uiStatus->iconIndex9 = iconIndex;
+    uiStatus->iconIndex9 = iconIndex = hud_element_create(&HES_StatusTimes);
     hud_element_set_flags(iconIndex, HUD_ELEMENT_FLAG_80 | HUD_ELEMENT_FLAG_DISABLED);
     hud_element_clear_flags(iconIndex, HUD_ELEMENT_FLAG_FILTER_TEX);
 
-    iconIndex = hud_element_create(&HES_StatusTimes);
-    uiStatus->iconIndexA = iconIndex;
+    uiStatus->iconIndexA = iconIndex = hud_element_create(&HES_StatusTimes);
     hud_element_set_flags(iconIndex, HUD_ELEMENT_FLAG_80 | HUD_ELEMENT_FLAG_DISABLED);
     hud_element_clear_flags(iconIndex, HUD_ELEMENT_FLAG_FILTER_TEX);
 
-    iconIndex = hud_element_create(&HES_StatusTimes);
-    uiStatus->iconIndexB = iconIndex;
+    uiStatus->iconIndexB = iconIndex = hud_element_create(&HES_StatusTimes);
     hud_element_set_flags(iconIndex, HUD_ELEMENT_FLAG_80 | HUD_ELEMENT_FLAG_DISABLED);
     hud_element_clear_flags(iconIndex, HUD_ELEMENT_FLAG_FILTER_TEX);
 
-    iconIndex = hud_element_create(&HES_StatusStar1);
-    uiStatus->starIconIndex = iconIndex;
+    uiStatus->starIconIndex = iconIndex = hud_element_create(&HES_StatusStar1);
     hud_element_set_flags(iconIndex, HUD_ELEMENT_FLAG_80);
     hud_element_clear_flags(iconIndex, HUD_ELEMENT_FLAG_FILTER_TEX);
 
@@ -532,7 +568,7 @@ void update_status_bar(void) {
         return;
     }
 
-    if (gGameStatusPtr->isBattle == 0 && playerData->coins != uiStatus->displayCoins) {
+    if (!gGameStatusPtr->isBattle && playerData->coins != uiStatus->displayCoins) {
         status_bar_start_blinking_coins();
     }
 
@@ -576,14 +612,14 @@ void update_status_bar(void) {
     }
 
     if (uiStatus->displayHP != playerData->curHP) {
-        if (gGameStatusPtr->isBattle == 0 && playerData->curHP < uiStatus->displayHP) {
+        if (!gGameStatusPtr->isBattle && playerData->curHP < uiStatus->displayHP) {
             status_bar_start_blinking_hp();
         }
         if (uiStatus->displayHP < playerData->curHP) {
             if (uiStatus->drawPosY >= 18) {
                 if (gGameStatusPtr->frameCounter % 4 == 0) {
                     uiStatus->displayHP++;
-                    sfx_play_sound(SOUND_213);
+                    sfx_play_sound(SOUND_HEART_PICKUP);
                 }
             } else if (gGameStatusPtr->frameCounter % 4 == 0) {
                 uiStatus->displayHP++;
@@ -594,14 +630,14 @@ void update_status_bar(void) {
     }
 
     if (uiStatus->displayFP != playerData->curFP) {
-        if (gGameStatusPtr->isBattle == 0 && playerData->curFP < uiStatus->displayFP) {
+        if (!gGameStatusPtr->isBattle && playerData->curFP < uiStatus->displayFP) {
             status_bar_start_blinking_fp();
         }
         if (uiStatus->displayFP < playerData->curFP) {
             if (uiStatus->drawPosY >= 18) {
                 if (gGameStatusPtr->frameCounter % 4 == 0) {
                     uiStatus->displayFP++;
-                    sfx_play_sound(SOUND_217);
+                    sfx_play_sound(SOUND_FLOWER_PICKUP);
                 }
             } else if (gGameStatusPtr->frameCounter % 4 == 0) {
                 uiStatus->displayFP++;
@@ -636,7 +672,7 @@ void update_status_bar(void) {
     }
 
     switch (uiStatus->hidden) {
-        case 0:
+        case FALSE:
             uiStatus->drawPosY += 10;
             if (uiStatus->drawPosY >= 18) {
                 uiStatus->drawPosY = 18;
@@ -648,8 +684,8 @@ void update_status_bar(void) {
                 } else {
                     if (!uiStatus->ignoreChanges) {
                         if (!uiStatus->unk_3B[0] || playerStatus->actionState != ACTION_STATE_IDLE) {
-                            if (gGameStatusPtr->isBattle == 0) {
-                                uiStatus->hidden = 1;
+                            if (!gGameStatusPtr->isBattle) {
+                                uiStatus->hidden = TRUE;
                                 uiStatus->showTimer = 0;
                                 uiStatus->unk_3B[1] = 0;
                             }
@@ -658,7 +694,7 @@ void update_status_bar(void) {
                 }
             }
             break;
-        case 1:
+        case TRUE:
             uiStatus->drawPosY -= 5;
             if (uiStatus->drawPosY < -100) {
                 uiStatus->drawPosY = -100;
@@ -671,9 +707,9 @@ void update_status_bar(void) {
                         uiStatus->showTimer++;
                     }
 
-                    if (uiStatus->showTimer >= 240 && gGameStatusPtr->isBattle == 0) {
+                    if (uiStatus->showTimer >= 240 && !gGameStatusPtr->isBattle) {
                         uiStatus->showTimer = 210;
-                        uiStatus->hidden = 0;
+                        uiStatus->hidden = FALSE;
                         uiStatus->unk_3B[0] = 1;
                         uiStatus->unk_3B[1] = 1;
                     }
@@ -1085,7 +1121,7 @@ void coin_counter_draw_content(UNK_TYPE arg0, s32 posX, s32 posY) {
     s32 iconIndex;
 
     if ((gPlayerData.coins != uiStatus->displayCoins) && ((gGameStatusPtr->frameCounter % 3) == 0)) {
-        sfx_play_sound(SOUND_211);
+        sfx_play_sound(SOUND_COIN_PICKUP);
     }
 
     iconIndex = uiStatus->iconIndex10;
@@ -1319,7 +1355,7 @@ s32 is_status_bar_visible(void) {
 void status_bar_start_blinking_hp(void) {
     UiStatus* uiStatus = &gUIStatus;
 
-    if (gGameStatusPtr->isBattle == 0) {
+    if (!gGameStatusPtr->isBattle) {
         uiStatus->hpBlinkTimer = 120;
     }
 
@@ -1342,7 +1378,7 @@ void status_bar_stop_blinking_hp(void) {
 void status_bar_start_blinking_fp(void) {
     UiStatus* uiStatus = &gUIStatus;
 
-    if (gGameStatusPtr->isBattle == 0) {
+    if (!gGameStatusPtr->isBattle) {
         uiStatus->fpBlinkTimer = 120;
     }
 
@@ -1364,7 +1400,7 @@ void status_bar_stop_blinking_fp(void) {
 void status_bar_start_blinking_coins(void) {
     UiStatus* uiStatus = &gUIStatus;
 
-    if (gGameStatusPtr->isBattle == 0) {
+    if (!gGameStatusPtr->isBattle) {
         uiStatus->coinsBlinkTimer = 120;
     }
 

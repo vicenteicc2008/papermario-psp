@@ -2,6 +2,7 @@
 #include "effects.h"
 #include "battle/battle.h"
 #include "script_api/battle.h"
+#include "sprite/player.h"
 
 extern EvtScript EVS_Enemy_Hit_Impl;
 extern EvtScript EVS_Enemy_SpinAround_Impl;
@@ -1747,7 +1748,7 @@ EvtScript EVS_Enemy_DeathWithoutRemove = {
     EVT_ADD(LVar1, 10)
     EVT_ADD(LVar2, 10)
     EVT_PLAY_EFFECT(EFFECT_BIG_SMOKE_PUFF, LVar0, LVar1, LVar2)
-    EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_DEATH)
+    EVT_CALL(PlaySoundAtActor, ACTOR_SELF, SOUND_ACTOR_DEATH)
     EVT_CALL(DropStarPoints, ACTOR_SELF)
     EVT_CALL(SetActorYaw, ACTOR_SELF, 0)
     EVT_SET(LVar3, 0)
@@ -1784,7 +1785,7 @@ EvtScript EVS_Enemy_ScareAway = {
     EVT_WAIT(17)
     EVT_CALL(SetActorYaw, ACTOR_SELF, 180)
     EVT_WAIT(3)
-    EVT_CALL(EnableActorBlur, ACTOR_SELF, 1)
+    EVT_CALL(EnableActorBlur, ACTOR_SELF, ACTOR_BLUR_ENABLE)
     EVT_CALL(SetActorSpeed, ACTOR_SELF, EVT_FLOAT(10.0))
     EVT_ADD(LVarA, 300)
     EVT_CALL(SetGoalPos, ACTOR_SELF, LVarA, LVarB, LVarC)

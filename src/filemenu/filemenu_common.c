@@ -181,14 +181,14 @@ BSS u16 D_802517E0[2][0x400] ALIGNED(16);
 BSS u8 filemenu_glyphBuffer[20][0x80];
 #endif
 
-void filemenu_draw_rect(s32 ulx, s32 uly, s32 lrx, s32 lry, s32 tileDescriptor, s32 uls, s32 ult, s32 dsdx, s32 dtdy) {
+void filemenu_draw_rect(s32 ulx, s32 uly, s32 lrx, s32 lry, s32 tileIdx, s32 uls, s32 ult, s32 dsdx, s32 dtdy) {
     if (ulx <= -2688 || uly <= -2688 || lrx <= 0 || lry <= 0) {
         return;
     }
     if (ulx >= 1280 || uly >= 960 || lrx >= 2688 || lry >= 2688) {
         return;
     }
-    gSPScisTextureRectangle(gMainGfxPos++, ulx, uly, lrx, lry, tileDescriptor, uls, ult, dsdx, dtdy);
+    gSPScisTextureRectangle(gMainGfxPos++, ulx, uly, lrx, lry, tileIdx, uls, ult, dsdx, dtdy);
 }
 
 void filemenu_set_selected(MenuPanel* menu, s32 col, s32 row) {
@@ -1012,26 +1012,65 @@ void filemenu_draw_contents_copy_arrow(MenuPanel* menu, s32 baseX, s32 baseY, s3
     }
 }
 
-#if VERSION_PAL
-INCLUDE_ASM(void, "filemenu/filemenu_common", filemenu_init);
-#else
 // TODO bad match, look into
+void func_PAL_8002B574(void); // TODO identify
+
 void filemenu_init(s32 arg0) {
     MenuPanel** panelIt;
     MenuPanel* menu;
     s32 i;
 
-    dma_copy(ui_images_ROM_START, ui_images_ROM_END, ui_images_VRAM);
+    DMA_COPY_SEGMENT(ui_images);
     for (i = 0; i < ARRAY_COUNT(filemenu_cursorHudElemID); i++) {
         filemenu_cursorHudElemID[i] = hud_element_create(filemenu_cursor_hudElemScripts[i]);
         hud_element_set_flags(filemenu_cursorHudElemID[i], HUD_ELEMENT_FLAG_DROP_SHADOW | HUD_ELEMENT_FLAG_80);
     }
 
     filemenu_cursorHudElem = filemenu_cursorHudElemID[0];
-    if (!arg0) {
+    if (arg0 == 0) {
         filemenu_common_windowBPs[0].style.customStyle->background.imgData = NULL; // ???
     }
     setup_pause_menu_tab(filemenu_common_windowBPs, ARRAY_COUNT(filemenu_common_windowBPs));
+
+#if VERSION_PAL
+    if (arg0 != 2) {
+        filemenu_currentMenu = 0;
+        menu = filemenu_menus[0];
+        menu->page = filemenu_currentMenu;
+        func_PAL_8002B574();
+
+        if (menu->page == 0) {
+            fio_has_valid_backup();
+            if (D_800D95E8.saveCount >= 4) {
+                D_800D95E8.saveCount = 0;
+            }
+            gGameStatusPtr->saveSlot = D_800D95E8.saveCount;
+        }
+
+        filemenu_set_selected(menu, (gGameStatusPtr->saveSlot & 1) * 2, gGameStatusPtr->saveSlot >> 1);
+
+        panelIt = filemenu_menus;
+        for (i = 0; i < ARRAY_COUNT(filemenu_menus) - 1; i++, panelIt++) {
+            if ((*panelIt)->fpInit != NULL) {
+                (*panelIt)->fpInit((*panelIt));
+            }
+        }
+        update_window_hierarchy(23, 64);
+    } else {
+        filemenu_currentMenu = 4;
+        filemenu_set_selected(filemenu_menus[4], 0, gCurrentLanguage);
+
+        panelIt = filemenu_menus;
+        for (i = 0; i < ARRAY_COUNT(filemenu_menus); i++, panelIt++) {
+            if (i == 4) {
+                if ((*panelIt)->fpInit != NULL) {
+                    (*panelIt)->fpInit((*panelIt));
+                }
+            }
+        }
+        update_window_hierarchy(23, 64);
+    }
+#else
     menu = filemenu_menus[0];
     filemenu_currentMenu = 0;
 
@@ -1069,8 +1108,8 @@ void filemenu_init(s32 arg0) {
         }
     }
     update_window_hierarchy(23, 64);
-}
 #endif
+}
 
 // TODO bad match, look into
 void filemenu_cleanup(void) {

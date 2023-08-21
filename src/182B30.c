@@ -10,13 +10,6 @@ enum StandardPalettes {
     STANDARD_PAL_STATIC     = 3,
 };
 
-#define UNPACK_PAL_R(color) (((color) >> 11) & 0x1F)
-#define UNPACK_PAL_G(color) (((color) >> 6) & 0x1F)
-#define UNPACK_PAL_B(color) (((color) >> 1) & 0x1F)
-#define UNPACK_PAL_A(color) ((color) & 1)
-
-#define PACK_PAL_RGBA(r, g, b, a) (((r) << 11) | ((g) << 6) | ((b) << 1) | (a));
-
 // lerp from A to B as alpha does from 0 to 255
 #define LERP_COMPONENT(a, b, alpha) ((a) * (255 - (alpha)) + (b) * (alpha)) / 255;
 
@@ -198,8 +191,8 @@ void enable_actor_blur(Actor* actor) {
     s32 i, j;
     s32 numParts;
 
-    decorationTable->effectType = 0;
-    decorationTable->unk_7DB++;
+    decorationTable->blurDisableDelay = 0;
+    decorationTable->blurEnableCount++;
     actor->flags |= ACTOR_FLAG_BLUR_ENABLED;
     partsTable = actor->partsTable;
     numParts = actor->numParts;
@@ -208,18 +201,18 @@ void enable_actor_blur(Actor* actor) {
         if (partsTable->idleAnimations != NULL && !(partsTable->flags & ACTOR_PART_FLAG_2)) {
             decorationTable = partsTable->decorationTable;
             decorationTable->unk_7D8 = 0;
-            decorationTable->unk_7D9 = 0;
+            decorationTable->blurBufferPos = 0;
             for (j = 0; j < ARRAY_COUNT(decorationTable->posX); j++) {
-                decorationTable->posX[j] = partsTable->currentPos.x;
-                decorationTable->posY[j] = partsTable->currentPos.y;
-                decorationTable->posZ[j] = partsTable->currentPos.z;
+                decorationTable->posX[j] = partsTable->curPos.x;
+                decorationTable->posY[j] = partsTable->curPos.y;
+                decorationTable->posZ[j] = partsTable->curPos.z;
                 decorationTable->yaw[j] = actor->yaw;
-                decorationTable->rotationPivotOffsetX[j] = (s32)(actor->rotationPivotOffset.x * actor->scalingFactor);
-                decorationTable->rotationPivotOffsetY[j] = (s32)(actor->rotationPivotOffset.y * actor->scalingFactor);
+                decorationTable->rotPivotOffsetX[j] = (s32)(actor->rotPivotOffset.x * actor->scalingFactor);
+                decorationTable->rotPivotOffsetY[j] = (s32)(actor->rotPivotOffset.y * actor->scalingFactor);
 
-                decorationTable->rotX[j] = clamp_angle(actor->rotation.x) * 0.5f;
-                decorationTable->rotY[j] = clamp_angle(actor->rotation.y) * 0.5f;
-                decorationTable->rotZ[j] = clamp_angle(actor->rotation.z) * 0.5f;
+                decorationTable->rotX[j] = clamp_angle(actor->rot.x) * 0.5f;
+                decorationTable->rotY[j] = clamp_angle(actor->rot.y) * 0.5f;
+                decorationTable->rotZ[j] = clamp_angle(actor->rot.z) * 0.5f;
             }
         }
         partsTable = partsTable->nextPart;
@@ -232,10 +225,10 @@ void disable_actor_blur(Actor* actor) {
     if ((actorPart->idleAnimations != NULL) && !(actorPart->flags & ACTOR_PART_FLAG_2)) {
         DecorationTable* decorationTable = actorPart->decorationTable;
 
-        if (decorationTable->unk_7DB != 0) {
-            decorationTable->unk_7DB--;
-            if (decorationTable->unk_7DB == 0) {
-                decorationTable->effectType = 20;
+        if (decorationTable->blurEnableCount != 0) {
+            decorationTable->blurEnableCount--;
+            if (decorationTable->blurEnableCount == 0) {
+                decorationTable->blurDisableDelay = 20;
             }
         }
     }
@@ -247,24 +240,24 @@ void reset_actor_blur(Actor* actor) {
     if ((actorPart->idleAnimations != NULL) && !(actorPart->flags & ACTOR_PART_FLAG_2)) {
         DecorationTable* decorationTable = actorPart->decorationTable;
 
-        if (decorationTable->unk_7DB != 0) {
-            decorationTable->unk_7DB--;
-            if (decorationTable->unk_7DB == 0) {
+        if (decorationTable->blurEnableCount != 0) {
+            decorationTable->blurEnableCount--;
+            if (decorationTable->blurEnableCount == 0) {
                 actor->flags &= ~ACTOR_FLAG_BLUR_ENABLED;
-                decorationTable->effectType = 1;
+                decorationTable->blurDisableDelay = 1;
             }
         }
     }
 }
 
-void func_80254610(Actor* actor) {
+void force_disable_actor_blur(Actor* actor) {
     ActorPart* actorPart = actor->partsTable;
 
     if (actorPart->idleAnimations != NULL && !(actorPart->flags & ACTOR_PART_FLAG_2)) {
         DecorationTable* decorationTable = actorPart->decorationTable;
 
-        decorationTable->unk_7DB = 0;
-        decorationTable->effectType = 20;
+        decorationTable->blurEnableCount = 0;
+        decorationTable->blurDisableDelay = 20;
     }
 }
 
@@ -280,8 +273,8 @@ void reset_partner_blur(void) {
     reset_actor_blur(gBattleStatus.partnerActor);
 }
 
-void func_802546B0(void) {
-    func_80254610(gBattleStatus.partnerActor);
+void force_disable_partner_blur(void) {
+    force_disable_actor_blur(gBattleStatus.partnerActor);
 }
 
 void enable_player_blur(void) {
@@ -290,90 +283,96 @@ void enable_player_blur(void) {
     DecorationTable* decorationTable = partsTable->decorationTable;
     s32 i;
 
-    decorationTable->effectType = 0;
-    decorationTable->unk_7DB++;
+    decorationTable->blurDisableDelay = 0;
+    decorationTable->blurEnableCount++;
     playerActor->flags |= ACTOR_FLAG_BLUR_ENABLED;
     decorationTable->unk_7D8 = 0;
-    decorationTable->unk_7D9 = 0;
+    decorationTable->blurBufferPos = 0;
 
     for (i = 0; i < ARRAY_COUNT(decorationTable->posX); i++) {
-        decorationTable->posX[i] = partsTable->currentPos.x;
-        decorationTable->posY[i] = partsTable->currentPos.y;
-        decorationTable->posZ[i] = partsTable->currentPos.z;
+        decorationTable->posX[i] = partsTable->curPos.x;
+        decorationTable->posY[i] = partsTable->curPos.y;
+        decorationTable->posZ[i] = partsTable->curPos.z;
         decorationTable->yaw[i] = playerActor->yaw;
-        decorationTable->rotationPivotOffsetX[i] = playerActor->rotationPivotOffset.x * playerActor->scalingFactor;
-        decorationTable->rotationPivotOffsetY[i] = playerActor->rotationPivotOffset.y * playerActor->scalingFactor;
+        decorationTable->rotPivotOffsetX[i] = playerActor->rotPivotOffset.x * playerActor->scalingFactor;
+        decorationTable->rotPivotOffsetY[i] = playerActor->rotPivotOffset.y * playerActor->scalingFactor;
 
-        decorationTable->rotX[i] = clamp_angle(playerActor->rotation.x) * 0.5f;
-        decorationTable->rotY[i] = clamp_angle(playerActor->rotation.y) * 0.5f;
-        decorationTable->rotZ[i] = clamp_angle(playerActor->rotation.z) * 0.5f;
+        decorationTable->rotX[i] = clamp_angle(playerActor->rot.x) * 0.5f;
+        decorationTable->rotY[i] = clamp_angle(playerActor->rot.y) * 0.5f;
+        decorationTable->rotZ[i] = clamp_angle(playerActor->rot.z) * 0.5f;
     }
 }
 
 void disable_player_blur(void) {
-    DecorationTable* decorationTable = gBattleStatus.playerActor->partsTable->decorationTable;
+    Actor* playerActor = gBattleStatus.playerActor;
+    ActorPart* partsTable = playerActor->partsTable;
+    DecorationTable* decorationTable = partsTable->decorationTable;
 
-    if (decorationTable->unk_7DB != 0) {
-        decorationTable->unk_7DB--;
-        if (decorationTable->unk_7DB == 0) {
-            decorationTable->effectType = 20;
+    if (decorationTable->blurEnableCount != 0) {
+        decorationTable->blurEnableCount--;
+        if (decorationTable->blurEnableCount == 0) {
+            decorationTable->blurDisableDelay = 20;
         }
     }
 }
 
-void func_80254950(void) {
+void reset_player_blur(void) {
     Actor* playerActor = gBattleStatus.playerActor;
-    DecorationTable* decorationTable = playerActor->partsTable->decorationTable;
+    ActorPart* partsTable = playerActor->partsTable;
+    DecorationTable* decorationTable = partsTable->decorationTable;
 
-    if (decorationTable->unk_7DB != 0) {
-        decorationTable->unk_7DB--;
-        if (decorationTable->unk_7DB == 0) {
+    if (decorationTable->blurEnableCount != 0) {
+        decorationTable->blurEnableCount--;
+        if (decorationTable->blurEnableCount == 0) {
             playerActor->flags &= ~ACTOR_FLAG_BLUR_ENABLED;
-            decorationTable->effectType = 1;
+            decorationTable->blurDisableDelay = 1;
         }
     }
 }
 
-void func_802549A0(void) {
-    DecorationTable* decorationTable = gBattleStatus.playerActor->partsTable->decorationTable;
+void force_disable_player_blur(void) {
+    Actor* playerActor = gBattleStatus.playerActor;
+    ActorPart* partsTable = playerActor->partsTable;
+    DecorationTable* decorationTable = partsTable->decorationTable;
 
-    decorationTable->unk_7DB = 0;
-    decorationTable->effectType = 20;
+    decorationTable->blurEnableCount = 0;
+    decorationTable->blurDisableDelay = 20;
 }
 
-void func_802549C0(void) {
+void force_disable_player_blur_immediately(void) {
     Actor* playerActor = gBattleStatus.playerActor;
-    DecorationTable* decorationTable = playerActor->partsTable->decorationTable;
+    ActorPart* partsTable = playerActor->partsTable;
+    DecorationTable* decorationTable = partsTable->decorationTable;
 
     playerActor->flags &= ~ACTOR_FLAG_BLUR_ENABLED;
-    decorationTable->unk_7DB = 0;
-    decorationTable->effectType = 1;
+    decorationTable->blurEnableCount = 0;
+    decorationTable->blurDisableDelay = 1;
 }
 
-void func_802549F4(Actor* actor) {
+void update_player_actor_blur_history(Actor* actor) {
     ActorPart* partsTable = actor->partsTable;
     DecorationTable* decorationTable = partsTable->decorationTable;
 
     if (!(partsTable->flags & ACTOR_PART_FLAG_INVISIBLE) && partsTable->idleAnimations != NULL) {
-        s32 i = decorationTable->unk_7D9;
+        s32 i = decorationTable->blurBufferPos;
 
-        decorationTable->posX[i] = partsTable->currentPos.x;
-        decorationTable->posY[i] = partsTable->currentPos.y;
-        decorationTable->posZ[i] = partsTable->currentPos.z;
+        decorationTable->posX[i] = partsTable->curPos.x;
+        decorationTable->posY[i] = partsTable->curPos.y;
+        decorationTable->posZ[i] = partsTable->curPos.z;
         decorationTable->yaw[i] = actor->yaw;
 
-        decorationTable->rotationPivotOffsetX[i] = actor->rotationPivotOffset.x * actor->scalingFactor;
-        decorationTable->rotationPivotOffsetY[i] = actor->rotationPivotOffset.y * actor->scalingFactor;
+        decorationTable->rotPivotOffsetX[i] = actor->rotPivotOffset.x * actor->scalingFactor;
+        decorationTable->rotPivotOffsetY[i] = actor->rotPivotOffset.y * actor->scalingFactor;
 
-        decorationTable->rotX[i] = clamp_angle(actor->rotation.x) * 0.5f;
-        decorationTable->rotY[i] = clamp_angle(actor->rotation.y) * 0.5f;
-        decorationTable->rotZ[i] = clamp_angle(actor->rotation.z) * 0.5f;
+        decorationTable->rotX[i] = clamp_angle(actor->rot.x) * 0.5f;
+        decorationTable->rotY[i] = clamp_angle(actor->rot.y) * 0.5f;
+        decorationTable->rotZ[i] = clamp_angle(actor->rot.z) * 0.5f;
 
         i++;
         if (i >= ARRAY_COUNT(decorationTable->posX)) {
             i = 0;
         }
-        decorationTable->unk_7D9 = i;
+        decorationTable->blurBufferPos = i;
     }
 }
 
@@ -382,105 +381,110 @@ void appendGfx_player_actor_blur(Actor* actor) {
     Matrix4f mtxScale;
     Matrix4f mtxPivotOn, mtxPivotOff, mtxTranslate;
     Matrix4f mtxTransform, mtxTemp;
-    s32 delay;
-    s32 num;
+    s32 strideIdx;
+    s32 drawIdx;
     s32 yaw;
     ActorPart* partTable;
     DecorationTable* decorationTable;
     f32 rotX, rotY, rotZ;
     s32 prevOpacity;
-    s32 temp_v1;
+    s32 opacity;
     s32 pivotOffsetX;
     s32 pivotOffsetY;
     s32 bufPos;
-    s32 newOpacityBase;
-    s32 newOpacityModulus;
+    s32 blurOpacityBase;
+    s32 opacityLossIncrement;
     f32 x, y, z;
 
     partTable = actor->partsTable;
     decorationTable = partTable->decorationTable;
-    if (decorationTable->effectType != 0) {
-        decorationTable->effectType--;
-        if (decorationTable->effectType == 0) {
+    if (decorationTable->blurDisableDelay != 0) {
+        decorationTable->blurDisableDelay--;
+        if (decorationTable->blurDisableDelay == 0) {
             actor->flags &= ~ACTOR_FLAG_BLUR_ENABLED;
             return;
         }
     }
 
     if (!(partTable->flags & ACTOR_PART_FLAG_INVISIBLE) && partTable->idleAnimations != NULL) {
-        delay = 0;
-        num = 0;
-        bufPos = decorationTable->unk_7D9;
+        bufPos = decorationTable->blurBufferPos;
+        strideIdx = 0;
+        drawIdx = 0;
 
-        while (1) {
+        while (TRUE) {
             bufPos--;
-            delay++;
+            strideIdx++;
             if (bufPos < 0) {
                 bufPos = ARRAY_COUNT(decorationTable->posX) - 1;
             }
-            if (bufPos == decorationTable->unk_7D9) {
+            if (bufPos == decorationTable->blurBufferPos) {
                 break;
             }
 
-            if (delay >= 3) {
-                delay = 0;
-                num++;
-
-                if (decorationTable->unk_7DA < num) {
-                    break;
-                }
-                temp_v1 = partTable->opacity;
-                x = decorationTable->posX[bufPos];
-                y = decorationTable->posY[bufPos];
-                z = decorationTable->posZ[bufPos];
-
-                yaw = decorationTable->yaw[bufPos];
-
-                pivotOffsetX = decorationTable->rotationPivotOffsetX[bufPos];
-                pivotOffsetY = decorationTable->rotationPivotOffsetY[bufPos];
-
-                rotX = decorationTable->rotX[bufPos] * 2;
-                rotY = decorationTable->rotY[bufPos] * 2;
-                rotZ = decorationTable->rotZ[bufPos] * 2;
-
-                newOpacityBase = 120;
-                newOpacityModulus = 20;
-                if (temp_v1 < 50) {
-                    newOpacityBase = 50;
-                    newOpacityModulus = 8;
-                } else if (temp_v1 < 100) {
-                    newOpacityBase = 70;
-                    newOpacityModulus = 10;
-                } else if (temp_v1 < 150) {
-                    newOpacityBase = 100;
-                    newOpacityModulus = 15;
-                }
-
-                guTranslateF(mtxTranslate, x, y, z);
-                guTranslateF(mtxPivotOn, -pivotOffsetX, -pivotOffsetY, 0.0f);
-                guTranslateF(mtxPivotOff, pivotOffsetX, pivotOffsetY, 0.0f);
-                guRotateF(mtxRotX, rotX, 1.0f, 0.0f, 0.0f);
-                guRotateF(mtxRotY, rotY, 0.0f, 1.0f, 0.0f);
-                guRotateF(mtxRotZ, rotZ, 0.0f, 0.0f, 1.0f);
-                guMtxCatF(mtxRotX, mtxRotY, mtxTransform);
-                guMtxCatF(mtxTransform, mtxRotZ, mtxRotation);
-                guScaleF(mtxScale, actor->scale.x * SPRITE_WORLD_SCALE_D * actor->scalingFactor,
-                                actor->scale.y * SPRITE_WORLD_SCALE_D * actor->scalingFactor * partTable->verticalStretch,
-                                actor->scale.z * SPRITE_WORLD_SCALE_D);
-                guMtxCatF(mtxScale, mtxPivotOn, mtxTemp);
-                guMtxCatF(mtxTemp, mtxRotation, mtxTransform);
-                guMtxCatF(mtxTransform, mtxPivotOff, mtxTemp);
-                guMtxCatF(mtxTemp, mtxTranslate, mtxTransform);
-                prevOpacity = partTable->opacity;
-                partTable->opacity = newOpacityBase - (num * newOpacityModulus);
-                render_with_adjusted_palettes(SPRITE_MODE_PLAYER, partTable, clamp_angle(yaw + 180), mtxTransform, 1);
-                partTable->opacity = prevOpacity;
+            // only draw every third blur frame
+            if (strideIdx < 3) {
+                continue;
             }
+
+            strideIdx = 0;
+            drawIdx++;
+
+            if (decorationTable->blurDrawCount < drawIdx) {
+                break;
+            }
+
+            opacity = partTable->opacity;
+
+            x = decorationTable->posX[bufPos];
+            y = decorationTable->posY[bufPos];
+            z = decorationTable->posZ[bufPos];
+
+            yaw = decorationTable->yaw[bufPos];
+
+            pivotOffsetX = decorationTable->rotPivotOffsetX[bufPos];
+            pivotOffsetY = decorationTable->rotPivotOffsetY[bufPos];
+
+            rotX = decorationTable->rotX[bufPos] * 2;
+            rotY = decorationTable->rotY[bufPos] * 2;
+            rotZ = decorationTable->rotZ[bufPos] * 2;
+
+            blurOpacityBase = 120;
+            opacityLossIncrement = 20;
+            if (opacity < 50) {
+                blurOpacityBase = 50;
+                opacityLossIncrement = 8;
+            } else if (opacity < 100) {
+                blurOpacityBase = 70;
+                opacityLossIncrement = 10;
+            } else if (opacity < 150) {
+                blurOpacityBase = 100;
+                opacityLossIncrement = 15;
+            }
+
+            guTranslateF(mtxTranslate, x, y, z);
+            guTranslateF(mtxPivotOn, -pivotOffsetX, -pivotOffsetY, 0.0f);
+            guTranslateF(mtxPivotOff, pivotOffsetX, pivotOffsetY, 0.0f);
+            guRotateF(mtxRotX, rotX, 1.0f, 0.0f, 0.0f);
+            guRotateF(mtxRotY, rotY, 0.0f, 1.0f, 0.0f);
+            guRotateF(mtxRotZ, rotZ, 0.0f, 0.0f, 1.0f);
+            guMtxCatF(mtxRotX, mtxRotY, mtxTransform);
+            guMtxCatF(mtxTransform, mtxRotZ, mtxRotation);
+            guScaleF(mtxScale, actor->scale.x * SPRITE_WORLD_SCALE_D * actor->scalingFactor,
+                            actor->scale.y * SPRITE_WORLD_SCALE_D * actor->scalingFactor * partTable->verticalStretch,
+                            actor->scale.z * SPRITE_WORLD_SCALE_D);
+            guMtxCatF(mtxScale, mtxPivotOn, mtxTemp);
+            guMtxCatF(mtxTemp, mtxRotation, mtxTransform);
+            guMtxCatF(mtxTransform, mtxPivotOff, mtxTemp);
+            guMtxCatF(mtxTemp, mtxTranslate, mtxTransform);
+            prevOpacity = partTable->opacity;
+            partTable->opacity = blurOpacityBase - (drawIdx * opacityLossIncrement);
+            render_with_adjusted_palettes(SPRITE_MODE_PLAYER, partTable, clamp_angle(yaw + 180), mtxTransform, 1);
+            partTable->opacity = prevOpacity;
         }
     }
 }
 
-void func_802550BC(s32 arg0, Actor* actor) {
+void update_nonplayer_actor_blur_history(b32 isPartner, Actor* actor) {
     s32 numParts = actor->numParts;
     ActorPart* partsTable = actor->partsTable;
     DecorationTable* decorationTable;
@@ -491,30 +495,30 @@ void func_802550BC(s32 arg0, Actor* actor) {
             partsTable = partsTable->nextPart;
         } else {
             decorationTable = partsTable->decorationTable;
-            j = decorationTable->unk_7D9;
+            j = decorationTable->blurBufferPos;
 
-            decorationTable->posX[j] = partsTable->currentPos.x;
-            decorationTable->posY[j] = partsTable->currentPos.y;
-            decorationTable->posZ[j] = partsTable->currentPos.z;
+            decorationTable->posX[j] = partsTable->curPos.x;
+            decorationTable->posY[j] = partsTable->curPos.y;
+            decorationTable->posZ[j] = partsTable->curPos.z;
             decorationTable->yaw[j] = actor->yaw;
 
-            decorationTable->rotationPivotOffsetX[j] = actor->rotationPivotOffset.x;
-            decorationTable->rotationPivotOffsetY[j] = actor->rotationPivotOffset.y;
+            decorationTable->rotPivotOffsetX[j] = actor->rotPivotOffset.x;
+            decorationTable->rotPivotOffsetY[j] = actor->rotPivotOffset.y;
 
-            decorationTable->rotX[j] = clamp_angle(actor->rotation.x) * 0.5f;
-            decorationTable->rotY[j] = clamp_angle(actor->rotation.y) * 0.5f;
-            decorationTable->rotZ[j] = clamp_angle(actor->rotation.z) * 0.5f;
+            decorationTable->rotX[j] = clamp_angle(actor->rot.x) * 0.5f;
+            decorationTable->rotY[j] = clamp_angle(actor->rot.y) * 0.5f;
+            decorationTable->rotZ[j] = clamp_angle(actor->rot.z) * 0.5f;
 
             j++;
             if (j >= ARRAY_COUNT(decorationTable->posX)) {
                 j = 0;
             }
-            decorationTable->unk_7D9 = j;
+            decorationTable->blurBufferPos = j;
         }
     }
 }
 
-void func_802552EC(s32 arg0, Actor* actor) {
+void appendGfx_nonplayer_actor_blur(b32 isPartner, Actor* actor) {
     DecorationTable* decorationTable;
     ActorPart* partTable;
     Matrix4f mtxRotX, mtxRotY, mtxRotZ, mtxRotation;
@@ -523,21 +527,21 @@ void func_802552EC(s32 arg0, Actor* actor) {
     Matrix4f mtxPivotOn, mtxPivotOff;
     Matrix4f mtxActor, mtxPartScale;
     s32 numParts;
-    s32 i, j, k, l;
+    s32 i, bufPos, strideIdx, drawIdx;
     f32 x, y, z;
     f32 rotX, rotY, rotZ;
     s32 yaw;
     s32 opacity;
     s32 pivotX;
     s32 pivotY;
-    s32 phi_fp;
-    s32 phi_s6;
-    s32 temp;
+    s32 blurOpacityBase;
+    s32 opacityLossIncrement;
+    s32 blurOpacity;
     s32 flags;
 
-    guRotateF(mtxRotX, actor->rotation.x, 1.0f, 0.0f, 0.0f);
-    guRotateF(mtxRotY, actor->rotation.y, 0.0f, 1.0f, 0.0f);
-    guRotateF(mtxRotZ, actor->rotation.z, 0.0f, 0.0f, 1.0f);
+    guRotateF(mtxRotX, actor->rot.x, 1.0f, 0.0f, 0.0f);
+    guRotateF(mtxRotY, actor->rot.y, 0.0f, 1.0f, 0.0f);
+    guRotateF(mtxRotZ, actor->rot.z, 0.0f, 0.0f, 1.0f);
     guMtxCatF(mtxRotX, mtxRotY, mtxTemp);
     guMtxCatF(mtxTemp, mtxRotZ, mtxRotation);
     guScaleF(mtxScale, actor->scale.x * SPRITE_WORLD_SCALE_D * actor->scalingFactor,
@@ -554,9 +558,9 @@ void func_802552EC(s32 arg0, Actor* actor) {
         }
 
         decorationTable = partTable->decorationTable;
-        if (decorationTable->effectType != 0) {
-            decorationTable->effectType--;
-            if (decorationTable->effectType == 0) {
+        if (decorationTable->blurDisableDelay != 0) {
+            decorationTable->blurDisableDelay--;
+            if (decorationTable->blurDisableDelay == 0) {
                 actor->flags &= ~ACTOR_FLAG_BLUR_ENABLED;
                 partTable = partTable->nextPart;
                 continue;
@@ -572,59 +576,60 @@ void func_802552EC(s32 arg0, Actor* actor) {
             guScaleF(mtxPartScale, actor->scale.x * SPRITE_WORLD_SCALE_D, actor->scale.y * SPRITE_WORLD_SCALE_D, actor->scale.z * SPRITE_WORLD_SCALE_D);
         }
 
-        j = decorationTable->unk_7D9;
-        k = 0;
-        l = 0;
+        bufPos = decorationTable->blurBufferPos;
+        strideIdx = 0;
+        drawIdx = 0;
 
-        while (1) {
-            j--;
-            k++;
+        while (TRUE) {
+            bufPos--;
+            strideIdx++;
 
-            if (j < 0) {
-                j = 15;
+            if (bufPos < 0) {
+                bufPos = 15;
             }
 
-            if (j == decorationTable->unk_7D9) {
+            if (bufPos == decorationTable->blurBufferPos) {
                 break;
             }
 
-            if (k < 3) {
+            // only draw every third blur frame
+            if (strideIdx < 3) {
                 continue;
             }
 
-            k = 0;
-            l++;
+            strideIdx = 0;
+            drawIdx++;
 
-            if (decorationTable->unk_7DA < l) {
+            if (decorationTable->blurDrawCount < drawIdx) {
                 break;
             }
 
             opacity = partTable->opacity;
 
-            x = decorationTable->posX[j];
-            y = decorationTable->posY[j];
-            z = decorationTable->posZ[j];
+            x = decorationTable->posX[bufPos];
+            y = decorationTable->posY[bufPos];
+            z = decorationTable->posZ[bufPos];
 
-            yaw = decorationTable->yaw[j];
+            yaw = decorationTable->yaw[bufPos];
 
-            pivotX = decorationTable->rotationPivotOffsetX[j];
-            pivotY = decorationTable->rotationPivotOffsetY[j];
+            pivotX = decorationTable->rotPivotOffsetX[bufPos];
+            pivotY = decorationTable->rotPivotOffsetY[bufPos];
 
-            rotX = decorationTable->rotX[j] * 2;
-            rotY = decorationTable->rotY[j] * 2;
-            rotZ = decorationTable->rotZ[j] * 2;
+            rotX = decorationTable->rotX[bufPos] * 2;
+            rotY = decorationTable->rotY[bufPos] * 2;
+            rotZ = decorationTable->rotZ[bufPos] * 2;
 
-            phi_fp = 120;
-            phi_s6 = 20;
+            blurOpacityBase = 120;
+            opacityLossIncrement = 20;
             if (opacity < 50) {
-                phi_fp = 50;
-                phi_s6 = 8;
+                blurOpacityBase = 50;
+                opacityLossIncrement = 8;
             } else if (opacity < 100) {
-                phi_fp = 70;
-                phi_s6 = 10;
+                blurOpacityBase = 70;
+                opacityLossIncrement = 10;
             } else if (opacity < 150) {
-                phi_fp = 100;
-                phi_s6 = 15;
+                blurOpacityBase = 100;
+                opacityLossIncrement = 15;
             }
 
             if (!(actor->flags & ACTOR_FLAG_UPSIDE_DOWN)) {
@@ -654,37 +659,37 @@ void func_802552EC(s32 arg0, Actor* actor) {
             guMtxCatF(mtxTemp, mtxTranslate, mtxTransform);
 
             flags = ACTOR_PART_FLAG_80000000;
-            temp = phi_fp - l * phi_s6;
-            if (arg0 == 0) {
-                spr_draw_npc_sprite(partTable->spriteInstanceID | flags, yaw, temp, 0, mtxTransform);
+            blurOpacity = blurOpacityBase - drawIdx * opacityLossIncrement;
+            if (!isPartner) {
+                spr_draw_npc_sprite(partTable->spriteInstanceID | flags, yaw, blurOpacity, 0, mtxTransform);
             } else {
-                spr_draw_npc_sprite(partTable->spriteInstanceID | flags, clamp_angle(yaw + 180), temp, 0, mtxTransform);
+                spr_draw_npc_sprite(partTable->spriteInstanceID | flags, clamp_angle(yaw + 180), blurOpacity, 0, mtxTransform);
             }
         }
     }
 }
 
-void func_8025593C(Actor* actor) {
-    func_802550BC(0, actor);
+void update_enemy_actor_blur_history(Actor* actor) {
+    update_nonplayer_actor_blur_history(FALSE, actor);
 }
 
 void appendGfx_enemy_actor_blur(void* data) {
     Actor* actor = data;
 
-    func_802552EC(0, actor);
+    appendGfx_nonplayer_actor_blur(FALSE, actor);
 }
 
-void func_8025597C(Actor* actor) {
-    func_802550BC(1, actor);
+void update_partner_actor_blur_history(Actor* actor) {
+    update_nonplayer_actor_blur_history(TRUE, actor);
 }
 
 void appendGfx_partner_actor_blur(void* data) {
     Actor* actor = data;
 
-    func_802552EC(1, actor);
+    appendGfx_nonplayer_actor_blur(TRUE, actor);
 }
 
-void update_actor_shadow(s32 arg0, Actor* actor) {
+void update_nonplayer_actor_shadow(b32 isPartner, Actor* actor) {
     Camera* camera = &gCameras[CAM_BATTLE];
     ActorPart* actorPart;
     Shadow* shadow;
@@ -701,21 +706,21 @@ void update_actor_shadow(s32 arg0, Actor* actor) {
         shadow->flags |= ENTITY_FLAG_HIDDEN;
         if (!(actor->flags & ACTOR_FLAG_DISABLED)) {
             if (actor->flags & ACTOR_FLAG_BLUR_ENABLED) {
-                if (arg0 == 0) {
-                    func_8025593C(actor);
+                if (!isPartner) {
+                    update_enemy_actor_blur_history(actor);
                 } else {
-                    func_8025597C(actor);
+                    update_partner_actor_blur_history(actor);
                 }
             }
 
             actor->renderMode = RENDER_MODE_ALPHATEST;
-            x1 = actor->currentPos.x + actor->headOffset.x;
+            x1 = actor->curPos.x + actor->headOffset.x;
             if (!(actor->flags & ACTOR_FLAG_UPSIDE_DOWN)) {
-                y1 = actor->currentPos.y + actor->headOffset.y;
+                y1 = actor->curPos.y + actor->headOffset.y;
             } else {
-                y1 = actor->currentPos.y - actor->headOffset.y;
+                y1 = actor->curPos.y - actor->headOffset.y;
             }
-            z1 = actor->currentPos.z + actor->headOffset.z;
+            z1 = actor->curPos.z + actor->headOffset.z;
             numParts = actor->numParts;
             actorPart = actor->partsTable;
 
@@ -723,7 +728,7 @@ void update_actor_shadow(s32 arg0, Actor* actor) {
                 if (!(actorPart->flags & ACTOR_PART_FLAG_INVISIBLE) && actorPart->idleAnimations != NULL) {
                     spriteID = actorPart->spriteInstanceID;
                     if (spriteID >= 0) {
-                        spr_update_sprite(spriteID, actorPart->currentAnimation, actorPart->animationRate);
+                        spr_update_sprite(spriteID, actorPart->curAnimation, actorPart->animationRate);
                         actorPart->animNotifyValue = spr_get_notify_value(actorPart->spriteInstanceID);
                     }
 
@@ -737,25 +742,25 @@ void update_actor_shadow(s32 arg0, Actor* actor) {
                         z2 = z1 + actorPart->partOffset.z + actorPart->visualOffset.z;
                         yaw = actorPart->yaw = actor->yaw;
                     } else {
-                        x2 = actorPart->absolutePosition.x + actorPart->visualOffset.x;
-                        y2 = actorPart->absolutePosition.y + actorPart->visualOffset.y;
-                        z2 = actorPart->absolutePosition.z + actorPart->visualOffset.z;
+                        x2 = actorPart->absolutePos.x + actorPart->visualOffset.x;
+                        y2 = actorPart->absolutePos.y + actorPart->visualOffset.y;
+                        z2 = actorPart->absolutePos.z + actorPart->visualOffset.z;
                         yaw = actorPart->yaw;
                     }
-                    actorPart->currentPos.x = x2;
-                    actorPart->currentPos.y = y2;
-                    actorPart->currentPos.z = z2;
+                    actorPart->curPos.x = x2;
+                    actorPart->curPos.y = y2;
+                    actorPart->curPos.z = z2;
 
                     if (!(actorPart->flags & ACTOR_PART_FLAG_4)) {
                         shadow = get_shadow_by_index(actorPart->shadowIndex);
                         shadow->flags &= ~ENTITY_FLAG_HIDDEN;
-                        x1 = actorPart->currentPos.x;
+                        x1 = actorPart->curPos.x;
                         if (!(actor->flags & ACTOR_FLAG_UPSIDE_DOWN)) {
-                            y1 = actorPart->currentPos.y + 12.0;
+                            y1 = actorPart->curPos.y + 12.0;
                         } else {
-                            y1 = actorPart->currentPos.y - 12.0;
+                            y1 = actorPart->curPos.y - 12.0;
                         }
-                        z1 = actorPart->currentPos.z;
+                        z1 = actorPart->curPos.z;
 
                         dist = 32767.0f;
                         npc_raycast_down_sides(0, &x1, &y1, &z1, &dist);
@@ -763,14 +768,14 @@ void update_actor_shadow(s32 arg0, Actor* actor) {
                         if (200.0f < dist) {
                             shadow->flags |= ENTITY_FLAG_HIDDEN;
                         }
-                        shadow->position.x = x1;
-                        shadow->position.y = y1;
-                        shadow->position.z = z1;
-                        shadow->rotation.y = clamp_angle(yaw - camera->currentYaw);
+                        shadow->pos.x = x1;
+                        shadow->pos.y = y1;
+                        shadow->pos.z = z1;
+                        shadow->rot.y = clamp_angle(yaw - camera->curYaw);
                         set_standard_shadow_scale(shadow, dist);
                         shadow->scale.x *= actorPart->shadowScale;
                     }
-                    if (actorPart->opacity < 255 || actorPart->flags & ACTOR_PART_FLAG_100) {
+                    if (actorPart->opacity < 255 || actorPart->flags & ACTOR_PART_FLAG_TRANSPARENT) {
                         actor->renderMode = RENDER_MODE_SURFACE_XLU_LAYER3;
                     }
                 }
@@ -782,13 +787,13 @@ void update_actor_shadow(s32 arg0, Actor* actor) {
                 shadow->flags &= ~ENTITY_FLAG_HIDDEN;
             }
 
-            x1 = actor->currentPos.x + actor->headOffset.x;
+            x1 = actor->curPos.x + actor->headOffset.x;
             if (!(actor->flags & ACTOR_FLAG_UPSIDE_DOWN)) {
-                y1 = actor->currentPos.y + actor->headOffset.y + 12.0;
+                y1 = actor->curPos.y + actor->headOffset.y + 12.0;
             } else {
-                y1 = actor->currentPos.y - actor->headOffset.y + 12.0;
+                y1 = actor->curPos.y - actor->headOffset.y + 12.0;
             }
-            z1 = actor->currentPos.z + actor->headOffset.z;
+            z1 = actor->curPos.z + actor->headOffset.z;
 
             dist = 32767.0f;
             npc_raycast_down_sides(0, &x1, &y1, &z1, &dist);
@@ -796,10 +801,10 @@ void update_actor_shadow(s32 arg0, Actor* actor) {
             if (200.0f < dist) {
                 shadow->flags |= ENTITY_FLAG_HIDDEN;
             }
-            shadow->position.x = x1;
-            shadow->position.y = y1;
-            shadow->position.z = z1 + bActorOffsets[actor->actorType].shadow;
-            shadow->rotation.y = clamp_angle(actor->yaw - camera->currentYaw);
+            shadow->pos.x = x1;
+            shadow->pos.y = y1;
+            shadow->pos.z = z1 + bActorOffsets[actor->actorType].shadow;
+            shadow->rot.y = clamp_angle(actor->yaw - camera->curYaw);
             set_standard_shadow_scale(shadow, dist);
             shadow->scale.x *= actor->shadowScale * actor->scalingFactor;
         }
@@ -811,19 +816,19 @@ void update_enemy_shadows(void) {
     s32 i;
 
     for (i = 0; i < ARRAY_COUNT(battleStatus->enemyActors); i++) {
-        update_actor_shadow(0, battleStatus->enemyActors[i]);
+        update_nonplayer_actor_shadow(FALSE, battleStatus->enemyActors[i]);
     }
 }
 
 void update_hero_shadows(void) {
-    update_actor_shadow(1, gBattleStatus.partnerActor);
+    update_nonplayer_actor_shadow(TRUE, gBattleStatus.partnerActor);
     update_player_actor_shadow();
 }
 
 void func_80255FD8(void) {
 }
 
-void appendGfx_npc_actor(s32 isPartner, s32 actorIndex) {
+void appendGfx_npc_actor(b32 isPartner, s32 actorIndex) {
     BattleStatus* battleStatus = &gBattleStatus;
     Matrix4f mtxRotX, mtxRotY, mtxRotZ, mtxRotation;
     Matrix4f mtxScale, mtxScaleMod;
@@ -846,13 +851,13 @@ void appendGfx_npc_actor(s32 isPartner, s32 actorIndex) {
     } else {
         actor = battleStatus->partnerActor;
     }
-    actorPosX = actor->currentPos.x + actor->headOffset.x;
+    actorPosX = actor->curPos.x + actor->headOffset.x;
     if (!(actor->flags & ACTOR_FLAG_UPSIDE_DOWN)) {
-        actorPosY = actor->currentPos.y + actor->headOffset.y + actor->verticalRenderOffset;
+        actorPosY = actor->curPos.y + actor->headOffset.y + actor->verticalRenderOffset;
     } else {
-        actorPosY = actor->currentPos.y - actor->headOffset.y + actor->verticalRenderOffset;
+        actorPosY = actor->curPos.y - actor->headOffset.y + actor->verticalRenderOffset;
     }
-    actorPosZ = actor->currentPos.z + actor->headOffset.z;
+    actorPosZ = actor->curPos.z + actor->headOffset.z;
 
     actor->disableEffect->data.disableX->pos.x = actorPosX +
         (actor->actorBlueprint->statusIconOffset.x + actor->statusIconOffset.x) * actor->scalingFactor;
@@ -920,26 +925,26 @@ void appendGfx_npc_actor(s32 isPartner, s32 actorIndex) {
 
     if (!(actor->flags & ACTOR_FLAG_UPSIDE_DOWN)) {
         guTranslateF(mtxPivotOn,
-            -actor->rotationPivotOffset.x * actor->scalingFactor,
-            -actor->rotationPivotOffset.y * actor->scalingFactor,
-            -actor->rotationPivotOffset.z * actor->scalingFactor);
+            -actor->rotPivotOffset.x * actor->scalingFactor,
+            -actor->rotPivotOffset.y * actor->scalingFactor,
+            -actor->rotPivotOffset.z * actor->scalingFactor);
         guTranslateF(mtxPivotOff,
-            actor->rotationPivotOffset.x * actor->scalingFactor,
-            actor->rotationPivotOffset.y * actor->scalingFactor,
-            actor->rotationPivotOffset.z * actor->scalingFactor);
+            actor->rotPivotOffset.x * actor->scalingFactor,
+            actor->rotPivotOffset.y * actor->scalingFactor,
+            actor->rotPivotOffset.z * actor->scalingFactor);
     } else {
         guTranslateF(mtxPivotOn,
-            -actor->rotationPivotOffset.x * actor->scalingFactor,
-             actor->rotationPivotOffset.y * actor->scalingFactor,
-            -actor->rotationPivotOffset.z * actor->scalingFactor);
+            -actor->rotPivotOffset.x * actor->scalingFactor,
+             actor->rotPivotOffset.y * actor->scalingFactor,
+            -actor->rotPivotOffset.z * actor->scalingFactor);
         guTranslateF(mtxPivotOff,
-             actor->rotationPivotOffset.x * actor->scalingFactor,
-            -actor->rotationPivotOffset.y * actor->scalingFactor,
-             actor->rotationPivotOffset.z * actor->scalingFactor);
+             actor->rotPivotOffset.x * actor->scalingFactor,
+            -actor->rotPivotOffset.y * actor->scalingFactor,
+             actor->rotPivotOffset.z * actor->scalingFactor);
     }
-    guRotateF(mtxRotX, actor->rotation.x, 1.0f, 0.0f, 0.0f);
-    guRotateF(mtxRotY, actor->rotation.y, 0.0f, 1.0f, 0.0f);
-    guRotateF(mtxRotZ, actor->rotation.z, 0.0f, 0.0f, 1.0f);
+    guRotateF(mtxRotX, actor->rot.x, 1.0f, 0.0f, 0.0f);
+    guRotateF(mtxRotY, actor->rot.y, 0.0f, 1.0f, 0.0f);
+    guRotateF(mtxRotZ, actor->rot.z, 0.0f, 0.0f, 1.0f);
     guMtxCatF(mtxRotY, mtxRotX, mtxTemp);
     guMtxCatF(mtxTemp, mtxRotZ, mtxRotation);
     guScaleF(mtxScale,
@@ -965,18 +970,18 @@ void appendGfx_npc_actor(s32 isPartner, s32 actorIndex) {
             partPosZ = actorPosZ + part->partOffset.z + part->visualOffset.z;
             partYaw = part->yaw = actor->yaw;
         } else {
-            partPosX = part->absolutePosition.x + part->visualOffset.x;
-            partPosY = part->absolutePosition.y + part->visualOffset.y;
-            partPosZ = part->absolutePosition.z + part->visualOffset.z;
+            partPosX = part->absolutePos.x + part->visualOffset.x;
+            partPosY = part->absolutePos.y + part->visualOffset.y;
+            partPosZ = part->absolutePos.z + part->visualOffset.z;
             guScaleF(mtxPartScale,
                 actor->scale.x * SPRITE_WORLD_SCALE_D,
                 actor->scale.y * SPRITE_WORLD_SCALE_D,
                 actor->scale.z * SPRITE_WORLD_SCALE_D);
             partYaw = part->yaw;
         }
-        part->currentPos.x = partPosX;
-        part->currentPos.y = partPosY;
-        part->currentPos.z = partPosZ;
+        part->curPos.x = partPosX;
+        part->curPos.y = partPosY;
+        part->curPos.z = partPosZ;
 
         if (part->flags & ACTOR_PART_FLAG_INVISIBLE) {
             part = part->nextPart;
@@ -988,13 +993,13 @@ void appendGfx_npc_actor(s32 isPartner, s32 actorIndex) {
         }
 
         if (actor->transparentStatus == STATUS_KEY_TRANSPARENT) {
-            part->flags |= ACTOR_PART_FLAG_100;
+            part->flags |= ACTOR_PART_FLAG_TRANSPARENT;
         } else {
-            part->flags &= ~ACTOR_PART_FLAG_100;
+            part->flags &= ~ACTOR_PART_FLAG_TRANSPARENT;
         }
 
         do {
-            lastAnim = part->currentAnimation;
+            lastAnim = part->curAnimation;
             animChanged = FALSE;
             palChanged = FALSE;
             decorChanged = FALSE;
@@ -1004,8 +1009,8 @@ void appendGfx_npc_actor(s32 isPartner, s32 actorIndex) {
             if ((gBattleStatus.flags2 & (BS_FLAGS2_10 | BS_FLAGS2_4)) == BS_FLAGS2_4) {
                 do {
                     if (actor->koStatus == 0) {
-                        part->currentAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_INACTIVE);
-                        spr_update_sprite(part->spriteInstanceID, part->currentAnimation, part->animationRate);
+                        part->curAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_INACTIVE);
+                        spr_update_sprite(part->spriteInstanceID, part->curAnimation, part->animationRate);
                         animChanged = TRUE;
                     }
                 } while (0); // required to match
@@ -1014,7 +1019,7 @@ void appendGfx_npc_actor(s32 isPartner, s32 actorIndex) {
                 func_80266EE8(actor, UNK_PAL_EFFECT_0);
                 decorChanged = TRUE;
             }
-            if (isPartner && (gPlayerData.currentPartner == PARTNER_WATT)) {
+            if (isPartner && (gPlayerData.curPartner == PARTNER_WATT)) {
                 if (!palChanged) {
                     set_actor_pal_adjustment(actor, PAL_ADJUST_WATT_IDLE);
                 }
@@ -1061,33 +1066,33 @@ void appendGfx_npc_actor(s32 isPartner, s32 actorIndex) {
             if (!(part->flags & ACTOR_PART_FLAG_20000000)) {
                 if (actor->debuff == STATUS_KEY_FROZEN) {
                     if (!animChanged) {
-                        part->currentAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_FROZEN);
+                        part->curAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_FROZEN);
                         animChanged = TRUE;
                     }
                 } else if (actor->debuff != STATUS_KEY_SHRINK) {
                     if (actor->debuff == STATUS_KEY_POISON) {
                         if (!animChanged) {
-                            part->currentAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_POISON);
+                            part->curAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_POISON);
                             animChanged = TRUE;
                         }
                     } else if (actor->debuff == STATUS_KEY_DIZZY) {
                         if (!animChanged) {
-                            part->currentAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_DIZZY);
+                            part->curAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_DIZZY);
                             animChanged = TRUE;
                         }
                     } else if (actor->debuff == STATUS_KEY_FEAR) {
                         if (!animChanged) {
-                            part->currentAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_FEAR);
+                            part->curAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_FEAR);
                             animChanged = TRUE;
                         }
                     } else if (actor->debuff == STATUS_KEY_SLEEP) {
                         if (!animChanged) {
-                            part->currentAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_SLEEP);
+                            part->curAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_SLEEP);
                             animChanged = TRUE;
                         }
                     } else if (actor->debuff == STATUS_KEY_PARALYZE) {
                         if (!animChanged) {
-                            part->currentAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_PARALYZE);
+                            part->curAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_PARALYZE);
                             animChanged = TRUE;
                         }
                     }
@@ -1095,37 +1100,37 @@ void appendGfx_npc_actor(s32 isPartner, s32 actorIndex) {
 
                 if (actor->staticStatus == STATUS_KEY_STATIC) {
                     if (!animChanged) {
-                        part->currentAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_STATIC);
+                        part->curAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_STATIC);
                         animChanged = TRUE;
                     }
 
                     do {} while (0); // required to match
                 }
                 if (!animChanged) {
-                    part->currentAnimation = get_npc_anim_for_status(part->idleAnimations, 1);
+                    part->curAnimation = get_npc_anim_for_status(part->idleAnimations, 1);
                 }
 
                 if (isPartner) {
                     if (actor->koStatus == STATUS_KEY_DAZE) {
-                        part->currentAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_DAZE);
+                        part->curAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_DAZE);
                         animChanged = TRUE;
                     } else {
                         s32 temp = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_NORMAL);
                         do {
                             if (temp == get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_DAZE)) {
-                                part->currentAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_NORMAL);
+                                part->curAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_NORMAL);
                             }
                         } while (0); // required to match
                     }
                 }
                 if (actor->debuff == STATUS_KEY_STOP) {
-                    part->currentAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_STOP);
+                    part->curAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_STOP);
                     create_status_debuff(actor->hudElementDataIndex, STATUS_KEY_STOP);
                 } else if (!animChanged) {
                     s32 temp = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_NORMAL);
                     do {
                         if (temp == get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_STOP)) {
-                            part->currentAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_NORMAL);
+                            part->curAnimation = get_npc_anim_for_status(part->idleAnimations, STATUS_KEY_NORMAL);
                         }
                     } while (0); // required to match
                 }
@@ -1152,7 +1157,7 @@ void appendGfx_npc_actor(s32 isPartner, s32 actorIndex) {
             if (actor->staticStatus == STATUS_KEY_STATIC) {
                 create_status_static(actor->hudElementDataIndex, STATUS_KEY_STATIC);
             }
-            if ((actor->transparentStatus == STATUS_KEY_TRANSPARENT) || (part->flags & ACTOR_PART_FLAG_100)) {
+            if ((actor->transparentStatus == STATUS_KEY_TRANSPARENT) || (part->flags & ACTOR_PART_FLAG_TRANSPARENT)) {
                 create_status_transparent(actor->hudElementDataIndex, STATUS_KEY_TRANSPARENT);
             }
             if (actor->chillOutAmount != 0) {
@@ -1165,37 +1170,37 @@ void appendGfx_npc_actor(s32 isPartner, s32 actorIndex) {
             enable_status_chill_out(actor->hudElementDataIndex);
         }
         if (part->spriteInstanceID >= 0) {
-            if (lastAnim != part->currentAnimation) {
-                spr_update_sprite(part->spriteInstanceID, part->currentAnimation, part->animationRate);
+            if (lastAnim != part->curAnimation) {
+                spr_update_sprite(part->spriteInstanceID, part->curAnimation, part->animationRate);
                 part->animNotifyValue = spr_get_notify_value(part->spriteInstanceID);
             }
         }
         if (!(actor->flags & ACTOR_FLAG_UPSIDE_DOWN)) {
             guTranslateF(mtxPivotOn,
-                -part->rotationPivotOffset.x * actor->scalingFactor,
-                -part->rotationPivotOffset.y * actor->scalingFactor,
-                -part->rotationPivotOffset.z * actor->scalingFactor);
+                -part->rotPivotOffset.x * actor->scalingFactor,
+                -part->rotPivotOffset.y * actor->scalingFactor,
+                -part->rotPivotOffset.z * actor->scalingFactor);
             guTranslateF(mtxPivotOff,
-                part->rotationPivotOffset.x * actor->scalingFactor,
-                part->rotationPivotOffset.y * actor->scalingFactor,
-                part->rotationPivotOffset.z * actor->scalingFactor);
+                part->rotPivotOffset.x * actor->scalingFactor,
+                part->rotPivotOffset.y * actor->scalingFactor,
+                part->rotPivotOffset.z * actor->scalingFactor);
         } else {
             guTranslateF(mtxPivotOn,
-                -part->rotationPivotOffset.x * actor->scalingFactor,
-                 part->rotationPivotOffset.y * actor->scalingFactor,
-                -part->rotationPivotOffset.z * actor->scalingFactor);
+                -part->rotPivotOffset.x * actor->scalingFactor,
+                 part->rotPivotOffset.y * actor->scalingFactor,
+                -part->rotPivotOffset.z * actor->scalingFactor);
             guTranslateF(mtxPivotOff,
-                 part->rotationPivotOffset.x * actor->scalingFactor,
-                -part->rotationPivotOffset.y * actor->scalingFactor,
-                 part->rotationPivotOffset.z * actor->scalingFactor);
+                 part->rotPivotOffset.x * actor->scalingFactor,
+                -part->rotPivotOffset.y * actor->scalingFactor,
+                 part->rotPivotOffset.z * actor->scalingFactor);
         }
         guTranslateF(mtxTranslate,
             partPosX + part->palAnimPosOffset[0],
             partPosY + part->palAnimPosOffset[1],
             partPosZ);
-        guRotateF(mtxRotX, part->rotation.x, 1.0f, 0.0f, 0.0f);
-        guRotateF(mtxRotY, part->rotation.y, 0.0f, 1.0f, 0.0f);
-        guRotateF(mtxRotZ, part->rotation.z, 0.0f, 0.0f, 1.0f);
+        guRotateF(mtxRotX, part->rot.x, 1.0f, 0.0f, 0.0f);
+        guRotateF(mtxRotY, part->rot.y, 0.0f, 1.0f, 0.0f);
+        guRotateF(mtxRotZ, part->rot.z, 0.0f, 0.0f, 1.0f);
         guMtxCatF(mtxRotY, mtxRotX, mtxTemp);
         guMtxCatF(mtxTemp, mtxRotZ, mtxRotation);
         guScaleF(mtxScale, part->scale.x, part->scale.y * part->verticalStretch, part->scale.z);
@@ -1210,9 +1215,9 @@ void appendGfx_npc_actor(s32 isPartner, s32 actorIndex) {
         }
         guMtxCatF(mtxTemp, mtxTranslate, mtxTransform);
 
-        part->currentPos.x = partPosX + part->palAnimPosOffset[0];
-        part->currentPos.y = partPosY + part->palAnimPosOffset[1];
-        part->currentPos.z = partPosZ;
+        part->curPos.x = partPosX + part->palAnimPosOffset[0];
+        part->curPos.y = partPosY + part->palAnimPosOffset[1];
+        part->curPos.z = partPosZ;
 
         if (part->spriteInstanceID >= 0) {
             if (!isPartner) {
@@ -1244,37 +1249,37 @@ void appendGfx_npc_actor_reflection(s32 flipYaw, Actor* actor) {
     s32 numParts;
     s32 i;
 
-    actorPosX = actor->currentPos.x + actor->headOffset.x;
+    actorPosX = actor->curPos.x + actor->headOffset.x;
     if (!(actor->flags & ACTOR_FLAG_UPSIDE_DOWN)) {
-        actorPosY = actor->currentPos.y + actor->headOffset.y;
+        actorPosY = actor->curPos.y + actor->headOffset.y;
     } else {
-        actorPosY = actor->currentPos.y - actor->headOffset.y;
+        actorPosY = actor->curPos.y - actor->headOffset.y;
     }
-    actorPosZ = actor->currentPos.z + actor->headOffset.z - 5.0f;
+    actorPosZ = actor->curPos.z + actor->headOffset.z - 5.0f;
 
     if (!(actor->flags & ACTOR_FLAG_UPSIDE_DOWN)) {
         guTranslateF(mtxPivotOn,
-            -actor->rotationPivotOffset.x * actor->scalingFactor,
-            -actor->rotationPivotOffset.y * actor->scalingFactor,
-            -actor->rotationPivotOffset.z * actor->scalingFactor);
+            -actor->rotPivotOffset.x * actor->scalingFactor,
+            -actor->rotPivotOffset.y * actor->scalingFactor,
+            -actor->rotPivotOffset.z * actor->scalingFactor);
          guTranslateF(mtxPivotOff,
-             actor->rotationPivotOffset.x * actor->scalingFactor,
-             actor->rotationPivotOffset.y * actor->scalingFactor,
-             actor->rotationPivotOffset.z * actor->scalingFactor);
+             actor->rotPivotOffset.x * actor->scalingFactor,
+             actor->rotPivotOffset.y * actor->scalingFactor,
+             actor->rotPivotOffset.z * actor->scalingFactor);
     } else {
         guTranslateF(mtxPivotOn,
-            -actor->rotationPivotOffset.x * actor->scalingFactor,
-             actor->rotationPivotOffset.y * actor->scalingFactor,
-            -actor->rotationPivotOffset.z * actor->scalingFactor);
+            -actor->rotPivotOffset.x * actor->scalingFactor,
+             actor->rotPivotOffset.y * actor->scalingFactor,
+            -actor->rotPivotOffset.z * actor->scalingFactor);
          guTranslateF(mtxPivotOff,
-             actor->rotationPivotOffset.x * actor->scalingFactor,
-             -actor->rotationPivotOffset.y * actor->scalingFactor,
-             actor->rotationPivotOffset.z * actor->scalingFactor);
+             actor->rotPivotOffset.x * actor->scalingFactor,
+             -actor->rotPivotOffset.y * actor->scalingFactor,
+             actor->rotPivotOffset.z * actor->scalingFactor);
     }
 
-    guRotateF(mtxRotX, actor->rotation.x, 1.0f, 0.0f, 0.0f);
-    guRotateF(mtxRotY, actor->rotation.y, 0.0f, 1.0f, 0.0f);
-    guRotateF(mtxRotZ, actor->rotation.z, 0.0f, 0.0f, 1.0f);
+    guRotateF(mtxRotX, actor->rot.x, 1.0f, 0.0f, 0.0f);
+    guRotateF(mtxRotY, actor->rot.y, 0.0f, 1.0f, 0.0f);
+    guRotateF(mtxRotZ, actor->rot.z, 0.0f, 0.0f, 1.0f);
     guMtxCatF(mtxRotY, mtxRotX, mtxTemp);
     guMtxCatF(mtxTemp, mtxRotZ, mtxRotation);
 
@@ -1301,9 +1306,9 @@ void appendGfx_npc_actor_reflection(s32 flipYaw, Actor* actor) {
             partPosZ = actorPosZ + part->partOffset.z + part->visualOffset.z;
             partYaw = part->yaw = actor->yaw;
         } else {
-            partPosX = part->absolutePosition.x + part->visualOffset.x;
-            partPosY = part->absolutePosition.y + part->visualOffset.y;
-            partPosZ = part->absolutePosition.z + part->visualOffset.z;
+            partPosX = part->absolutePos.x + part->visualOffset.x;
+            partPosY = part->absolutePos.y + part->visualOffset.y;
+            partPosZ = part->absolutePos.z + part->visualOffset.z;
             guScaleF(mtxPartScale,
                 actor->scale.x * SPRITE_WORLD_SCALE_D,
                 actor->scale.y * SPRITE_WORLD_SCALE_D,
@@ -1322,31 +1327,31 @@ void appendGfx_npc_actor_reflection(s32 flipYaw, Actor* actor) {
 
         if (!(actor->flags & ACTOR_FLAG_UPSIDE_DOWN)) {
             guTranslateF(mtxPivotOn,
-                -part->rotationPivotOffset.x * actor->scalingFactor,
-                -part->rotationPivotOffset.y * actor->scalingFactor,
-                -part->rotationPivotOffset.z * actor->scalingFactor);
+                -part->rotPivotOffset.x * actor->scalingFactor,
+                -part->rotPivotOffset.y * actor->scalingFactor,
+                -part->rotPivotOffset.z * actor->scalingFactor);
             guTranslateF(mtxPivotOff,
-                 part->rotationPivotOffset.x * actor->scalingFactor,
-                 part->rotationPivotOffset.y * actor->scalingFactor,
-                 part->rotationPivotOffset.z * actor->scalingFactor);
+                 part->rotPivotOffset.x * actor->scalingFactor,
+                 part->rotPivotOffset.y * actor->scalingFactor,
+                 part->rotPivotOffset.z * actor->scalingFactor);
         } else {
             guTranslateF(mtxPivotOn,
-                -part->rotationPivotOffset.x * actor->scalingFactor,
-                 part->rotationPivotOffset.y * actor->scalingFactor,
-                -part->rotationPivotOffset.z * actor->scalingFactor);
+                -part->rotPivotOffset.x * actor->scalingFactor,
+                 part->rotPivotOffset.y * actor->scalingFactor,
+                -part->rotPivotOffset.z * actor->scalingFactor);
             guTranslateF(mtxPivotOff,
-                 part->rotationPivotOffset.x * actor->scalingFactor,
-                -part->rotationPivotOffset.y * actor->scalingFactor,
-                 part->rotationPivotOffset.z * actor->scalingFactor);
+                 part->rotPivotOffset.x * actor->scalingFactor,
+                -part->rotPivotOffset.y * actor->scalingFactor,
+                 part->rotPivotOffset.z * actor->scalingFactor);
         }
         guTranslateF(mtxTranslate,
             partPosX + part->palAnimPosOffset[0],
             partPosY + part->palAnimPosOffset[1],
             partPosZ - 1.0f);
 
-        guRotateF(mtxRotX, part->rotation.x, 1.0f, 0.0f, 0.0f);
-        guRotateF(mtxRotY, part->rotation.y, 0.0f, 1.0f, 0.0f);
-        guRotateF(mtxRotZ, part->rotation.z, 0.0f, 0.0f, 1.0f);
+        guRotateF(mtxRotX, part->rot.x, 1.0f, 0.0f, 0.0f);
+        guRotateF(mtxRotY, part->rot.y, 0.0f, 1.0f, 0.0f);
+        guRotateF(mtxRotZ, part->rot.z, 0.0f, 0.0f, 1.0f);
         guMtxCatF(mtxRotY, mtxRotX, mtxTemp);
         guMtxCatF(mtxTemp, mtxRotZ, mtxRotation);
 
@@ -1403,10 +1408,10 @@ void update_player_actor_shadow(void) {
     Shadow* shadow;
     f32 x, y, z, distance;
 
-    parts->animNotifyValue = spr_update_player_sprite(PLAYER_SPRITE_MAIN, parts->currentAnimation, parts->animationRate);
+    parts->animNotifyValue = spr_update_player_sprite(PLAYER_SPRITE_MAIN, parts->curAnimation, parts->animationRate);
 
     if (player->flags & ACTOR_FLAG_BLUR_ENABLED) {
-        func_802549F4(player);
+        update_player_actor_blur_history(player);
     }
 
     shadow = get_shadow_by_index(player->shadow.id);
@@ -1419,22 +1424,22 @@ void update_player_actor_shadow(void) {
     }
 
     distance = 32767.0f;
-    x = player->currentPos.x + player->headOffset.x;
-    z = player->currentPos.z + player->headOffset.z;
-    y = player->currentPos.y + player->headOffset.y + 12.0;
+    x = player->curPos.x + player->headOffset.x;
+    z = player->curPos.z + player->headOffset.z;
+    y = player->curPos.y + player->headOffset.y + 12.0;
     npc_raycast_down_sides(0, &x, &y, &z, &distance);
 
     if (distance > 200.0f) {
         shadow->flags |= ENTITY_FLAG_HIDDEN;
     }
-    shadow->position.x = x;
-    shadow->position.y = y;
-    shadow->position.z = z;
-    shadow->rotation.y = clamp_angle(player->yaw - camera->currentYaw);
+    shadow->pos.x = x;
+    shadow->pos.y = y;
+    shadow->pos.z = z;
+    shadow->rot.y = clamp_angle(player->yaw - camera->curYaw);
     set_standard_shadow_scale(shadow, distance);
     shadow->scale.x *= player->shadowScale * player->scalingFactor;
 
-    if (parts->opacity >= 255 && !(parts->flags & ACTOR_PART_FLAG_100)) {
+    if (parts->opacity >= 255 && !(parts->flags & ACTOR_PART_FLAG_TRANSPARENT)) {
         player->renderMode = RENDER_MODE_ALPHATEST;
     } else {
         player->renderMode = RENDER_MODE_SURFACE_XLU_LAYER3;
@@ -1461,9 +1466,9 @@ void appendGfx_player_actor(void* arg0) {
     partner = battleStatus->partnerActor;
     playerParts = player->partsTable;
 
-    playerPosX = player->currentPos.x + player->headOffset.x;
-    playerPosY = player->currentPos.y + player->headOffset.y + player->verticalRenderOffset;
-    playerPosZ = player->currentPos.z + player->headOffset.z;
+    playerPosX = player->curPos.x + player->headOffset.x;
+    playerPosY = player->curPos.y + player->headOffset.y + player->verticalRenderOffset;
+    playerPosZ = player->curPos.z + player->headOffset.z;
 
     playerYaw = playerParts->yaw = player->yaw;
 
@@ -1597,16 +1602,16 @@ void appendGfx_player_actor(void* arg0) {
     }
 
     if (player->transparentStatus == STATUS_KEY_TRANSPARENT) {
-        playerParts->flags |= ACTOR_PART_FLAG_100;
+        playerParts->flags |= ACTOR_PART_FLAG_TRANSPARENT;
 
         if (FALSE) { // TODO required to match - also whyyyyyy compiler, whyyyyy
     back:
-            playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_STOP);
+            playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_STOP);
             create_status_debuff(player->hudElementDataIndex, STATUS_KEY_STOP);
             goto end;
         }
     } else {
-        playerParts->flags &= ~ACTOR_PART_FLAG_100;
+        playerParts->flags &= ~ACTOR_PART_FLAG_TRANSPARENT;
     }
 
     do {
@@ -1614,7 +1619,7 @@ void appendGfx_player_actor(void* arg0) {
         palChanged = FALSE;
         cond3 = FALSE;
         cond4 = FALSE;
-        lastAnim = playerParts->currentAnimation;
+        lastAnim = playerParts->curAnimation;
     } while (0); // required to match
 
     if (((((gBattleStatus.flags2 & (BS_FLAGS2_8 | BS_FLAGS2_2)) == BS_FLAGS2_2) && (partner != NULL)) || (battleStatus->outtaSightActive > 0))
@@ -1632,15 +1637,15 @@ void appendGfx_player_actor(void* arg0) {
                     ((battleStatus->outtaSightActive > 0) || (gBattleStatus.flags2 & BS_FLAGS2_2)))
                 {
                     if (is_ability_active(ABILITY_BERSERKER)) {
-                        playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_INACTIVE_BERSERK);
+                        playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_INACTIVE_BERSERK);
                     } else  if (player->debuff == STATUS_KEY_SLEEP) {
-                        playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_INACTIVE_SLEEP);
+                        playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_INACTIVE_SLEEP);
                     } else if (player->debuff == STATUS_KEY_DIZZY) {
-                        playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_INACTIVE_DIZZY);
+                        playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_INACTIVE_DIZZY);
                     } else {
-                        playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_INACTIVE);
+                        playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_INACTIVE);
                     }
-                    spr_update_player_sprite(PLAYER_SPRITE_MAIN, playerParts->currentAnimation, playerParts->animationRate);
+                    spr_update_player_sprite(PLAYER_SPRITE_MAIN, playerParts->curAnimation, playerParts->animationRate);
                     animChanged = TRUE;
                 }
             }
@@ -1658,8 +1663,8 @@ void appendGfx_player_actor(void* arg0) {
     }
 
     if (player->stoneStatus == STATUS_KEY_STONE) {
-        playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_STONE);
-        spr_update_player_sprite(PLAYER_SPRITE_MAIN, playerParts->currentAnimation, playerParts->animationRate);
+        playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_STONE);
+        spr_update_player_sprite(PLAYER_SPRITE_MAIN, playerParts->curAnimation, playerParts->animationRate);
         animChanged = TRUE;
 
         if (!palChanged) {
@@ -1677,9 +1682,9 @@ void appendGfx_player_actor(void* arg0) {
     }
 
     if ((player->flags & ACTOR_FLAG_4000000) && !animChanged) {
-        s32 temp = playerParts->currentAnimation;
+        s32 temp = playerParts->curAnimation;
         if (temp == get_player_anim_for_status(STATUS_KEY_STONE)) {
-            playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_NORMAL);
+            playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_NORMAL);
         }
     }
 
@@ -1727,13 +1732,13 @@ void appendGfx_player_actor(void* arg0) {
     }
     if (player->flags & ACTOR_FLAG_4000000) {
         if (battleStatus->hustleTurns != 0) {
-            playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_HUSTLE);
+            playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_HUSTLE);
             animChanged = TRUE;
         } else if (!animChanged) {
             s32 temp = get_player_anim_for_status(STATUS_KEY_NORMAL);
             do {
                 if (temp == get_player_anim_for_status(STATUS_KEY_HUSTLE)) {
-                    playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_NORMAL);
+                    playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_NORMAL);
                 }
             } while (0); // required to match
         }
@@ -1741,34 +1746,34 @@ void appendGfx_player_actor(void* arg0) {
         do {
             if (player->debuff == STATUS_KEY_FROZEN) {
                 if (!animChanged) {
-                    playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_FROZEN);
+                    playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_FROZEN);
                     animChanged = TRUE;
                 }
             } else if (player->debuff != STATUS_KEY_SHRINK) {
                 if (player->debuff == STATUS_KEY_POISON) {
                     if (!animChanged) {
-                        playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_POISON);
+                        playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_POISON);
                         animChanged = TRUE;
                     }
                 } else if (player->debuff == STATUS_KEY_DIZZY) {
                     if (!animChanged) {
-                        playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_DIZZY);
+                        playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_DIZZY);
                         animChanged = TRUE;
                     }
                 } else if (player->debuff == STATUS_KEY_SLEEP) {
                     if (!animChanged) {
-                        playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_SLEEP);
+                        playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_SLEEP);
                         animChanged = TRUE;
                     }
                 } else if (player->debuff == STATUS_KEY_PARALYZE) {
                     if (!animChanged) {
-                        playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_PARALYZE);
+                        playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_PARALYZE);
                         animChanged = TRUE;
                     }
                  } else {
                     if (player_team_is_ability_active(player, ABILITY_BERSERKER)) {
                         if (!animChanged) {
-                            playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_BERSERK);
+                            playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_BERSERK);
                             animChanged = TRUE;
                         }
                     }
@@ -1776,24 +1781,24 @@ void appendGfx_player_actor(void* arg0) {
             }
             if (is_ability_active(ABILITY_ZAP_TAP)) {
                 if (!animChanged) {
-                    playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_STATIC);
+                    playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_STATIC);
                     animChanged = TRUE;
                 }
                 player->staticStatus = STATUS_KEY_STATIC;
                 player->staticDuration = 127;
             } else if ((player->staticStatus == STATUS_KEY_STATIC) && !animChanged) {
-                playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_STATIC);
+                playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_STATIC);
                 animChanged = TRUE;
             }
-            if ((player->transparentStatus == STATUS_KEY_TRANSPARENT) || (playerParts->flags & ACTOR_PART_FLAG_100)) {
+            if ((player->transparentStatus == STATUS_KEY_TRANSPARENT) || (playerParts->flags & ACTOR_PART_FLAG_TRANSPARENT)) {
                 if (!animChanged) {
-                    playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_TRANSPARENT);
+                    playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_TRANSPARENT);
                     animChanged = TRUE;
                 }
                 create_status_transparent(player->hudElementDataIndex, STATUS_KEY_TRANSPARENT);
             }
             if (!animChanged) {
-                playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_NORMAL);
+                playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_NORMAL);
             }
         } while (0); // needed to match
     }
@@ -1819,7 +1824,7 @@ void appendGfx_player_actor(void* arg0) {
                 create_status_static(player->hudElementDataIndex, STATUS_KEY_STATIC);
             }
         }
-        if ((player->transparentStatus == STATUS_KEY_TRANSPARENT) || (playerParts->flags & ACTOR_PART_FLAG_100)) {
+        if ((player->transparentStatus == STATUS_KEY_TRANSPARENT) || (playerParts->flags & ACTOR_PART_FLAG_TRANSPARENT)) {
             create_status_transparent(player->hudElementDataIndex, STATUS_KEY_TRANSPARENT);
         }
     } else {
@@ -1831,9 +1836,9 @@ void appendGfx_player_actor(void* arg0) {
 
     if (player->debuff != STATUS_KEY_STOP) {
         if (!animChanged) {
-            s32 temp = playerParts->currentAnimation;
+            s32 temp = playerParts->curAnimation;
             if (temp == get_player_anim_for_status(STATUS_KEY_STOP)) {
-                playerParts->currentAnimation = get_player_anim_for_status(STATUS_KEY_NORMAL);
+                playerParts->curAnimation = get_player_anim_for_status(STATUS_KEY_NORMAL);
             }
         }
     } else {
@@ -1854,23 +1859,23 @@ end:
     playerPosX += playerParts->palAnimPosOffset[0];
     playerPosY += playerParts->palAnimPosOffset[1];
 
-    playerParts->currentPos.x = playerPosX;
-    playerParts->currentPos.y = playerPosY;
-    playerParts->currentPos.z = playerPosZ;
+    playerParts->curPos.x = playerPosX;
+    playerParts->curPos.y = playerPosY;
+    playerParts->curPos.z = playerPosZ;
     guTranslateF(mtxTranslate, playerPosX, playerPosY, playerPosZ);
 
     guTranslateF(mtxPivotOn,
-        -player->rotationPivotOffset.x * player->scalingFactor,
-        -player->rotationPivotOffset.y * player->scalingFactor,
-        -player->rotationPivotOffset.z * player->scalingFactor);
+        -player->rotPivotOffset.x * player->scalingFactor,
+        -player->rotPivotOffset.y * player->scalingFactor,
+        -player->rotPivotOffset.z * player->scalingFactor);
     guTranslateF(mtxPivotOff,
-        player->rotationPivotOffset.x * player->scalingFactor,
-        player->rotationPivotOffset.y * player->scalingFactor,
-        player->rotationPivotOffset.z * player->scalingFactor);
+        player->rotPivotOffset.x * player->scalingFactor,
+        player->rotPivotOffset.y * player->scalingFactor,
+        player->rotPivotOffset.z * player->scalingFactor);
 
-    guRotateF(mtxRotX, player->rotation.x, 1.0f, 0.0f, 0.0f);
-    guRotateF(mtxRotY, player->rotation.y, 0.0f, 1.0f, 0.0f);
-    guRotateF(mtxRotZ, player->rotation.z, 0.0f, 0.0f, 1.0f);
+    guRotateF(mtxRotX, player->rot.x, 1.0f, 0.0f, 0.0f);
+    guRotateF(mtxRotY, player->rot.y, 0.0f, 1.0f, 0.0f);
+    guRotateF(mtxRotZ, player->rot.z, 0.0f, 0.0f, 1.0f);
     guMtxCatF(mtxRotY, mtxRotX, mtxTemp);
     guMtxCatF(mtxTemp, mtxRotZ, mtxRotation);
 
@@ -1884,8 +1889,8 @@ end:
     guMtxCatF(mtxTransform, mtxPivotOff, mtxTemp);
     guMtxCatF(mtxTemp, mtxTranslate, mtxTransform);
 
-    if (lastAnim != playerParts->currentAnimation) {
-        spr_update_player_sprite(PLAYER_SPRITE_MAIN, playerParts->currentAnimation, playerParts->animationRate);
+    if (lastAnim != playerParts->curAnimation) {
+        spr_update_player_sprite(PLAYER_SPRITE_MAIN, playerParts->curAnimation, playerParts->animationRate);
     }
     func_8025C840(0, playerParts, clamp_angle(playerYaw + 180.0f), 0);
     func_8025CCC8(0, playerParts, clamp_angle(playerYaw + 180.0f), 0);
@@ -1902,27 +1907,27 @@ void appendGfx_player_actor_reflection(void* arg0) {
     f32 playerYaw = player->yaw;
     f32 dx, dy, dz;
 
-    dx = player->currentPos.x + player->headOffset.x;
+    dx = player->curPos.x + player->headOffset.x;
     dx += part->palAnimPosOffset[0];
-    dy = player->currentPos.y + player->headOffset.y;
+    dy = player->curPos.y + player->headOffset.y;
     dy += part->palAnimPosOffset[1];
-    dz = player->currentPos.z + player->headOffset.z - 5.0f;
+    dz = player->curPos.z + player->headOffset.z - 5.0f;
     part->yaw = playerYaw;
 
     guTranslateF(mtxTranslate, dx, dy, dz - 1.0f);
 
     guTranslateF(mtxPivotOn,
-        -player->rotationPivotOffset.x * player->scalingFactor,
-        -player->rotationPivotOffset.y * player->scalingFactor,
-        -player->rotationPivotOffset.z * player->scalingFactor);
+        -player->rotPivotOffset.x * player->scalingFactor,
+        -player->rotPivotOffset.y * player->scalingFactor,
+        -player->rotPivotOffset.z * player->scalingFactor);
     guTranslateF(mtxPivotOff,
-        player->rotationPivotOffset.x * player->scalingFactor,
-        player->rotationPivotOffset.y * player->scalingFactor,
-        player->rotationPivotOffset.z * player->scalingFactor);
+        player->rotPivotOffset.x * player->scalingFactor,
+        player->rotPivotOffset.y * player->scalingFactor,
+        player->rotPivotOffset.z * player->scalingFactor);
 
-    guRotateF(mtxRotX, player->rotation.x, 1.0f, 0.0f, 0.0f);
-    guRotateF(mtxRotY, player->rotation.y, 0.0f, 1.0f, 0.0f);
-    guRotateF(mtxRotZ, player->rotation.z, 0.0f, 0.0f, 1.0f);
+    guRotateF(mtxRotX, player->rot.x, 1.0f, 0.0f, 0.0f);
+    guRotateF(mtxRotY, player->rot.y, 0.0f, 1.0f, 0.0f);
+    guRotateF(mtxRotZ, player->rot.z, 0.0f, 0.0f, 1.0f);
     guMtxCatF(mtxRotY, mtxRotX, mtxTemp);
     guMtxCatF(mtxTemp, mtxRotZ, mtxRotation);
     guScaleF(mtxScale,
@@ -1953,7 +1958,7 @@ s32 render_with_adjusted_palettes(b32 isNpcSprite, ActorPart* part, s32 yaw, Mat
             sprDrawOpts = DRAW_SPRITE_OVERRIDE_ALPHA;
             opacity = part->opacity;
         }
-        if (part->flags & ACTOR_PART_FLAG_100) {
+        if (part->flags & ACTOR_PART_FLAG_TRANSPARENT) {
             sprDrawOpts = DRAW_SPRITE_OVERRIDE_ALPHA;
             opacity = opacity * 120 / 255;
         }
@@ -2056,13 +2061,13 @@ void func_8025950C(ActorPart* part, s32 yaw, Matrix4f mtx) {
         idMask = DRAW_SPRITE_OVERRIDE_ALPHA;
         opacity = part->opacity;
     }
-    if (part->flags & ACTOR_PART_FLAG_100) {
+    if (part->flags & ACTOR_PART_FLAG_TRANSPARENT) {
         idMask = DRAW_SPRITE_OVERRIDE_ALPHA;
         opacity = (opacity * 120) / 255;
     }
 
     if (decor->unk_768 != 0) {
-        decor->originalPalettesList = spr_get_npc_palettes(part->currentAnimation >> 0x10);
+        decor->originalPalettesList = spr_get_npc_palettes(part->curAnimation >> 0x10);
         decor->originalPalettesCount = 0;
         while (decor->originalPalettesList[decor->originalPalettesCount] != (PAL_PTR) -1) {
             decor->originalPalettesCount++;
@@ -2100,7 +2105,7 @@ void func_802596C0(ActorPart* part, s32 yaw, Matrix4f mtx) {
         opacity = part->opacity;
     }
 
-    if (part->flags & ACTOR_PART_FLAG_100) {
+    if (part->flags & ACTOR_PART_FLAG_TRANSPARENT) {
         idMask = DRAW_SPRITE_OVERRIDE_ALPHA;
         opacity = (opacity * 120) / 255;
     }
@@ -2125,13 +2130,13 @@ void func_802597B0(ActorPart* part, s32 yaw, Matrix4f mtx) {
         idMask = DRAW_SPRITE_OVERRIDE_ALPHA;
         opacity = part->opacity;
     }
-    if (part->flags & ACTOR_PART_FLAG_100) {
+    if (part->flags & ACTOR_PART_FLAG_TRANSPARENT) {
         idMask = DRAW_SPRITE_OVERRIDE_ALPHA;
         opacity = (opacity * 120) / 255;
     }
 
     if (decor->unk_768 != 0) {
-        decor->originalPalettesList = spr_get_player_palettes(part->currentAnimation >> 16);
+        decor->originalPalettesList = spr_get_player_palettes(part->curAnimation >> 16);
         decor->originalPalettesCount = 0;
 
         while (decor->originalPalettesList[decor->originalPalettesCount] != (PAL_PTR) -1) {
@@ -2167,7 +2172,7 @@ void func_8025995C(ActorPart* part, s32 yaw, Matrix4f mtx) {
         idMask = DRAW_SPRITE_OVERRIDE_ALPHA;
         opacity = part->opacity;
     }
-    if (part->flags & ACTOR_PART_FLAG_100) {
+    if (part->flags & ACTOR_PART_FLAG_TRANSPARENT) {
         idMask = DRAW_SPRITE_OVERRIDE_ALPHA;
         opacity = (opacity * 120) / 255;
     }
@@ -2204,13 +2209,13 @@ void render_with_sleep_palettes(b32 isNpcSprite, ActorPart* part, s32 yaw, Matri
 
     if (decorationTable->resetPalAdjust) {
         if (isNpcSprite == SPRITE_MODE_PLAYER) {
-            decorationTable->originalPalettesList = spr_get_player_palettes(part->currentAnimation >> 16);
+            decorationTable->originalPalettesList = spr_get_player_palettes(part->curAnimation >> 16);
             decorationTable->originalPalettesCount = 0;
             while ((s32)decorationTable->originalPalettesList[decorationTable->originalPalettesCount] != -1) {
                 decorationTable->originalPalettesCount++;
             }
         } else {
-            decorationTable->originalPalettesList = spr_get_npc_palettes(part->currentAnimation >> 16);
+            decorationTable->originalPalettesList = spr_get_npc_palettes(part->curAnimation >> 16);
             decorationTable->originalPalettesCount = 0;
             while ((s32)decorationTable->originalPalettesList[decorationTable->originalPalettesCount] != -1) {
                 decorationTable->originalPalettesCount++;
@@ -2263,19 +2268,19 @@ void render_with_static_palettes(b32 isNpcSprite, ActorPart* part, s32 yaw, Matr
 
     if (decorationTable->resetPalAdjust) {
         if (isNpcSprite == SPRITE_MODE_PLAYER) {
-            decorationTable->originalPalettesList = spr_get_player_palettes(part->currentAnimation >> 16);
+            decorationTable->originalPalettesList = spr_get_player_palettes(part->curAnimation >> 16);
             decorationTable->originalPalettesCount = 0;
             while ((s32)decorationTable->originalPalettesList[decorationTable->originalPalettesCount] != -1) {
                 decorationTable->originalPalettesCount++;
             }
             decorationTable->spriteColorVariations = SPR_PLAYER_COLOR_VARIATIONS;
         } else {
-            decorationTable->originalPalettesList = spr_get_npc_palettes(part->currentAnimation >> 16);
+            decorationTable->originalPalettesList = spr_get_npc_palettes(part->curAnimation >> 16);
             decorationTable->originalPalettesCount = 0;
             while ((s32)decorationTable->originalPalettesList[decorationTable->originalPalettesCount] != -1) {
                 decorationTable->originalPalettesCount++;
             }
-            decorationTable->spriteColorVariations = spr_get_npc_color_variations(part->currentAnimation >> 16);
+            decorationTable->spriteColorVariations = spr_get_npc_color_variations(part->curAnimation >> 16);
         }
 
         for (i = 0; i < decorationTable->originalPalettesCount; i++) {
@@ -2379,13 +2384,13 @@ void render_with_fear_palettes(b32 isNpcSprite, ActorPart* part, s32 yaw, Matrix
 
     if (decorationTable->resetPalAdjust) {
         if (isNpcSprite == SPRITE_MODE_PLAYER) {
-            decorationTable->originalPalettesList = spr_get_player_palettes(part->currentAnimation >> 16);
+            decorationTable->originalPalettesList = spr_get_player_palettes(part->curAnimation >> 16);
             decorationTable->originalPalettesCount = 2;
             while ((s32)decorationTable->originalPalettesList[decorationTable->originalPalettesCount] != -1) {
                 decorationTable->originalPalettesCount++;
             }
         } else {
-            decorationTable->originalPalettesList = spr_get_npc_palettes(part->currentAnimation >> 16);
+            decorationTable->originalPalettesList = spr_get_npc_palettes(part->curAnimation >> 16);
             decorationTable->originalPalettesCount = 0;
             while ((s32)decorationTable->originalPalettesList[decorationTable->originalPalettesCount] != -1) {
                 decorationTable->originalPalettesCount++;
@@ -2448,19 +2453,19 @@ void render_with_poison_palettes(b32 isNpcSprite, ActorPart* part, s32 yaw, Matr
 
     if (decorationTable->resetPalAdjust) {
         if (isNpcSprite == SPRITE_MODE_PLAYER) {
-            decorationTable->originalPalettesList = spr_get_player_palettes(part->currentAnimation >> 16);
+            decorationTable->originalPalettesList = spr_get_player_palettes(part->curAnimation >> 16);
             decorationTable->originalPalettesCount = 0;
             while ((s32)decorationTable->originalPalettesList[decorationTable->originalPalettesCount] != -1) {
                 decorationTable->originalPalettesCount++;
             }
             decorationTable->spriteColorVariations = SPR_PLAYER_COLOR_VARIATIONS;
         } else {
-            decorationTable->originalPalettesList = spr_get_npc_palettes(part->currentAnimation >> 16);
+            decorationTable->originalPalettesList = spr_get_npc_palettes(part->curAnimation >> 16);
             decorationTable->originalPalettesCount = 0;
             while ((s32)decorationTable->originalPalettesList[decorationTable->originalPalettesCount] != -1) {
                 decorationTable->originalPalettesCount++;
             }
-            decorationTable->spriteColorVariations = spr_get_npc_color_variations(part->currentAnimation >> 16);
+            decorationTable->spriteColorVariations = spr_get_npc_color_variations(part->curAnimation >> 16);
         }
 
         decorationTable->palAnimState = 0;
@@ -2506,13 +2511,13 @@ void render_with_paralyze_palettes(b32 isNpcSprite, ActorPart* part, s32 yaw, Ma
 
     if (decorationTable->resetPalAdjust) {
         if (isNpcSprite == SPRITE_MODE_PLAYER) {
-            decorationTable->originalPalettesList = spr_get_player_palettes(part->currentAnimation >> 16);
+            decorationTable->originalPalettesList = spr_get_player_palettes(part->curAnimation >> 16);
             decorationTable->originalPalettesCount = 0;
             while ((s32)decorationTable->originalPalettesList[decorationTable->originalPalettesCount] != -1) {
                 decorationTable->originalPalettesCount++;
             }
         } else {
-            decorationTable->originalPalettesList = spr_get_npc_palettes(part->currentAnimation >> 16);
+            decorationTable->originalPalettesList = spr_get_npc_palettes(part->curAnimation >> 16);
             decorationTable->originalPalettesCount = 0;
             while ((s32)decorationTable->originalPalettesList[decorationTable->originalPalettesCount] != -1) {
                 decorationTable->originalPalettesCount++;
@@ -2607,14 +2612,14 @@ void render_with_berserk_palettes(b32 isNpcSprite, ActorPart* part, s32 yaw, Mat
 
     if (decorationTable->resetPalAdjust) {
         if (isNpcSprite == SPRITE_MODE_PLAYER) {
-            decorationTable->originalPalettesList = spr_get_player_palettes(part->currentAnimation >> 16);
+            decorationTable->originalPalettesList = spr_get_player_palettes(part->curAnimation >> 16);
             decorationTable->originalPalettesCount = 0;
             while ((s32)decorationTable->originalPalettesList[decorationTable->originalPalettesCount] != -1) {
                 decorationTable->originalPalettesCount++;
             }
             decorationTable->palAnimState = 0;
         } else {
-            decorationTable->originalPalettesList = spr_get_npc_palettes(part->currentAnimation >> 16);
+            decorationTable->originalPalettesList = spr_get_npc_palettes(part->curAnimation >> 16);
             decorationTable->originalPalettesCount = 0;
             while ((s32)decorationTable->originalPalettesList[decorationTable->originalPalettesCount] != -1) {
                 decorationTable->originalPalettesCount++;
@@ -2669,19 +2674,19 @@ void render_with_watt_idle_palettes(b32 isNpcSprite, ActorPart* part, s32 yaw, M
 
     if (decorationTable->resetPalAdjust) {
         if (isNpcSprite == SPRITE_MODE_PLAYER) {
-            decorationTable->originalPalettesList = spr_get_player_palettes(part->currentAnimation >> 16);
+            decorationTable->originalPalettesList = spr_get_player_palettes(part->curAnimation >> 16);
             decorationTable->originalPalettesCount = 0;
             while ((s32)decorationTable->originalPalettesList[decorationTable->originalPalettesCount] != -1) {
                 decorationTable->originalPalettesCount++;
             }
             decorationTable->spriteColorVariations = SPR_PLAYER_COLOR_VARIATIONS;
         } else {
-            decorationTable->originalPalettesList = spr_get_npc_palettes(part->currentAnimation >> 16);
+            decorationTable->originalPalettesList = spr_get_npc_palettes(part->curAnimation >> 16);
             decorationTable->originalPalettesCount = 0;
             while ((s32)decorationTable->originalPalettesList[decorationTable->originalPalettesCount] != -1) {
                 decorationTable->originalPalettesCount++;
             }
-            decorationTable->spriteColorVariations = spr_get_npc_color_variations(part->currentAnimation >> 16);
+            decorationTable->spriteColorVariations = spr_get_npc_color_variations(part->curAnimation >> 16);
         }
 
         for (i = 0; i < decorationTable->originalPalettesCount; i++) {
@@ -2781,19 +2786,19 @@ void render_with_watt_attack_palettes(b32 isNpcSprite, ActorPart* part, s32 yaw,
 
     if (decorationTable->resetPalAdjust) {
         if (isNpcSprite == SPRITE_MODE_PLAYER) {
-            decorationTable->originalPalettesList = spr_get_player_palettes(part->currentAnimation >> 16);
+            decorationTable->originalPalettesList = spr_get_player_palettes(part->curAnimation >> 16);
             decorationTable->originalPalettesCount = 0;
             while ((s32)decorationTable->originalPalettesList[decorationTable->originalPalettesCount] != -1) {
                 decorationTable->originalPalettesCount++;
             }
             decorationTable->spriteColorVariations = SPR_PLAYER_COLOR_VARIATIONS;
         } else {
-            decorationTable->originalPalettesList = spr_get_npc_palettes(part->currentAnimation >> 16);
+            decorationTable->originalPalettesList = spr_get_npc_palettes(part->curAnimation >> 16);
             decorationTable->originalPalettesCount = 0;
             while ((s32)decorationTable->originalPalettesList[decorationTable->originalPalettesCount] != -1) {
                 decorationTable->originalPalettesCount++;
             }
-            decorationTable->spriteColorVariations = spr_get_npc_color_variations(part->currentAnimation >> 16);
+            decorationTable->spriteColorVariations = spr_get_npc_color_variations(part->curAnimation >> 16);
         }
 
         for (i = 0; i < decorationTable->originalPalettesCount; i++) {
@@ -2892,7 +2897,7 @@ void render_with_player_debuff_palettes(b32 isNpcSprite, ActorPart* part, s32 ya
 
     if (decorationTable->resetPalAdjust) {
         if (isNpcSprite == SPRITE_MODE_PLAYER) {
-            decorationTable->originalPalettesList = spr_get_player_palettes(part->currentAnimation >> 16);
+            decorationTable->originalPalettesList = spr_get_player_palettes(part->curAnimation >> 16);
             decorationTable->originalPalettesCount = 0;
             while ((s32)decorationTable->originalPalettesList[decorationTable->originalPalettesCount] != -1) {
                 decorationTable->originalPalettesCount++;
@@ -2904,12 +2909,12 @@ void render_with_player_debuff_palettes(b32 isNpcSprite, ActorPart* part, s32 ya
                 decorationTable->spriteColorVariations = SPR_PLAYER_COLOR_VARIATIONS;
             }
         } else {
-            decorationTable->originalPalettesList = spr_get_npc_palettes(part->currentAnimation >> 16);
+            decorationTable->originalPalettesList = spr_get_npc_palettes(part->curAnimation >> 16);
             decorationTable->originalPalettesCount = 0;
             while ((s32)decorationTable->originalPalettesList[decorationTable->originalPalettesCount] != -1) {
                 decorationTable->originalPalettesCount++;
             }
-            decorationTable->spriteColorVariations = spr_get_npc_color_variations(part->currentAnimation >> 16);
+            decorationTable->spriteColorVariations = spr_get_npc_color_variations(part->curAnimation >> 16);
         }
 
         if (decorationTable->resetPalAdjust == TRUE) {
@@ -3019,13 +3024,13 @@ void render_with_pal_blending(b32 isNpcSprite, ActorPart* part, s32 yaw, b32 has
 
     if (decor->resetPalAdjust != 0) {
         if (isNpcSprite == SPRITE_MODE_PLAYER) {
-            decor->originalPalettesList = spr_get_player_palettes(part->currentAnimation >> 16);
+            decor->originalPalettesList = spr_get_player_palettes(part->curAnimation >> 16);
             decor->originalPalettesCount = 0;
             while ((s32)decor->originalPalettesList[decor->originalPalettesCount] != -1) {
                 decor->originalPalettesCount++;
             }
         } else {
-            decor->originalPalettesList = spr_get_npc_palettes(part->currentAnimation >> 16);
+            decor->originalPalettesList = spr_get_npc_palettes(part->curAnimation >> 16);
             decor->originalPalettesCount = 0;
             while ((s32)decor->originalPalettesList[decor->originalPalettesCount] != -1) {
                 decor->originalPalettesCount++;
@@ -3191,18 +3196,18 @@ void render_with_palset_blending(b32 isNpcSprite, ActorPart* part, s32 yaw, Matr
 
     if (decor->resetPalAdjust != 0) {
         if (isNpcSprite == SPRITE_MODE_PLAYER) {
-            decor->originalPalettesList = spr_get_player_palettes(part->currentAnimation >> 16);
+            decor->originalPalettesList = spr_get_player_palettes(part->curAnimation >> 16);
             decor->originalPalettesCount = 0;
             while (decor->originalPalettesList[decor->originalPalettesCount] != (PAL_PTR) -1) {
                 decor->originalPalettesCount++;
             }
         } else {
-            decor->originalPalettesList = spr_get_npc_palettes(part->currentAnimation >> 16);
+            decor->originalPalettesList = spr_get_npc_palettes(part->curAnimation >> 16);
             decor->originalPalettesCount = 0;
             while (decor->originalPalettesList[decor->originalPalettesCount] != (PAL_PTR) -1) {
                 decor->originalPalettesCount++;
             }
-            decor->spriteColorVariations = spr_get_npc_color_variations(part->currentAnimation >> 16);
+            decor->spriteColorVariations = spr_get_npc_color_variations(part->curAnimation >> 16);
         }
 
         if (decor->resetPalAdjust == 1) {
@@ -3658,7 +3663,7 @@ void func_8025D160(ActorPart* arg0, s32 index) {
 
     switch (table->state[index]) {
         case 0:
-            fx_aura(3, arg0->currentPos.x, arg0->currentPos.y, arg0->currentPos.z, 0.4f, &table->effect[index]);
+            fx_aura(3, arg0->curPos.x, arg0->curPos.y, arg0->curPos.z, 0.4f, &table->effect[index]);
             table->state[index] = 1;
             table->unk_8C6[index].unk00 = 40;
             table->unk_8C6[index].unk02 = 40;
@@ -3667,9 +3672,9 @@ void func_8025D160(ActorPart* arg0, s32 index) {
         case 1:
             effect = table->effect[index];
             data = effect->data.aura;
-            data->posA.x = arg0->currentPos.x + table->unk_8C6[index].unk04;
-            data->posA.y = arg0->currentPos.y;
-            data->posA.z = arg0->currentPos.z;
+            data->posA.x = arg0->curPos.x + table->unk_8C6[index].unk04;
+            data->posA.y = arg0->curPos.y;
+            data->posA.z = arg0->curPos.z;
             scale = table->unk_8C6[index].unk00;
             scale /= 100.0f;
             effect->data.aura->scale.x = scale;
@@ -3690,9 +3695,9 @@ void func_8025D2B0(ActorPart* part, s32 decorationIndex) {
     switch (decor->state[decorationIndex]) {
         case 0:
             if (part->yaw > 90.0f) {
-                fx_sweat(0, part->currentPos.x, part->currentPos.y + part->size.y, part->currentPos.z, 5.0f, 45.0f, 20);
+                fx_sweat(0, part->curPos.x, part->curPos.y + part->size.y, part->curPos.z, 5.0f, 45.0f, 20);
             } else {
-                fx_sweat(0, part->currentPos.x, part->currentPos.y + part->size.y, part->currentPos.z, 5.0f, -45.0f, 20);
+                fx_sweat(0, part->curPos.x, part->curPos.y + part->size.y, part->curPos.z, 5.0f, -45.0f, 20);
             }
             decor->stateResetTimer[decorationIndex] = 10;
             decor->state[decorationIndex] = TRUE;
@@ -3718,15 +3723,15 @@ void func_8025D3CC(ActorPart* part, s32 decorationIndex) {
     decor = part->decorationTable;
     switch (decor->state[decorationIndex]) {
         case 0:
-            fx_stars_orbiting(0, part->currentPos.x, part->currentPos.y + part->size.y, part->currentPos.z,
+            fx_stars_orbiting(0, part->curPos.x, part->curPos.y + part->size.y, part->curPos.z,
                 20.0f, 3, &decor->effect[decorationIndex]);
             decor->state[decorationIndex] = 1;
             break;
         case 1:
             data = decor->effect[decorationIndex]->data.starsOrbiting;
-            data->pos.x = part->currentPos.x;
-            data->pos.y = part->currentPos.y + part->size.y;
-            data->pos.z = part->currentPos.z;
+            data->pos.x = part->curPos.x;
+            data->pos.y = part->curPos.y + part->size.y;
+            data->pos.z = part->curPos.z;
             break;
     }
 }
@@ -3743,7 +3748,7 @@ void func_8025D4C8(ActorPart* part, s32 decorationIndex) {
 
     switch (decor->state[decorationIndex]) {
         case 0:
-            fx_aura(1, part->currentPos.x, part->currentPos.y, part->currentPos.z, 0.4f, &decor->effect[decorationIndex]);
+            fx_aura(1, part->curPos.x, part->curPos.y, part->curPos.z, 0.4f, &decor->effect[decorationIndex]);
             decor->state[decorationIndex] = 1;
             decor->unk_8C6[decorationIndex].unk00 = 40;
             decor->unk_8C6[decorationIndex].unk02 = 40;
@@ -3756,9 +3761,9 @@ void func_8025D4C8(ActorPart* part, s32 decorationIndex) {
         case 1:
             effect = decor->effect[decorationIndex];
             data = effect->data.aura;
-            data->posA.x = part->currentPos.x;
-            data->posA.y = part->currentPos.y;
-            data->posA.z = part->currentPos.z + decor->unk_8C6[decorationIndex].unk06;
+            data->posA.x = part->curPos.x;
+            data->posA.y = part->curPos.y;
+            data->posA.z = part->curPos.z + decor->unk_8C6[decorationIndex].unk06;
 
             scale = decor->unk_8C6[decorationIndex].unk00;
             scale /= 100.0f;
@@ -3781,14 +3786,14 @@ void func_8025D640(ActorPart* part, s32 decorationIndex) {
 
     switch (decor->state[decorationIndex]) {
         case 0:
-            decor->effect[decorationIndex] = fx_65(1, part->currentPos.x, part->currentPos.y, part->currentPos.z, 1.0f, 0);
+            decor->effect[decorationIndex] = fx_effect_65(1, part->curPos.x, part->curPos.y, part->curPos.z, 1.0f, 0);
             decor->state[decorationIndex] = 1;
             break;
         case 1:
             effect = decor->effect[decorationIndex];
-            effect->data.unk_65->pos.x = part->currentPos.x;
-            effect->data.unk_65->pos.y = part->currentPos.y;
-            effect->data.unk_65->pos.z = part->currentPos.z;
+            effect->data.unk_65->pos.x = part->curPos.x;
+            effect->data.unk_65->pos.y = part->curPos.y;
+            effect->data.unk_65->pos.z = part->curPos.z;
             break;
     }
 }
@@ -3803,15 +3808,15 @@ void func_8025D71C(ActorPart* part, s32 decorationIndex) {
 
     switch (decor->state[decorationIndex]) {
         case 0:
-            decor->effect[decorationIndex] = fx_65(2, part->currentPos.x, part->currentPos.y, part->currentPos.z, 1.0f, 0);
+            decor->effect[decorationIndex] = fx_effect_65(2, part->curPos.x, part->curPos.y, part->curPos.z, 1.0f, 0);
             decor->unk_8C6[decorationIndex].unk00 = 1;
             decor->state[decorationIndex] = 1;
             break;
         case 1:
             effect = decor->effect[decorationIndex];
-            effect->data.unk_65->pos.x = part->currentPos.x;
-            effect->data.unk_65->pos.y = part->currentPos.y;
-            effect->data.unk_65->pos.z = part->currentPos.z;
+            effect->data.unk_65->pos.x = part->curPos.x;
+            effect->data.unk_65->pos.y = part->curPos.y;
+            effect->data.unk_65->pos.z = part->curPos.z;
             effect->data.unk_65->scale = decor->unk_8C6[decorationIndex].unk00 / 100.0f;
             break;
     }
@@ -3827,14 +3832,14 @@ void func_8025D830(ActorPart* part, s32 decorationIndex) {
 
     switch (decor->state[decorationIndex]) {
         case 0:
-            decor->effect[decorationIndex] = fx_whirlwind(2, part->currentPos.x, part->currentPos.y, part->currentPos.z, 1.0f, 0);
+            decor->effect[decorationIndex] = fx_whirlwind(2, part->curPos.x, part->curPos.y, part->curPos.z, 1.0f, 0);
             decor->state[decorationIndex] = 1;
             break;
         case 1:
             effect = decor->effect[decorationIndex];
-            effect->data.whirlwind->pos.x = part->currentPos.x;
-            effect->data.whirlwind->pos.y = part->currentPos.y;
-            effect->data.whirlwind->pos.z = part->currentPos.z;
+            effect->data.whirlwind->pos.x = part->curPos.x;
+            effect->data.whirlwind->pos.y = part->curPos.y;
+            effect->data.whirlwind->pos.z = part->curPos.z;
             break;
     }
 }
@@ -3860,9 +3865,9 @@ void func_8025D90C(ActorPart* part, s32 decorationIndex) {
                 sinA = sin_rad(angle);
                 cosA = cos_rad(angle);
                 fx_walking_dust(0,
-                    part->currentPos.x + (part->size.x * sinA * 0.2f),
-                    part->currentPos.y + 1.5f,
-                    part->currentPos.z + (part->size.x * cosA * 0.2f),
+                    part->curPos.x + (part->size.x * sinA * 0.2f),
+                    part->curPos.y + 1.5f,
+                    part->curPos.z + (part->size.x * cosA * 0.2f),
                     sinA, cosA);
             }
             break;
@@ -3883,9 +3888,9 @@ void func_8025DA68(ActorPart* part, s32 decorationIndex) {
                 decor->state[decorationIndex] = 1;
                 // fallthrough
             case 1:
-                x = part->currentPos.x;
-                y = part->currentPos.y + (part->size.y / 2);
-                z = part->currentPos.z - 5.0f;
+                x = part->curPos.x;
+                y = part->curPos.y + (part->size.y / 2);
+                z = part->curPos.z - 5.0f;
                 // @bug? perhaps this should be % 4?
                 if ((gGameStatusPtr->frameCounter / 4) == 0) {
                     fx_sparkles(FX_SPARKLES_1, x, y, z, 10.0f);
@@ -3911,7 +3916,7 @@ void func_8025DBD0(ActorPart* part, s32 decorationIndex) {
 
     switch (decor->state[decorationIndex]) {
         case 0:
-            fx_aura(2, part->currentPos.x, part->currentPos.y, part->currentPos.z, 1.2f, &decor->effect[decorationIndex]);
+            fx_aura(2, part->curPos.x, part->curPos.y, part->curPos.z, 1.2f, &decor->effect[decorationIndex]);
             decor->state[decorationIndex] = 1;
             decor->unk_8C6[decorationIndex].unk00 = 150;
             decor->unk_8C6[decorationIndex].unk02 = 150;
@@ -3921,9 +3926,9 @@ void func_8025DBD0(ActorPart* part, s32 decorationIndex) {
         case 1:
             effect = decor->effect[decorationIndex];
             data = effect->data.aura;
-            data->posA.x = part->currentPos.x;
-            data->posA.y = part->currentPos.y;
-            data->posA.z = part->currentPos.z + decor->unk_8C6[decorationIndex].unk06;
+            data->posA.x = part->curPos.x;
+            data->posA.y = part->curPos.y;
+            data->posA.z = part->curPos.z + decor->unk_8C6[decorationIndex].unk06;
 
             scale = decor->unk_8C6[decorationIndex].unk00;
             scale /= 100.0f;
@@ -3948,7 +3953,7 @@ void func_8025DD60(ActorPart* part, s32 decorationIndex) {
 
     switch (decor->state[decorationIndex]) {
         case 0:
-            decor->effect[decorationIndex] = fx_energy_in_out(4, part->currentPos.x, part->currentPos.y, part->currentPos.z, 1.2f, 0);
+            decor->effect[decorationIndex] = fx_energy_in_out(4, part->curPos.x, part->curPos.y, part->curPos.z, 1.2f, 0);
             decor->state[decorationIndex] = 1;
             decor->unk_8C6[decorationIndex].unk00 = 120;
             decor->unk_8C6[decorationIndex].unk02 = 0;
@@ -3958,9 +3963,9 @@ void func_8025DD60(ActorPart* part, s32 decorationIndex) {
             scale = decor->unk_8C6[decorationIndex].unk00;
             scale /= 100.0f;
             data->unk_44 = scale;
-            data->pos.x = part->currentPos.x;
-            data->pos.y = (part->currentPos.y + (scale * 41.0f));
-            data->pos.z = (part->currentPos.z + decor->unk_8C6[decorationIndex].unk02);
+            data->pos.x = part->curPos.x;
+            data->pos.y = (part->curPos.y + (scale * 41.0f));
+            data->pos.z = (part->curPos.z + decor->unk_8C6[decorationIndex].unk02);
             break;
     }
 }

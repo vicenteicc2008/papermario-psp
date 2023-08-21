@@ -3,17 +3,17 @@
 
 API_CALLABLE(N(SetPlayerAsPeach)) {
     gGameStatusPtr->peachFlags |= PEACH_STATUS_FLAG_IS_PEACH;
-    script->varTable[0] = gPlayerData.currentPartner;
-    gPlayerData.currentPartner = PARTNER_TWINK;
+    script->varTable[0] = gPlayerData.curPartner;
+    gPlayerData.curPartner = PARTNER_TWINK;
     return ApiStatus_DONE2;
 }
 
 API_CALLABLE(N(GetKammyFlightEmitterPos)) {
     Npc* npc = get_npc_unsafe(NPC_Kammy);
 
-    script->varTable[0] = npc->pos.x + (sin_deg(npc->yaw + gCameras[CAM_DEFAULT].currentYaw + 180.0f) * 20.0f);
+    script->varTable[0] = npc->pos.x + (sin_deg(npc->yaw + gCameras[CAM_DEFAULT].curYaw + 180.0f) * 20.0f);
     script->varTable[1] = npc->pos.y + 18.0f;
-    script->varTable[2] = npc->pos.z - (cos_deg(npc->yaw + gCameras[CAM_DEFAULT].currentYaw + 180.0f) * 20.0f);
+    script->varTable[2] = npc->pos.z - (cos_deg(npc->yaw + gCameras[CAM_DEFAULT].curYaw + 180.0f) * 20.0f);
     return ApiStatus_DONE2;
 }
 
@@ -37,7 +37,7 @@ EvtScript N(EVS_PlayKammyFlightFX) = {
     EVT_CHILD_THREAD
         EVT_SET(LVar0, 110)
         EVT_LOOP(0)
-            EVT_CALL(PlaySoundWithVolume, SOUND_295, LVar0)
+            EVT_CALL(PlaySoundWithVolume, SOUND_FLIGHT, LVar0)
             EVT_ADD(LVar0, -2)
             EVT_IF_LT(LVar0, 10)
                 EVT_SET(LVar0, 10)

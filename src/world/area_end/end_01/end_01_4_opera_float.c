@@ -5,7 +5,7 @@
 extern s32 N(SpotlightsAlpha);
 
 API_CALLABLE(N(SetWorldDark)) {
-    func_8011B950(MODEL_Root, -1, 1, 0);
+    func_8011B950(MODEL_Root, CUSTOM_GFX_NONE, FOG_MODE_1, 0);
     set_background_color_blend(0, 0, 0, 255);
     return ApiStatus_DONE2;
 }
@@ -23,7 +23,7 @@ API_CALLABLE(N(FadeInWorld)) {
     set_background_color_blend(0, 0, 0, script->functionTemp[1]);
 
     if (script->functionTemp[1] == 0) {
-        func_8011B950(MODEL_Root, -1, 0, 0);
+        func_8011B950(MODEL_Root, CUSTOM_GFX_NONE, FOG_MODE_0, 0);
         return ApiStatus_DONE2;
     } else {
         return ApiStatus_BLOCK;
@@ -38,7 +38,7 @@ API_CALLABLE(N(UpdateStarSpiritRotation)) {
         script->functionTemp[0] = 0;
     }
     npc = script->functionTempPtr[2];
-    npc->rotation.y = update_lerp(EASING_QUADRATIC_OUT, 810.0f, 0.0f, script->functionTemp[0], 45);
+    npc->rot.y = update_lerp(EASING_QUADRATIC_OUT, 810.0f, 0.0f, script->functionTemp[0], 45);
     npc->alpha = update_lerp(EASING_QUADRATIC_OUT, 0.0f, 255.0f, script->functionTemp[0], 45);
 
     script->functionTemp[0]++;
@@ -265,7 +265,7 @@ EvtScript N(EVS_UpdateLightshow) = {
     EVT_CALL(EnableModel, MODEL_kino8, TRUE)
     EVT_CALL(EnableTexPanning, MODEL_kino8, TRUE)
     EVT_CALL(SetModelCustomGfx, MODEL_kino7, CUSTOM_GFX_1, -1)
-    EVT_CALL(SetCustomGfxBuilders, CUSTOM_GFX_1, EVT_PTR(N(gfx_build_set_spotlight_alpha)), 0)
+    EVT_CALL(SetCustomGfxBuilders, CUSTOM_GFX_1, EVT_PTR(N(gfx_build_set_spotlight_alpha)), NULL)
     EVT_CHILD_THREAD
         EVT_CALL(MakeLerp, 0, 255, 90, EASING_LINEAR)
         EVT_LOOP(0)
@@ -306,7 +306,7 @@ EvtScript N(EVS_ParadePhase_Opera) = {
     EVT_SET(LVar0, 1)
     EVT_EXEC_GET_TID(N(EVS_TexPan_OperaFloat_MainStageLights), LVarA)
     EVT_EXEC_GET_TID(N(EVS_UpdateLightshow), LVarC)
-    EVT_CALL(SetNpcFlagBits, NPC_Singer, NPC_FLAG_8, TRUE)
+    EVT_CALL(SetNpcFlagBits, NPC_Singer, NPC_FLAG_FLYING, TRUE)
     EVT_CALL(MakeLerp, 0, 55, 90 * DT, EASING_LINEAR)
     EVT_LOOP(0)
         EVT_CALL(UpdateLerp)

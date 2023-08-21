@@ -9,7 +9,7 @@ MAP_STATIC_PAD(1,key_item);
 API_CALLABLE(N(GetAngleToPlayer)) {
     Npc* npc = get_npc_safe(script->owner2.npcID);
 
-    script->varTable[0] = clamp_angle(atan2(npc->pos.x, npc->pos.z, gPlayerStatus.position.x, gPlayerStatus.position.z));
+    script->varTable[0] = clamp_angle(atan2(npc->pos.x, npc->pos.z, gPlayerStatus.pos.x, gPlayerStatus.pos.z));
     return ApiStatus_DONE2;
 }
 
@@ -78,7 +78,7 @@ EvtScript N(EVS_ChangeDinoDirection) = {
                 EVT_END_IF
             EVT_END_LOOP
         EVT_END_THREAD
-        EVT_CALL(PlaySoundAtNpc, NPC_SELF, SOUND_1ED, 0)
+        EVT_CALL(PlaySoundAtNpc, NPC_SELF, SOUND_PRA_ROTATE_ALBINO_DINO, SOUND_SPACE_DEFAULT)
         EVT_SWITCH(LVar5)
             EVT_CASE_OR_EQ(90)
             EVT_CASE_OR_EQ(270)

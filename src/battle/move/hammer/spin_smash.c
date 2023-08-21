@@ -1,14 +1,15 @@
 #include "common.h"
 #include "effects.h"
+#include "sprite/player.h"
 
 #define NAMESPACE battle_move_spin_smash
 
 API_CALLABLE(func_802A1000_737890) {
     BattleStatus* battleStatus = &gBattleStatus;
     Actor* playerActor = battleStatus->playerActor;
-    f32 xPos = playerActor->currentPos.x + 20.0f;
-    f32 yPos = playerActor->currentPos.y + 15.0f;
-    f32 zPos = playerActor->currentPos.z + 5.0f;
+    f32 xPos = playerActor->curPos.x + 20.0f;
+    f32 yPos = playerActor->curPos.y + 15.0f;
+    f32 zPos = playerActor->curPos.z + 5.0f;
 
     fx_stars_spread(0, xPos, yPos, zPos, 6, 20);
 
@@ -18,9 +19,9 @@ API_CALLABLE(func_802A1000_737890) {
 API_CALLABLE(func_802A1074_737904) {
     BattleStatus* battleStatus = &gBattleStatus;
     Actor* playerActor = battleStatus->playerActor;
-    f32 xPos = playerActor->currentPos.x + 20.0f;
-    f32 yPos = playerActor->currentPos.y + 15.0f;
-    f32 zPos = playerActor->currentPos.z + 5.0f;
+    f32 xPos = playerActor->curPos.x + 20.0f;
+    f32 yPos = playerActor->curPos.y + 15.0f;
+    f32 zPos = playerActor->curPos.z + 5.0f;
 
     fx_steam_burst(0, xPos, yPos, zPos, 1.0f, 20);
 
@@ -92,7 +93,7 @@ EvtScript N(EVS_UseMove1_Impl) = {
     EVT_CALL(SetGoalToTarget, ACTOR_PLAYER)
     EVT_CALL(AddGoalPos, ACTOR_PLAYER, 0, 0, 0)
     EVT_CALL(UseBattleCamPreset, BTL_CAM_PLAYER_AIM_HAMMER)
-    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_10B)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HAMMER_WINDUP)
     EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB2_SpinSmash1_Raise)
     EVT_WAIT(8)
     EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB2_SpinSmash1_Hold1)
@@ -107,11 +108,11 @@ EvtScript N(EVS_UseMove1_Impl) = {
         EVT_END_LOOP
     EVT_END_IF
     EVT_CALL(action_command_hammer_start, 0, LVarD, 3)
-    EVT_CALL(SetActionResult, 0)
+    EVT_CALL(SetActionQuality, 0)
     EVT_SET(LVar1, 0)
     EVT_LOOP(30)
         EVT_WAIT(1)
-        EVT_CALL(GetActionResult, LVar0)
+        EVT_CALL(GetActionQuality, LVar0)
         EVT_IF_NE(LVar0, 0)
             EVT_IF_NE(LVar1, 1)
                 EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB2_SpinSmash1_Hold2)
@@ -135,7 +136,7 @@ EvtScript N(EVS_UseMove1_Impl) = {
     EVT_WAIT(3)
     EVT_CALL(UseBattleCamPreset, BTL_CAM_PRESET_46)
     EVT_CALL(StartRumble, 7)
-    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_211E)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_SPIN_SMASH_1)
     EVT_CALL(PlayerTestEnemy, LVar0, DAMAGE_TYPE_SMASH, 25, 0, 0, 16)
     EVT_IF_EQ(LVar0, HIT_RESULT_MISS)
         EVT_WAIT(10)
@@ -214,7 +215,7 @@ EvtScript N(EVS_UseMove2_Impl) = {
     EVT_CALL(SetGoalToTarget, ACTOR_PLAYER)
     EVT_CALL(AddGoalPos, ACTOR_PLAYER, 0, 0, 0)
     EVT_CALL(UseBattleCamPreset, BTL_CAM_PLAYER_AIM_HAMMER)
-    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_10B)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HAMMER_WINDUP)
     EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB2_SpinSmash2_Raise)
     EVT_WAIT(8)
     EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB2_SpinSmash2_Hold1)
@@ -229,11 +230,11 @@ EvtScript N(EVS_UseMove2_Impl) = {
         EVT_END_LOOP
     EVT_END_IF
     EVT_CALL(action_command_hammer_start, 0, LVarD, 3)
-    EVT_CALL(SetActionResult, 0)
+    EVT_CALL(SetActionQuality, 0)
     EVT_SET(LVar1, 0)
     EVT_LOOP(30)
         EVT_WAIT(1)
-        EVT_CALL(GetActionResult, LVar0)
+        EVT_CALL(GetActionQuality, LVar0)
         EVT_IF_NE(LVar0, 0)
             EVT_IF_NE(LVar1, 1)
                 EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB2_SpinSmash2_Hold2)
@@ -257,7 +258,7 @@ EvtScript N(EVS_UseMove2_Impl) = {
     EVT_WAIT(3)
     EVT_CALL(UseBattleCamPreset, BTL_CAM_PRESET_46)
     EVT_CALL(StartRumble, 8)
-    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_211F)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_SPIN_SMASH_2)
     EVT_CALL(PlayerTestEnemy, LVar0, DAMAGE_TYPE_SMASH, 25, 0, 0, 16)
     EVT_IF_EQ(LVar0, HIT_RESULT_MISS)
         EVT_WAIT(10)
@@ -334,7 +335,7 @@ EvtScript N(EVS_UseMove3_Impl) = {
     EVT_END_SWITCH
     EVT_CALL(InitTargetIterator)
     EVT_CALL(UseBattleCamPreset, BTL_CAM_PLAYER_AIM_HAMMER)
-    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_10B)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_HAMMER_WINDUP)
     EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB2_SpinSmash3_Raise)
     EVT_WAIT(8)
     EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB2_SpinSmash3_Hold1)
@@ -349,11 +350,11 @@ EvtScript N(EVS_UseMove3_Impl) = {
         EVT_END_LOOP
     EVT_END_IF
     EVT_CALL(action_command_hammer_start, 0, LVarD, 3)
-    EVT_CALL(SetActionResult, 0)
+    EVT_CALL(SetActionQuality, 0)
     EVT_SET(LVar1, 0)
     EVT_LOOP(30)
         EVT_WAIT(1)
-        EVT_CALL(GetActionResult, LVar0)
+        EVT_CALL(GetActionQuality, LVar0)
         EVT_IF_NE(LVar0, 0)
             EVT_IF_NE(LVar1, 1)
                 EVT_CALL(SetAnimation, ACTOR_PLAYER, 0, ANIM_MarioB2_SpinSmash3_Hold2)
@@ -377,7 +378,7 @@ EvtScript N(EVS_UseMove3_Impl) = {
     EVT_WAIT(3)
     EVT_CALL(UseBattleCamPreset, BTL_CAM_PRESET_46)
     EVT_CALL(StartRumble, 9)
-    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_2120)
+    EVT_CALL(PlaySoundAtActor, ACTOR_PLAYER, SOUND_SPIN_SMASH_3)
     EVT_CALL(PlayerTestEnemy, LVar0, DAMAGE_TYPE_SMASH, 25, 0, 0, 16)
     EVT_IF_EQ(LVar0, HIT_RESULT_MISS)
         EVT_WAIT(10)

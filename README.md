@@ -14,7 +14,7 @@ It builds the following ROMs:
 | PAL    | `2111d39265a317414d359e35a7d971c4dfa5f9e1` | [![Progress (PAL)][progress-pal-badge]][progress-pal]    |
 | iQue   | `5c724685085eba796537573dd6f84aaddedc8582` | [![Progress (iQue)][progress-ique-badge]][progress-ique] |
 
-To set up the repository, see [INSTALL.md](INSTALL.md).
+To set up the repository, see [SETUP.md](SETUP.md).
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for information on how to contribute to the project. Any and all help is welcome!
 
@@ -35,5 +35,5 @@ Also see our website at [papermar.io](https://papermar.io/).
 [progress-ique]: https://papermar.io/progress-ique
 [progress-ique-badge]: https://img.shields.io/endpoint?url=https://papermar.io/reports/progress_ique_shield.json
 
-[discord]: https://discord.gg/urUm3VG
-[discord-badge]: https://img.shields.io/discord/279322074412089344?color=%237289DA&logo=discord&logoColor=ffffff
+[discord]: https://discord.gg/PgcMpQTzh5
+[discord-badge]: https://img.shields.io/discord/1141775228440158338?color=%237289DA&logo=discord&logoColor=ffffff

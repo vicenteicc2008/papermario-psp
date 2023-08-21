@@ -15,6 +15,8 @@ extern StaticAnimatorNode* Entity_HitFloatingYellowBlock_Mesh[];
 extern AnimScript Entity_HitRedBlock_AnimationHit;
 extern StaticAnimatorNode* Entity_HitRedBlock_Mesh[];
 
+extern s32 D_802EA310[];
+
 extern EntityBlueprint Entity_HitGroundedYellowBlock;
 extern EntityBlueprint Entity_HitFloatingYellowBlock;
 extern EntityBlueprint Entity_HitRedBlock;
@@ -66,11 +68,11 @@ void entity_ItemBlock_spawn_item(Entity* entity) {
     entity->flags |= ENTITY_FLAG_100000;
 
     if (data->item == ITEM_COIN) {
-        make_item_entity(ITEM_COIN, entity->position.x, entity->position.y + 28.0, entity->position.z,
+        make_item_entity(ITEM_COIN, entity->pos.x, entity->pos.y + 28.0, entity->pos.z,
             ITEM_SPAWN_MODE_ITEM_BLOCK_COIN, 0, angle, data->gameFlagIndex);
     } else {
         angle += 360;
-        make_item_entity(data->item, entity->position.x, entity->position.y + 20.0, entity->position.z,
+        make_item_entity(data->item, entity->pos.x, entity->pos.y + 20.0, entity->pos.z,
             (gItemTable[data->item].typeFlags & ITEM_TYPE_FLAG_BADGE) ? ITEM_SPAWN_MODE_ITEM_BLOCK_BADGE : ITEM_SPAWN_MODE_ITEM_BLOCK_ITEM,
             0, angle, data->gameFlagIndex);
     }
@@ -82,7 +84,7 @@ void entity_TriggerBlock_start_bound_script_2(Entity* entity) {
 }
 
 void entity_TriggerBlock_play_vanish_effect(Entity* entity) {
-    TriggerBlockVanishEffect = fx_cold_breath(0, entity->position.x, entity->position.y, entity->position.z, 1.0f, 0x3C);
+    TriggerBlockVanishEffect = fx_cold_breath(0, entity->pos.x, entity->pos.y, entity->pos.z, 1.0f, 0x3C);
 }
 
 void entity_HitItemBlock_play_anim(Entity* entity) {
@@ -117,7 +119,7 @@ void entity_ItemBlock_check_if_inactive(Entity* entity) {
         } else {
             bp = &Entity_InertRedBlock;
         }
-        create_entity(bp, (s32)entity->position.x, (s32)entity->position.y, (s32)entity->position.z, (s32)entity->rotation.y, MAKE_ENTITY_END);
+        create_entity(bp, (s32)entity->pos.x, (s32)entity->pos.y, (s32)entity->pos.z, (s32)entity->rot.y, MAKE_ENTITY_END);
         set_entity_commandlist(entity, D_802EA310);
     } else {
         exec_entity_commandlist(entity);
@@ -144,7 +146,7 @@ void entity_ItemBlock_replace_with_inactive(Entity* entity) {
     }
 
     // this child entity is the inert block
-    childEntityIndex = create_entity(bp, (s32)entity->position.x, (s32)entity->position.y, (s32)entity->position.z, (s32)entity->rotation.y, MAKE_ENTITY_END);
+    childEntityIndex = create_entity(bp, (s32)entity->pos.x, (s32)entity->pos.y, (s32)entity->pos.z, (s32)entity->rot.y, MAKE_ENTITY_END);
     childEntity = get_entity_by_index(childEntityIndex);
     childEntity->flags |= ENTITY_FLAG_HIDDEN;
 
@@ -170,7 +172,7 @@ void entity_ItemBlock_replace_with_inactive(Entity* entity) {
     }
 
     // child entity is now the animated block which appears before it turns inert
-    childEntity = get_entity_by_index(create_entity(bp, (s32)entity->position.x, (s32)entity->position.y, (s32)entity->position.z, (s32)entity->rotation.y, MAKE_ENTITY_END));
+    childEntity = get_entity_by_index(create_entity(bp, (s32)entity->pos.x, (s32)entity->pos.y, (s32)entity->pos.z, (s32)entity->rot.y, MAKE_ENTITY_END));
     childEntity->alpha = entity->alpha;
     if ((entity->flags & ENTITY_FLAG_HIDDEN) || (entity->alpha < 255)) {
         childEntity->alpha = 32;
@@ -210,7 +212,7 @@ s32 entity_TriggerBlock_start_bound_script(Entity* entity) {
 
 void entity_TriggerBlock_disable_player_input(void) {
     disable_player_input();
-    gPlayerStatus.currentSpeed = 0.0f;
+    gPlayerStatus.curSpeed = 0.0f;
     gPlayerStatus.flags |= PS_FLAG_SCRIPTED_FALL;
     set_action_state(ACTION_STATE_FALLING);
     gravity_use_fall_parms();

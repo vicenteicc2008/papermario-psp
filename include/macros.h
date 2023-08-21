@@ -26,7 +26,14 @@
 #define TRANSPARENT_UNION
 #endif
 
-#define ALIGNED(x) __attribute__((aligned(x)))
+#ifndef BBPLAYER
+# define ALIGNED(x) __attribute__((aligned(x)))
+#else
+# define ALIGNED(x)
+#endif
+
+#define BBALIGNED(x) __attribute__((aligned(x)))
+
 #define ALIGN16(val) (((val) + 0xF) & ~0xF)
 #define ALIGN8(val) (((val) + 0x7) & ~0x7)
 
@@ -47,7 +54,7 @@
 
 #define PTR_LIST_END ((void*) -1)
 
-#define API_CALLABLE(name) ApiStatus name(Evt* script, s32 isInitialCall)
+#define API_CALLABLE(name) ApiStatus name(Evt* script, b32 isInitialCall)
 
 // standardized padding macros for map overlays
 #define MAP_RODATA_PAD(n,name) const s32 N(rodata_pad_##name)[n] = {};
@@ -218,6 +225,52 @@
 #define DMG_STATUS_ALWAYS(typeFlag, duration) (STATUS_FLAG_80000000 | STATUS_FLAG_RIGHT_ON | typeFlag | (duration << 8))
 #define DMG_STATUS_IGNORE_RES(typeFlag, duration) (STATUS_KEY_IGNORE_RES | typeFlag | (duration << 8))
 
+#define _RDP_WHOLE(x) (((s32)(x * 65536.0) >> 16) & 0xFFFF)
+#define _RDP_FRAC(x) ((s32)(x * 65536.0) & 0xFFFF)
+#define _RDP_PACK_WHOLE(a, b) (_RDP_WHOLE(a) << 16) | _RDP_WHOLE(b)
+#define _RDP_PACK_FRAC(a, b) (_RDP_FRAC(a) << 16) | _RDP_FRAC(b)
+
+#define RDP_MATRIX(  \
+    Ax, Bx, Cx, Dx, \
+    Ay, By, Cy, Dy, \
+    Az, Bz, Cz, Dz, \
+    Aw, Bw, Cw, Dw ) \
+{ \
+    .m = { \
+        { \
+            _RDP_PACK_WHOLE(Ax, Ay), \
+            _RDP_PACK_WHOLE(Az, Aw), \
+            _RDP_PACK_WHOLE(Bx, By), \
+            _RDP_PACK_WHOLE(Bz, Bw), \
+        }, \
+        { \
+            _RDP_PACK_WHOLE(Cx, Cy), \
+            _RDP_PACK_WHOLE(Cz, Cw), \
+            _RDP_PACK_WHOLE(Dx, Dy), \
+            _RDP_PACK_WHOLE(Dz, Dw), \
+        }, \
+        { \
+            _RDP_PACK_FRAC(Ax, Ay), \
+            _RDP_PACK_FRAC(Az, Aw), \
+            _RDP_PACK_FRAC(Bx, By), \
+            _RDP_PACK_FRAC(Bz, Bw), \
+        }, \
+        { \
+            _RDP_PACK_FRAC(Cx, Cy), \
+            _RDP_PACK_FRAC(Cz, Cw), \
+            _RDP_PACK_FRAC(Dx, Dy), \
+            _RDP_PACK_FRAC(Dz, Dw), \
+        } \
+    } \
+};
+
+#define UNPACK_PAL_R(color) (((color) >> 11) & 0x1F)
+#define UNPACK_PAL_G(color) (((color) >> 6) & 0x1F)
+#define UNPACK_PAL_B(color) (((color) >> 1) & 0x1F)
+#define UNPACK_PAL_A(color) ((color) & 1)
+
+#define PACK_PAL_RGBA(r, g, b, a) (((r) << 11) | ((g) << 6) | ((b) << 1) | (a));
+
 #define PM_CC_01        0, 0, 0, TEXEL0, PRIMITIVE, 0, TEXEL0, 0
 #define PM_CC_02        0, 0, 0, TEXEL0, TEXEL0, 0, PRIMITIVE, 0
 #define PM_CC_03        TEXEL0, 0, SHADE, 0, PRIMITIVE, 0, SHADE, 0
@@ -290,5 +343,7 @@
 #else
 #define DT (1.0f)
 #endif
+
+#define DMA_COPY_SEGMENT(segment) dma_copy(segment##_ROM_START, segment##_ROM_END, segment##_VRAM)
 
 #endif

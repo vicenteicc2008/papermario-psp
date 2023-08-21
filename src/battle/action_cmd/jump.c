@@ -11,7 +11,7 @@ API_CALLABLE(N(init)) {
 
     gBattleStatus.unk_82 = 1;
     gBattleStatus.actionCmdDifficultyTable = actionCmdTableJump;
-    gBattleStatus.unk_86 = 0;
+    gBattleStatus.actionResult = ACTION_RESULT_FAIL;
 
     if (gBattleStatus.actionCommandMode == ACTION_COMMAND_MODE_NOT_LEARNED) {
         gBattleStatus.actionSuccess = 0;
@@ -123,9 +123,9 @@ void N(update)(void) {
             if (((actionCommandStatus->prepareTime - temp_s0_3) - 2) <= 0) {
                 hud_element_set_script(actionCommandStatus->hudElements[0], &HES_AButtonDown);
             }
-            if ((battleStatus->currentButtonsPressed & BUTTON_A) && (actionCommandStatus->autoSucceed == 0)) {
+            if ((battleStatus->curButtonsPressed & BUTTON_A) && (actionCommandStatus->autoSucceed == 0)) {
                 actionCommandStatus->wrongButtonPressed = TRUE;
-                battleStatus->unk_86 = -1;
+                battleStatus->actionResult = ACTION_RESULT_EARLY;
             }
             if ((actionCommandStatus->prepareTime - temp_s0_3) > 0) {
                 actionCommandStatus->prepareTime -= 1;
@@ -153,11 +153,11 @@ void N(update)(void) {
             }
 
             if (battleStatus->actionSuccess < 0) {
-                if (((battleStatus->currentButtonsPressed & BUTTON_A)&&
+                if (((battleStatus->curButtonsPressed & BUTTON_A)&&
                     !actionCommandStatus->wrongButtonPressed) ||
                     (actionCommandStatus->autoSucceed != 0)) {
                     battleStatus->actionSuccess = 1;
-                    battleStatus->unk_86 = 1;
+                    battleStatus->actionResult = ACTION_RESULT_SUCCESS;
                     gBattleStatus.flags1 |= BS_FLAGS1_2000;
                 }
             }
@@ -187,7 +187,7 @@ void N(update)(void) {
 
 void N(draw)(void) {
     hud_element_draw_clipped(gActionCommandStatus.hudElements[0]);
-    if (!(gGameStatusPtr->demoFlags & 1)) {
+    if (!(gGameStatusPtr->demoBattleFlags & DEMO_BTL_FLAG_ENABLED)) {
         hud_element_draw_clipped(gActionCommandStatus.hudElements[1]);
     }
 }

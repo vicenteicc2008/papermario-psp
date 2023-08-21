@@ -2,6 +2,7 @@
 #include "script_api/battle.h"
 
 #define LERP(a, b, alpha) ((a) * (alpha) + (b) * (1.0f-(alpha)))
+#define CUBIC_SINE_INTERP(alpha) (1.0f - sin_rad(sin_rad(sin_rad((1.0f - alpha) * PI_S / 2) * PI_S / 2) * PI_S / 2))
 
 static f32 BattleCam_PosX;
 static f32 BattleCam_PosY;
@@ -129,8 +130,8 @@ EvtScript EVS_OnBattleInit = {
     EVT_WAIT(1)
     EVT_CALL(InitVirtualEntityList)
     EVT_CALL(InitAnimatedModels)
-    EVT_CALL(func_802CABE8, 1, 0, 240, 100, 8)
-    EVT_CALL(func_802CAE50, 1, -75, 35, 0)
+    EVT_CALL(func_802CABE8, CAM_BATTLE, 0, 240, 100, 8)
+    EVT_CALL(func_802CAE50, CAM_BATTLE, -75, 35, 0)
     EVT_CALL(BattleCamTargetActor, 0)
     EVT_CALL(func_8024CE9C)
     EVT_RETURN
@@ -167,9 +168,9 @@ s32 CamPresetUpdate_F(Evt* script, s32 isInitialCall) {
             if (actor == NULL) {
                 return ApiStatus_BLOCK;
             }
-            x = actor->currentPos.x;
-            y = actor->currentPos.y + actor->size.y / 2 + actor->size.y / 4;
-            z = actor->currentPos.z;
+            x = actor->curPos.x;
+            y = actor->curPos.y + actor->size.y / 2 + actor->size.y / 4;
+            z = actor->curPos.z;
 
             sizeY = actor->size.y;
             sizeX = actor->size.x;
@@ -180,9 +181,9 @@ s32 CamPresetUpdate_F(Evt* script, s32 isInitialCall) {
                 return ApiStatus_BLOCK;
             }
 
-            targetX = targetActor->currentPos.x;
-            targetY = targetActor->currentPos.y + targetActor->size.y / 2 + targetActor->size.y / 4;
-            targetZ = targetActor->currentPos.z;
+            targetX = targetActor->curPos.x;
+            targetY = targetActor->curPos.y + targetActor->size.y / 2 + targetActor->size.y / 4;
+            targetZ = targetActor->curPos.z;
             targetAverageSize = (targetActor->size.y + targetActor->size.x) / 2;
 
             middlePosX = x + (targetX - x) / 2;
@@ -206,9 +207,9 @@ s32 CamPresetUpdate_F(Evt* script, s32 isInitialCall) {
             if (actor == NULL) {
                 return ApiStatus_BLOCK;
             }
-            x = actor->currentPos.x;
-            y = actor->currentPos.y + actor->size.y / 2 + actor->size.y / 4;
-            z = actor->currentPos.z;
+            x = actor->curPos.x;
+            y = actor->curPos.y + actor->size.y / 2 + actor->size.y / 4;
+            z = actor->curPos.z;
 
             sizeY = actor->size.y;
             sizeX = actor->size.x;
@@ -219,9 +220,9 @@ s32 CamPresetUpdate_F(Evt* script, s32 isInitialCall) {
                 return ApiStatus_BLOCK;
             }
 
-            targetX = targetActor->currentPos.x;
-            targetY = targetActor->currentPos.y + targetActor->size.y / 2 + targetActor->size.y / 4;
-            targetZ = targetActor->currentPos.z;
+            targetX = targetActor->curPos.x;
+            targetY = targetActor->curPos.y + targetActor->size.y / 2 + targetActor->size.y / 4;
+            targetZ = targetActor->curPos.z;
             targetAverageSize = (targetActor->size.y + targetActor->size.x) /2;
 
             middlePosX = x + (targetX - x) / 2;
@@ -241,9 +242,9 @@ s32 CamPresetUpdate_F(Evt* script, s32 isInitialCall) {
             if (actor == NULL) {
                 return ApiStatus_BLOCK;
             }
-            x = actor->currentPos.x;
-            y = actor->currentPos.y + actor->size.y / 2 + actor->size.y / 4;
-            z = actor->currentPos.z;
+            x = actor->curPos.x;
+            y = actor->curPos.y + actor->size.y / 2 + actor->size.y / 4;
+            z = actor->curPos.z;
 
             sizeY = actor->size.y;
             sizeX = actor->size.x;
@@ -254,9 +255,9 @@ s32 CamPresetUpdate_F(Evt* script, s32 isInitialCall) {
                 return ApiStatus_BLOCK;
             }
 
-            targetX = targetActor->currentPos.x;
-            targetY = targetActor->currentPos.y + targetActor->size.y / 2 + targetActor->size.y / 4;
-            targetZ = targetActor->currentPos.z;
+            targetX = targetActor->curPos.x;
+            targetY = targetActor->curPos.y + targetActor->size.y / 2 + targetActor->size.y / 4;
+            targetZ = targetActor->curPos.z;
             targetAverageSize = (targetActor->size.y + targetActor->size.x) / 2;
 
             middlePosX = x + (targetX - x) / 2;
@@ -323,7 +324,7 @@ s32 CamPresetUpdate_F(Evt* script, s32 isInitialCall) {
     if (!BattleCam_UseLinearInterp) {
         alpha = BattleCam_MoveTimeLeft;
         alpha /= BattleCam_MoveTimeTotal;
-        alpha = 1.0f - sin_rad(sin_rad(sin_rad((1.0f - alpha) * PI_S / 2) * PI_S / 2) * PI_S / 2);
+        alpha = CUBIC_SINE_INTERP(alpha);
     } else {
         alpha = BattleCam_MoveTimeLeft;
         alpha /= BattleCam_MoveTimeTotal;
@@ -381,9 +382,9 @@ s32 CamPresetUpdate_M(Evt* script, s32 isInitialCall) {
             if (actor == NULL) {
                 return ApiStatus_BLOCK;
             }
-            x = actor->currentPos.x;
-            y = actor->currentPos.y + actor->size.y / 2 + actor->size.y / 4;
-            z = actor->currentPos.z;
+            x = actor->curPos.x;
+            y = actor->curPos.y + actor->size.y / 2 + actor->size.y / 4;
+            z = actor->curPos.z;
 
             sizeY = actor->size.y;
             sizeX = actor->size.x;
@@ -394,9 +395,9 @@ s32 CamPresetUpdate_M(Evt* script, s32 isInitialCall) {
                 return ApiStatus_BLOCK;
             }
 
-            targetX = targetActor->currentPos.x;
-            targetY = targetActor->currentPos.y + targetActor->size.y / 2 + targetActor->size.y / 4;
-            targetZ = targetActor->currentPos.z;
+            targetX = targetActor->curPos.x;
+            targetY = targetActor->curPos.y + targetActor->size.y / 2 + targetActor->size.y / 4;
+            targetZ = targetActor->curPos.z;
             targetAverageSize = (targetActor->size.y + targetActor->size.x) / 2;
 
             middlePosX = x + (targetX - x) / 2;
@@ -420,9 +421,9 @@ s32 CamPresetUpdate_M(Evt* script, s32 isInitialCall) {
             if (actor == NULL) {
                 return ApiStatus_BLOCK;
             }
-            x = actor->currentPos.x;
-            y = actor->currentPos.y + actor->size.y / 2 + actor->size.y / 4;
-            z = actor->currentPos.z;
+            x = actor->curPos.x;
+            y = actor->curPos.y + actor->size.y / 2 + actor->size.y / 4;
+            z = actor->curPos.z;
 
             sizeY = actor->size.y;
             sizeX = actor->size.x;
@@ -433,9 +434,9 @@ s32 CamPresetUpdate_M(Evt* script, s32 isInitialCall) {
                 return ApiStatus_BLOCK;
             }
 
-            targetX = targetActor->currentPos.x;
-            targetY = targetActor->currentPos.y + targetActor->size.y / 2 + targetActor->size.y / 4;
-            targetZ = targetActor->currentPos.z;
+            targetX = targetActor->curPos.x;
+            targetY = targetActor->curPos.y + targetActor->size.y / 2 + targetActor->size.y / 4;
+            targetZ = targetActor->curPos.z;
             targetAverageSize = (targetActor->size.y + targetActor->size.x) /2;
 
             middlePosX = x + (targetX - x) / 2;
@@ -455,9 +456,9 @@ s32 CamPresetUpdate_M(Evt* script, s32 isInitialCall) {
             if (actor == NULL) {
                 return ApiStatus_BLOCK;
             }
-            x = actor->currentPos.x;
-            y = actor->currentPos.y + actor->size.y / 2 + actor->size.y / 4;
-            z = actor->currentPos.z;
+            x = actor->curPos.x;
+            y = actor->curPos.y + actor->size.y / 2 + actor->size.y / 4;
+            z = actor->curPos.z;
 
             sizeY = actor->size.y;
             sizeX = actor->size.x;
@@ -468,9 +469,9 @@ s32 CamPresetUpdate_M(Evt* script, s32 isInitialCall) {
                 return ApiStatus_BLOCK;
             }
 
-            targetX = targetActor->currentPos.x;
-            targetY = targetActor->currentPos.y + targetActor->size.y / 2 + targetActor->size.y / 4;
-            targetZ = targetActor->currentPos.z;
+            targetX = targetActor->curPos.x;
+            targetY = targetActor->curPos.y + targetActor->size.y / 2 + targetActor->size.y / 4;
+            targetZ = targetActor->curPos.z;
             targetAverageSize = (targetActor->size.y + targetActor->size.x) / 2;
 
             middlePosX = x + (targetX - x) / 2;
@@ -537,7 +538,7 @@ s32 CamPresetUpdate_M(Evt* script, s32 isInitialCall) {
     if (!BattleCam_UseLinearInterp) {
         alpha = BattleCam_MoveTimeLeft;
         alpha /= BattleCam_MoveTimeTotal;
-        alpha = 1.0f - sin_rad(sin_rad(sin_rad((1.0f - alpha) * PI_S / 2) * PI_S / 2) * PI_S / 2);
+        alpha = CUBIC_SINE_INTERP(alpha);
     } else {
         alpha = BattleCam_MoveTimeLeft;
         alpha /= BattleCam_MoveTimeTotal;
@@ -592,9 +593,9 @@ s32 CamPresetUpdate_G(Evt* script, s32 isInitialCall) {
             if (actor == NULL) {
                 return ApiStatus_BLOCK;
             }
-            x = actor->currentPos.x;
-            y = actor->currentPos.y + actor->size.y / 2 + actor->size.y / 4;
-            z = actor->currentPos.z;
+            x = actor->curPos.x;
+            y = actor->curPos.y + actor->size.y / 2 + actor->size.y / 4;
+            z = actor->curPos.z;
 
             sizeY = actor->size.y;
             sizeX = actor->size.x;
@@ -604,9 +605,9 @@ s32 CamPresetUpdate_G(Evt* script, s32 isInitialCall) {
                 return ApiStatus_BLOCK;
             }
 
-            targetX = targetActor->currentPos.x;
-            targetY = targetActor->currentPos.y + targetActor->size.y / 2 + targetActor->size.y / 4;
-            targetZ = targetActor->currentPos.z;
+            targetX = targetActor->curPos.x;
+            targetY = targetActor->curPos.y + targetActor->size.y / 2 + targetActor->size.y / 4;
+            targetZ = targetActor->curPos.z;
             targetAverageSize = (targetActor->size.y + targetActor->size.x) / 2;
 
             middlePosX = x + (targetX - x) / 2;
@@ -626,9 +627,9 @@ s32 CamPresetUpdate_G(Evt* script, s32 isInitialCall) {
             if (actor == NULL) {
                 return ApiStatus_BLOCK;
             }
-            x = actor->currentPos.x;
-            y = actor->currentPos.y + actor->size.y / 2 + actor->size.y / 4;
-            z = actor->currentPos.z;
+            x = actor->curPos.x;
+            y = actor->curPos.y + actor->size.y / 2 + actor->size.y / 4;
+            z = actor->curPos.z;
 
             sizeY = actor->size.y;
             sizeX = actor->size.x;
@@ -638,9 +639,9 @@ s32 CamPresetUpdate_G(Evt* script, s32 isInitialCall) {
                 return ApiStatus_BLOCK;
             }
 
-            targetX = targetActor->currentPos.x;
-            targetY = targetActor->currentPos.y + targetActor->size.y / 2 + targetActor->size.y / 4;
-            targetZ = targetActor->currentPos.z;
+            targetX = targetActor->curPos.x;
+            targetY = targetActor->curPos.y + targetActor->size.y / 2 + targetActor->size.y / 4;
+            targetZ = targetActor->curPos.z;
             targetAverageSize = (targetActor->size.y + targetActor->size.x) / 2;
 
             middlePosX = x + (targetX - x) / 2;
@@ -661,9 +662,9 @@ s32 CamPresetUpdate_G(Evt* script, s32 isInitialCall) {
                 return ApiStatus_BLOCK;
             }
             actorPart = get_actor_part(targetActor, BattleCam_TargetActorPart);
-            x = actorPart->absolutePosition.x;
-            y = actorPart->absolutePosition.y + actorPart->size.y / 2 + actorPart->size.y / 4;
-            z = actorPart->absolutePosition.z;
+            x = actorPart->absolutePos.x;
+            y = actorPart->absolutePos.y + actorPart->size.y / 2 + actorPart->size.y / 4;
+            z = actorPart->absolutePos.z;
 
             sizeY = actorPart->size.y;
             sizeX = actorPart->size.x;
@@ -673,9 +674,9 @@ s32 CamPresetUpdate_G(Evt* script, s32 isInitialCall) {
                 return ApiStatus_BLOCK;
             }
 
-            targetX = targetActor->currentPos.x;
-            targetY = targetActor->currentPos.y + targetActor->size.y / 2 + targetActor->size.y / 4;
-            targetZ = targetActor->currentPos.z;
+            targetX = targetActor->curPos.x;
+            targetY = targetActor->curPos.y + targetActor->size.y / 2 + targetActor->size.y / 4;
+            targetZ = targetActor->curPos.z;
             targetAverageSize = (targetActor->size.y + targetActor->size.x) / 2;
 
             middlePosX = x + (targetX - x) / 2;
@@ -738,7 +739,7 @@ s32 CamPresetUpdate_G(Evt* script, s32 isInitialCall) {
     if (!BattleCam_UseLinearInterp) {
         alpha = BattleCam_MoveTimeLeft;
         alpha /= BattleCam_MoveTimeTotal;
-        alpha = 1.0f - sin_rad(sin_rad(sin_rad((1.0f - alpha) * PI_S / 2) * PI_S / 2) * PI_S / 2);
+        alpha = CUBIC_SINE_INTERP(alpha);
     } else {
         alpha = BattleCam_MoveTimeLeft;
         alpha /= BattleCam_MoveTimeTotal;
@@ -786,9 +787,9 @@ s32 CamPresetUpdate_I(Evt* script, s32 isInitialCall) {
                 btl_cam_use_preset(BTL_CAM_DEFAULT);
                 return ApiStatus_BLOCK;
             }
-            x = actor->currentPos.x;
-            y = actor->currentPos.y + playerStatus->colliderHeight / 2;
-            z = actor->currentPos.z;
+            x = actor->curPos.x;
+            y = actor->curPos.y + playerStatus->colliderHeight / 2;
+            z = actor->curPos.z;
 
             sizeY = actor->size.y;
             sizeX = actor->size.x;
@@ -800,9 +801,9 @@ s32 CamPresetUpdate_I(Evt* script, s32 isInitialCall) {
                 btl_cam_use_preset(BTL_CAM_DEFAULT);
                 return ApiStatus_BLOCK;
             }
-            x = actor->currentPos.x;
-            y = actor->currentPos.y + actor->size.y / 2;
-            z = actor->currentPos.z;
+            x = actor->curPos.x;
+            y = actor->curPos.y + actor->size.y / 2;
+            z = actor->curPos.z;
 
             sizeY = actor->size.y;
             sizeX = actor->size.x;
@@ -814,9 +815,9 @@ s32 CamPresetUpdate_I(Evt* script, s32 isInitialCall) {
                 btl_cam_use_preset(BTL_CAM_DEFAULT);
                 return ApiStatus_BLOCK;
             }
-            x = actor->currentPos.x;
-            y = actor->currentPos.y + actor->size.y / 2;
-            z = actor->currentPos.z;
+            x = actor->curPos.x;
+            y = actor->curPos.y + actor->size.y / 2;
+            z = actor->curPos.z;
 
             sizeY = actor->size.y;
             sizeX = actor->size.x;
@@ -860,7 +861,7 @@ s32 CamPresetUpdate_I(Evt* script, s32 isInitialCall) {
     if (!BattleCam_UseLinearInterp) {
         alpha = BattleCam_MoveTimeLeft;
         alpha /= BattleCam_MoveTimeTotal;
-        alpha = 1.0f - sin_rad(sin_rad(sin_rad((1.0f - alpha) * PI_S / 2) * PI_S / 2) * PI_S / 2);
+        alpha = CUBIC_SINE_INTERP(alpha);
     } else {
         alpha = BattleCam_MoveTimeLeft;
         alpha /= BattleCam_MoveTimeTotal;
@@ -908,36 +909,36 @@ s32 CamPresetUpdate_H(Evt* script, s32 isInitialCall) {
             if (actor == NULL) {
                 return ApiStatus_BLOCK;
             }
-            currentX = actor->currentPos.x;
+            currentX = actor->curPos.x;
             x = actor->state.goalPos.x;
             y = actor->state.goalPos.y;
             z = actor->state.goalPos.z;
             averageSize = (actor->size.y + actor->size.x) / 2;
-            currentY = actor->currentPos.y + playerStatus->colliderHeight / 2;
+            currentY = actor->curPos.y + playerStatus->colliderHeight / 2;
             break;
         case ACTOR_CLASS_PARTNER:
             actor = battleStatus->partnerActor;
             if (actor == NULL) {
                 return ApiStatus_BLOCK;
             }
-            currentX = actor->currentPos.x;
+            currentX = actor->curPos.x;
             x = actor->state.goalPos.x;
             y = actor->state.goalPos.y;
             z = actor->state.goalPos.z;
             averageSize = (actor->size.y + actor->size.x) / 2;
-            currentY = actor->currentPos.y + actor->size.y / 2;
+            currentY = actor->curPos.y + actor->size.y / 2;
             break;
         case ACTOR_CLASS_ENEMY:
             actor = battleStatus->enemyActors[actorID];
             if (actor == NULL) {
                 return ApiStatus_BLOCK;
             }
-            currentX = actor->currentPos.x;
+            currentX = actor->curPos.x;
             x = actor->state.goalPos.x;
             y = actor->state.goalPos.y;
             z = actor->state.goalPos.z;
             averageSize = (actor->size.y + actor->size.x) / 2;
-            currentY = actor->currentPos.y + actor->size.y / 2;
+            currentY = actor->curPos.y + actor->size.y / 2;
             break;
         default:
             return ApiStatus_DONE2;
@@ -980,7 +981,7 @@ s32 CamPresetUpdate_H(Evt* script, s32 isInitialCall) {
     if (!BattleCam_UseLinearInterp) {
         alpha = BattleCam_MoveTimeLeft;
         alpha /= BattleCam_MoveTimeTotal;
-        alpha = 1.0f - sin_rad(sin_rad(sin_rad((1.0f - alpha) * PI_S / 2) * PI_S / 2) * PI_S / 2);
+        alpha = CUBIC_SINE_INTERP(alpha);
     } else {
         alpha = BattleCam_MoveTimeLeft;
         alpha /= BattleCam_MoveTimeTotal;
@@ -1028,7 +1029,7 @@ ApiStatus CamPresetUpdate_N(Evt* script, s32 isInitialCall) {
     if (!BattleCam_UseLinearInterp) {
         alpha = BattleCam_MoveTimeLeft;
         alpha /= BattleCam_MoveTimeTotal;
-        alpha = 1.0f - sin_rad(sin_rad(sin_rad((1.0f - alpha) * PI_S / 2) * PI_S / 2) * PI_S / 2);
+        alpha = CUBIC_SINE_INTERP(alpha);
     } else {
         alpha = BattleCam_MoveTimeLeft;
         alpha /= BattleCam_MoveTimeTotal;
@@ -1141,7 +1142,7 @@ ApiStatus CamPresetUpdate_D(Evt* script, s32 isInitialCall) {
     if (!BattleCam_UseLinearInterp) {
         alpha = BattleCam_MoveTimeLeft;
         alpha /= BattleCam_MoveTimeTotal;
-        alpha = 1.0f - sin_rad(sin_rad(sin_rad((1.0f - alpha) * PI_S / 2) * PI_S / 2) * PI_S / 2);
+        alpha = CUBIC_SINE_INTERP(alpha);
     } else {
         alpha = BattleCam_MoveTimeLeft;
         alpha /= BattleCam_MoveTimeTotal;
@@ -1195,7 +1196,7 @@ ApiStatus CamPresetUpdate_E(Evt* script, s32 isInitialCall) {
     if (!BattleCam_UseLinearInterp) {
         alpha = BattleCam_MoveTimeLeft;
         alpha /= BattleCam_MoveTimeTotal;
-        alpha = 1.0f - sin_rad(sin_rad(sin_rad((1.0f - alpha) * PI_S / 2) * PI_S / 2) * PI_S / 2);
+        alpha = CUBIC_SINE_INTERP(alpha);
     } else {
         alpha = BattleCam_MoveTimeLeft;
         alpha /= BattleCam_MoveTimeTotal;
@@ -1246,7 +1247,7 @@ ApiStatus CamPresetUpdate_J(Evt* script, s32 isInitialCall) {
     if (!BattleCam_UseLinearInterp) {
         alpha = BattleCam_MoveTimeLeft;
         alpha /= BattleCam_MoveTimeTotal;
-        alpha = 1.0f - sin_rad(sin_rad(sin_rad((1.0f - alpha) * PI_S / 2) * PI_S / 2) * PI_S / 2);
+        alpha = CUBIC_SINE_INTERP(alpha);
     } else {
         alpha = BattleCam_MoveTimeLeft;
         alpha /= BattleCam_MoveTimeTotal;
@@ -1297,19 +1298,19 @@ ApiStatus CamPresetUpdate_K(Evt* script, s32 isInitialCall) {
             if (battleStatus->playerActor == NULL) {
                 return ApiStatus_BLOCK;
             }
-            y = battleStatus->playerActor->currentPos.y + (playerStatus->colliderHeight / 2);
+            y = battleStatus->playerActor->curPos.y + (playerStatus->colliderHeight / 2);
             break;
         case ACTOR_CLASS_PARTNER:
             if (battleStatus->partnerActor == NULL) {
                 return ApiStatus_BLOCK;
             }
-            y = battleStatus->partnerActor->currentPos.y;
+            y = battleStatus->partnerActor->curPos.y;
             break;
         case ACTOR_CLASS_ENEMY:
             if (battleStatus->enemyActors[actorID] == NULL) {
                 return ApiStatus_BLOCK;
             }
-            y = battleStatus->enemyActors[actorID]->currentPos.y;
+            y = battleStatus->enemyActors[actorID]->curPos.y;
             break;
     }
 
@@ -1350,26 +1351,26 @@ ApiStatus CamPresetUpdate_L(Evt* script, s32 isInitialCall) {
             if (battleStatus->playerActor == NULL) {
                 return ApiStatus_BLOCK;
             }
-            x = battleStatus->playerActor->currentPos.x;
-            y = battleStatus->playerActor->currentPos.y + (playerStatus->colliderHeight / 2);
-            z = battleStatus->playerActor->currentPos.z;
+            x = battleStatus->playerActor->curPos.x;
+            y = battleStatus->playerActor->curPos.y + (playerStatus->colliderHeight / 2);
+            z = battleStatus->playerActor->curPos.z;
             break;
         case ACTOR_CLASS_PARTNER:
             if (battleStatus->partnerActor == NULL) {
                 return ApiStatus_BLOCK;
             }
-            x = battleStatus->partnerActor->currentPos.x;
-            y = battleStatus->partnerActor->currentPos.y;
-            z = battleStatus->partnerActor->currentPos.z;
+            x = battleStatus->partnerActor->curPos.x;
+            y = battleStatus->partnerActor->curPos.y;
+            z = battleStatus->partnerActor->curPos.z;
             break;
         case ACTOR_CLASS_ENEMY:
         default:
             if (battleStatus->enemyActors[actorID] == NULL) {
                 return ApiStatus_BLOCK;
             }
-            x = battleStatus->enemyActors[actorID]->currentPos.x;
-            y = battleStatus->enemyActors[actorID]->currentPos.y;
-            z = battleStatus->enemyActors[actorID]->currentPos.z;
+            x = battleStatus->enemyActors[actorID]->curPos.x;
+            y = battleStatus->enemyActors[actorID]->curPos.y;
+            z = battleStatus->enemyActors[actorID]->curPos.z;
             break;
     }
 

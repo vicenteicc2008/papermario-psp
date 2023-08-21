@@ -5,8 +5,22 @@
 #include "hud_element.h"
 #include "sprite.h"
 
-extern s32 D_800DC060;
-extern StageListRow* gCurrentStagePtr;
+SHIFT_BSS s32 D_800DC060;
+SHIFT_BSS StageListRow* gCurrentStagePtr;
+SHIFT_BSS s32 gBattleState;
+SHIFT_BSS BattleStatus gBattleStatus;
+SHIFT_BSS s32 gLastDrawBattleState;
+SHIFT_BSS s32 D_800DC4D4;
+SHIFT_BSS s32 gDefeatedBattleSubstate;
+SHIFT_BSS s32 gBattleSubState;
+SHIFT_BSS s32 D_800DC4E0;
+SHIFT_BSS s32 gDefeatedBattleState;
+SHIFT_BSS s32 gCurrentBattleID;
+SHIFT_BSS s32 gCurrentStageID;
+SHIFT_BSS s32 D_800DC4F0;
+SHIFT_BSS Battle* gOverrideBattlePtr;
+SHIFT_BSS s32 D_800DC4F8;
+SHIFT_BSS Battle* gCurrentBattlePtr;
 
 // standard battle area table entry
 #define BTL_AREA(id, jpName) { \
@@ -87,7 +101,7 @@ BattleArea gBattleAreas[] = {
 };
 
 void reset_battle_status(void) {
-    gGameStatusPtr->demoFlags = 0;
+    gGameStatusPtr->demoBattleFlags = 0;
     gBattleState = BATTLE_STATE_0;
     D_800DC4E0 = 1;
     gBattleSubState = BTL_SUBSTATE_INIT;
@@ -174,7 +188,7 @@ void setup_demo_player(void) {
         playerData->partners[i].level = 2;
     }
 
-    playerData->currentPartner = PARTNER_GOOMBARIO;
+    playerData->curPartner = PARTNER_GOOMBARIO;
 
     for (i = 0; i < ARRAY_COUNT(playerData->badges); i++) {
         playerData->badges[i] = 0;
@@ -202,7 +216,7 @@ void load_demo_battle(u32 index) {
     u32 mode;
     s32 battleID;
 
-    gGameStatusPtr->demoFlags = 0;
+    gGameStatusPtr->demoBattleFlags = 0;
     gGameStatusPtr->areaID = 0;
     gGameStatusPtr->mapID = 0;
     gGameStatusPtr->isBattle = FALSE;
@@ -234,36 +248,36 @@ void load_demo_battle(u32 index) {
     set_screen_overlay_params_front(OVERLAY_TYPE_9, 255.0f);
 
     switch (index) {
-        case 0:
+        case 0: // hammer first strike on Fuzzies
             setup_demo_player();
             mode = 0;
             playerData->hasActionCommands = FALSE;
             battleID = BTL_DIG_FORMATION_00;
             break;
-        case 1:
+        case 1: // jump on Monty Mole
             setup_demo_player();
             mode = 0;
-            playerData->currentPartner = PARTNER_BOW;
+            playerData->curPartner = PARTNER_BOW;
             battleID = BTL_DIG_FORMATION_01;
             break;
-        case 2:
+        case 2: // Parakarry shell shot against Pokey
             setup_demo_player();
             mode = 0;
-            playerData->currentPartner = PARTNER_PARAKARRY;
-            gGameStatusPtr->demoFlags |= 2;
+            playerData->curPartner = PARTNER_PARAKARRY;
+            gGameStatusPtr->demoBattleFlags |= DEMO_BTL_FLAG_PARTNER_ACTING;
             battleID = BTL_DIG_FORMATION_02;
             break;
-        case 3:
+        case 3: // Thunder Rage on Shy Guys at the slot machine
             setup_demo_player();
             mode = 0;
-            playerData->currentPartner = PARTNER_WATT;
+            playerData->curPartner = PARTNER_WATT;
             battleID = BTL_DIG_FORMATION_03;
             break;
-        case 4:
+        case 4: // stomped by Tubba Blubba
             setup_demo_player();
-            playerData->currentPartner = PARTNER_KOOPER;
-            gGameStatusPtr->demoFlags |= 4;
             mode = 0;
+            playerData->curPartner = PARTNER_KOOPER;
+            gGameStatusPtr->demoBattleFlags |= DEMO_BTL_FLAG_ENEMY_ACTING;
             battleID = BTL_DIG_FORMATION_04;
             break;
         default:
@@ -280,32 +294,32 @@ void load_demo_battle(u32 index) {
             gCurrentEncounter.firstStrikeType = FIRST_STRIKE_NONE;
             gCurrentEncounter.hitType = ENCOUNTER_TRIGGER_NONE;
             gCurrentEncounter.hitTier = 0;
-            gGameStatusPtr->demoFlags |= 0x10;
-            gGameStatusPtr->demoFlags |= 0x20;
-            gGameStatusPtr->demoFlags |= 0x40;
+            gGameStatusPtr->demoBattleFlags |= DEMO_BTL_FLAG_10;
+            gGameStatusPtr->demoBattleFlags |= DEMO_BTL_FLAG_20;
+            gGameStatusPtr->demoBattleFlags |= DEMO_BTL_FLAG_40;
             break;
         case 1:
             gCurrentEncounter.firstStrikeType = FIRST_STRIKE_PLAYER;
             gCurrentEncounter.hitType = ENCOUNTER_TRIGGER_HAMMER;
             gCurrentEncounter.hitTier = playerData->hammerLevel;
-            gGameStatusPtr->demoFlags |= 0x10;
+            gGameStatusPtr->demoBattleFlags |= DEMO_BTL_FLAG_10;
             break;
         case 2:
             gCurrentEncounter.firstStrikeType = FIRST_STRIKE_PLAYER;
             gCurrentEncounter.hitType = ENCOUNTER_TRIGGER_JUMP;
             gCurrentEncounter.hitTier = playerData->bootsLevel;
-            gGameStatusPtr->demoFlags |= 0x10;
+            gGameStatusPtr->demoBattleFlags |= DEMO_BTL_FLAG_10;
             break;
         case 3:
             gCurrentEncounter.firstStrikeType = FIRST_STRIKE_PLAYER;
             gCurrentEncounter.hitType = ENCOUNTER_TRIGGER_PARTNER;
-            gGameStatusPtr->demoFlags |= 0x20;
+            gGameStatusPtr->demoBattleFlags |= DEMO_BTL_FLAG_20;
             break;
         case 4:
             gCurrentEncounter.firstStrikeType = FIRST_STRIKE_ENEMY;
             gCurrentEncounter.hitType = ENCOUNTER_TRIGGER_NONE;
             gCurrentEncounter.hitTier = 0;
-            gGameStatusPtr->demoFlags |= 0x40;
+            gGameStatusPtr->demoBattleFlags |= DEMO_BTL_FLAG_40;
             break;
     }
 
@@ -313,9 +327,7 @@ void load_demo_battle(u32 index) {
     gCurrentEncounter.unk_07 = 0;
     gCurrentEncounter.instigatorValue = 0;
     set_battle_stage(BTL_STAGE_DEFAULT);
-    gGameStatusPtr->demoFlags |= 1;
+    gGameStatusPtr->demoBattleFlags |= DEMO_BTL_FLAG_ENABLED;
     gOverrideFlags &= ~GLOBAL_OVERRIDES_8;
     load_battle(battleID);
 }
-
-static const f32 padding[] = { 0.0f, 0.0f };
